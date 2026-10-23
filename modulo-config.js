@@ -1,5 +1,6 @@
 /* UI_UNIFICADO_V1: emojis -> sprite de icones; cores na paleta unica (CORES_TOKENS_V1). */
 /* DEEMOJI_V1 */
+/* PERM_V6: aba Permissões refeita (tipo de acesso explícito, salva 1 usuário, confere com o servidor) */
 // ==================== MÓDULO CONFIG ====================
 // Arquivo: modulo-config.js
 // Carregado dinamicamente quando usuário acessa Configurações
@@ -535,530 +536,465 @@
     }
 
     // ==================== VIEW: PERMISSÕES ADM ====================
-    // Redesign da aba Permissões: cards de admin com barra de progresso,
-    // busca, e modal "Replicar permissões" (copia módulos + abas de um
-    // admin para vários de uma vez, gravando direto no banco).
+    // PERM_V6: editor por usuário com tipo de acesso explícito (Acesso total / Personalizado /
+    // Sem acesso). Salva UM usuário por vez, confere com o servidor depois de salvar e mostra
+    // o que foi recusado. "Ver como" monta o menu com a mesma regra do login.
     function PermissoesADMView(props) {
-        var usuarios = props.usuarios || [];
+        var h = React.createElement;
         var API_URL = props.API_URL;
         var fetchAuth = props.fetchAuth;
         var showToast = props.showToast;
-        var setLoading = props.setLoading;
         var usuarioLogado = props.usuario || {};
-        var recarregar = props.recarregar;
-        var ehMaster = usuarioLogado.role === "admin_master";
-        var MODULOS = props.SISTEMA_MODULOS_CONFIG || [];
-        var TOTAL = MODULOS.length;
 
-        var admins = usuarios.filter(function(u) {
-            return (u.role === "admin" || u.role === "admin_financeiro") && u.ativo !== false;
-        });
+        var C = { roxo: "#770fa8", roxoEsc: "#5d0b85", fundoRoxo: "#3a1556", lilas: "#f3e8fb", lilasBorda: "#d8c3ea", lilasFundo: "#faf5ff",
+                  laranja: "#f67602", borda: "#e5e7eb", bordaLeve: "#f3f4f6", texto: "#111827", texto2: "#374151", cinza: "#6b7280", cinza2: "#4b5563", fundo: "#f9fafb" };
+        var FONTE_TIT = "Sora, Inter, system-ui, sans-serif";
+        var TIPOS = [
+            { id: "total", nome: "Acesso total", desc: "Tudo que o papel permite, inclusive módulos novos" },
+            { id: "personalizado", nome: "Personalizado", desc: "Só os módulos e abas marcados abaixo" },
+            { id: "nenhum", nome: "Sem acesso", desc: "Entra só nos módulos sempre liberados" }
+        ];
+        var CHIP = { total: ["#ecfdf5", "#065f46", "Total"], personalizado: ["#f3e8fb", "#5d0b85", "Personalizado"], nenhum: ["#fef2f2", "#991b1b", "Sem acesso"] };
 
-        var sPerms   = React.useState({});    var perms = sPerms[0],   setPerms = sPerms[1];
-        var sBusca   = React.useState("");    var busca = sBusca[0],   setBusca = sBusca[1];
-        var sExp     = React.useState(null);  var exp = sExp[0],       setExp = sExp[1];
-        var sExpMod  = React.useState(null);  var expMod = sExpMod[0], setExpMod = sExpMod[1];
-        var sModal   = React.useState(false); var modalOpen = sModal[0], setModalOpen = sModal[1];
-        var sOrigem  = React.useState("");    var origem = sOrigem[0], setOrigem = sOrigem[1];
-        var sAlvos   = React.useState({});    var alvos = sAlvos[0],   setAlvos = sAlvos[1];
-        var sBusy    = React.useState(false); var busy = sBusy[0],     setBusy = sBusy[1];
+        function limpa(t) { return String(t || "").replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu, "").replace(/\s+/g, " ").trim(); }
+        function chaveAba(m, a) { return String(m) + "_" + String(a).replace(/-/g, ""); }
+        function ico(nome, tam, cor) { return h("svg", { className: "ico", style: { width: tam || 16, height: tam || 16, color: cor || "currentColor", flexShrink: 0 }, "aria-hidden": "true" }, h("use", { href: "#i-" + nome })); }
+        function iniciais(n) { var p = String(n || "?").trim().split(/\s+/); return ((p[0] || "")[0] || "?").toUpperCase() + ((p.length > 1 ? p[p.length - 1][0] : "") || "").toUpperCase(); }
+        function primeiroNome(n) { return String(n || "").trim().split(/\s+/)[0] || "usuário"; }
+        function papelTxt(r) { return r === "admin_financeiro" ? "Admin financeiro" : "Admin"; }
+        function fmtData(d) { try { var x = new Date(d); return x.toLocaleDateString("pt-BR") + " às " + x.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); } catch (_) { return ""; } }
 
-        // --- Normaliza resposta da API ---
-        function normalizar(lista) {
-            var obj = {};
-            lista.forEach(function(adm) {
-                var mods = Array.isArray(adm.allowed_modules) ? adm.allowed_modules : [];
-                var tabs = (adm.allowed_tabs && typeof adm.allowed_tabs === "object") ? adm.allowed_tabs : {};
-                var modulosObj = {};
-                MODULOS.forEach(function(m) {
-                    modulosObj[m.id] = mods.length === 0 ? true : mods.includes(m.id);
-                });
-                obj[adm.cod_profissional] = { modulos: modulosObj, abas: tabs };
-            });
-            return obj;
+        var sCat = React.useState(props.SISTEMA_MODULOS_CONFIG || []); var catalogo = sCat[0], setCatalogo = sCat[1];
+        var sLista = React.useState(null); var lista = sLista[0], setLista = sLista[1];
+        var sErro = React.useState(null); var erroCarga = sErro[0], setErroCarga = sErro[1];
+        var sSel = React.useState(null); var selCod = sSel[0], setSelCod = sSel[1];
+        var sRas = React.useState(null); var rascunho = sRas[0], setRascunho = sRas[1];
+        var sBusca = React.useState(""); var busca = sBusca[0], setBusca = sBusca[1];
+        var sFiltro = React.useState("todos"); var filtro = sFiltro[0], setFiltro = sFiltro[1];
+        var sExp = React.useState(null); var expandido = sExp[0], setExpandido = sExp[1];
+        var sSalv = React.useState(false); var salvando = sSalv[0], setSalvando = sSalv[1];
+        var sRes = React.useState(null); var resultado = sRes[0], setResultado = sRes[1];
+        var sCop = React.useState(false); var copiarAberto = sCop[0], setCopiarAberto = sCop[1];
+        var sPrev = React.useState(false); var previa = sPrev[0], setPrevia = sPrev[1];
+
+        // módulos que o master configura (sempre liberados aparecem travados)
+        var MODULOS = (catalogo || []).filter(function (m) { return m && m.id; });
+
+        function rascunhoDe(row) {
+            var mods = {};
+            (row.allowed_modules || []).forEach(function (id) { mods[id] = true; });
+            var abas = {};
+            var t = row.allowed_tabs || {};
+            Object.keys(t).forEach(function (k) { if (t[k] === false) abas[k] = false; });
+            return { tipo: row.acesso_tipo || "total", modulos: mods, abas: abas };
+        }
+        function assinatura(r) {
+            if (!r) return "";
+            var mods = Object.keys(r.modulos).filter(function (k) { return r.modulos[k]; }).sort();
+            var abas = Object.keys(r.abas).filter(function (k) { return r.abas[k] === false; }).sort();
+            return r.tipo + "|" + (r.tipo === "personalizado" ? mods.join(",") + "|" + abas.join(",") : "");
         }
 
-        // --- Carregar permissões (mount + botão atualizar) ---
-        function carregar(comToast) {
-            setLoading(true);
-            fetchAuth(API_URL + "/admin-permissions")
-                .then(function(res) { return res.ok ? res.json() : Promise.reject(); })
-                .then(function(data) {
-                    setPerms(normalizar(data));
-                    if (comToast) showToast("Atualizado!", "success");
+        function carregar(manterSel) {
+            setErroCarga(null);
+            return Promise.all([
+                fetchAuth(API_URL + "/modules-config").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
+                fetchAuth(API_URL + "/admin-permissions").then(function (r) {
+                    if (!r.ok) return r.json().catch(function () { return {}; }).then(function (e) { throw new Error(e.error || "Não deu para carregar as permissões."); });
+                    return r.json();
                 })
-                .catch(function() { showToast("Erro ao carregar permissões", "error"); })
-                .finally(function() { setLoading(false); });
+            ]).then(function (rs) {
+                if (rs[0] && Array.isArray(rs[0].modulos) && rs[0].modulos.length) setCatalogo(rs[0].modulos);
+                var rows = Array.isArray(rs[1]) ? rs[1] : [];
+                setLista(rows);
+                var alvo = manterSel || selCod;
+                var achou = rows.find(function (x) { return x.cod_profissional === alvo; }) || rows[0] || null;
+                if (achou && (!manterSel || manterSel === achou.cod_profissional)) {
+                    setSelCod(achou.cod_profissional);
+                    setRascunho(rascunhoDe(achou));
+                }
+                return rows;
+            }).catch(function (e) { setErroCarga(e.message || "Não deu para carregar as permissões."); setLista([]); });
         }
-        React.useEffect(function() { carregar(false); }, []);
+        React.useEffect(function () { carregar(null); }, []);
 
-        // --- Monta payload do PATCH a partir de um objeto de perms ---
-        function payloadDe(cod, fonte) {
-            var pr = (fonte && fonte[cod]) ? fonte[cod] : { modulos: {}, abas: {} };
-            var allowedModules = [];
-            MODULOS.forEach(function(m) {
-                if (pr.modulos && pr.modulos[m.id] === true) allowedModules.push(m.id);
+        var linhas = lista || [];
+        var sel = linhas.find(function (x) { return x.cod_profissional === selCod; }) || null;
+        var sujo = !!(sel && rascunho && assinatura(rascunho) !== assinatura(rascunhoDe(sel)));
+
+        function bloqueadoPapel(m, role) { return Array.isArray(m.bloqueadoPara) && m.bloqueadoPara.indexOf(role) >= 0; }
+        // mesma regra do backend (registry.permissoesEfetivas) aplicada ao rascunho
+        function efetivoDe(r, role) {
+            var out = {};
+            MODULOS.forEach(function (m) {
+                var ok;
+                if (m.sempreLiberado) ok = true;
+                else if (bloqueadoPapel(m, role)) ok = false;
+                else if (r.tipo === "total") ok = true;
+                else if (r.tipo === "nenhum") ok = false;
+                else ok = r.modulos[m.id] === true;
+                out[m.id] = ok;
             });
-            // 2026-07: acesso total = lista vazia (irrestrito). Assim modulo novo
-            // entra sozinho pros admins full, sem precisar re-salvar toda vez.
-            if (allowedModules.length === MODULOS.length) allowedModules = [];
-            return { allowed_modules: allowedModules, allowed_tabs: pr.abas || {} };
+            return out;
         }
-        function patchAdmin(cod, fonte) {
-            return fetchAuth(API_URL + "/admin-permissions/" + encodeURIComponent(cod), {
+
+        function selecionar(cod) {
+            if (cod === selCod) return;
+            if (sujo && !window.confirm("As alterações de " + primeiroNome(sel && sel.full_name) + " ainda não foram salvas. Descartar e trocar de usuário?")) return;
+            var row = linhas.find(function (x) { return x.cod_profissional === cod; });
+            setSelCod(cod); setRascunho(row ? rascunhoDe(row) : null); setResultado(null); setExpandido(null); setPrevia(false);
+        }
+        function mudar(fn) { setRascunho(function (r) { var n = { tipo: r.tipo, modulos: Object.assign({}, r.modulos), abas: Object.assign({}, r.abas) }; fn(n); return n; }); setResultado(null); }
+        function setTipo(t) {
+            mudar(function (n) {
+                var nada = Object.keys(n.modulos).filter(function (k) { return n.modulos[k]; }).length === 0;
+                if (t === "personalizado" && n.tipo === "total" && nada) {
+                    MODULOS.forEach(function (m) { if (!m.sempreLiberado && !bloqueadoPapel(m, sel.role)) n.modulos[m.id] = true; });
+                }
+                n.tipo = t;
+            });
+        }
+        function toggleModulo(m) {
+            mudar(function (n) {
+                if (n.tipo !== "personalizado") {
+                    var base = efetivoDe(n, sel.role);
+                    n.modulos = {};
+                    MODULOS.forEach(function (x) { if (!x.sempreLiberado && base[x.id]) n.modulos[x.id] = true; });
+                    n.tipo = "personalizado";
+                }
+                n.modulos[m.id] = !n.modulos[m.id];
+            });
+        }
+        function toggleAba(m, a) {
+            var k = chaveAba(m.id, a.id);
+            mudar(function (n) { if (n.abas[k] === false) delete n.abas[k]; else n.abas[k] = false; });
+        }
+        function marcarTodos(v) {
+            mudar(function (n) {
+                n.tipo = "personalizado"; n.modulos = {}; n.abas = {};
+                if (v) MODULOS.forEach(function (m) { if (!m.sempreLiberado && !bloqueadoPapel(m, sel.role)) n.modulos[m.id] = true; });
+            });
+        }
+        function descartar() { if (sel) { setRascunho(rascunhoDe(sel)); setResultado(null); } }
+        function copiarDe(cod) {
+            var origem = linhas.find(function (x) { return x.cod_profissional === cod; });
+            if (!origem) return;
+            var r = rascunhoDe(origem);
+            setRascunho(r); setCopiarAberto(false); setResultado(null);
+            showToast("Permissões de " + primeiroNome(origem.full_name) + " copiadas. Confira e salve.", "success");
+        }
+
+        function salvar() {
+            if (!sel || !rascunho || salvando) return;
+            var mods = rascunho.tipo === "personalizado" ? Object.keys(rascunho.modulos).filter(function (k) { return rascunho.modulos[k]; }) : [];
+            var abas = {};
+            if (rascunho.tipo === "personalizado") Object.keys(rascunho.abas).forEach(function (k) {
+                if (rascunho.abas[k] !== false) return;
+                var m = MODULOS.find(function (x) { return (x.abas || []).some(function (a) { return chaveAba(x.id, a.id) === k; }); });
+                if (m && rascunho.modulos[m.id]) abas[k] = false;
+            });
+            var cod = sel.cod_profissional;
+            var enviado = { tipo: rascunho.tipo, mods: mods.slice().sort().join(","), abas: Object.keys(abas).sort().join(",") };
+            setSalvando(true); setResultado(null);
+            fetchAuth(API_URL + "/admin-permissions/" + encodeURIComponent(cod), {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payloadDe(cod, fonte))
-            }).then(function(res) { return res.ok; }).catch(function() { return false; });
+                body: JSON.stringify({ acesso_tipo: rascunho.tipo, allowed_modules: mods, allowed_tabs: abas })
+            }).then(function (res) {
+                return res.json().catch(function () { return {}; }).then(function (data) {
+                    if (!res.ok || !data || data.success !== true || !data.user) throw new Error((data && data.error) || "O servidor não confirmou o salvamento.");
+                    return data;
+                });
+            }).then(function (data) {
+                var u = data.user;
+                setLista(function (ls) { return (ls || []).map(function (x) { return x.cod_profissional === u.cod_profissional ? u : x; }); });
+                if (selCod === cod) setRascunho(rascunhoDe(u));
+                var gravado = rascunhoDe(u);
+                var gravadoSig = { tipo: gravado.tipo, mods: Object.keys(gravado.modulos).sort().join(","), abas: Object.keys(gravado.abas).sort().join(",") };
+                var diferencas = [];
+                if (gravadoSig.tipo !== enviado.tipo) diferencas.push("O tipo de acesso ficou " + (CHIP[gravadoSig.tipo] ? CHIP[gravadoSig.tipo][2] : gravadoSig.tipo) + (gravadoSig.tipo === "nenhum" ? " porque nenhum módulo ficou marcado." : "."));
+                var motivos = Array.isArray(data.motivos) ? data.motivos.slice() : [];
+                if (!motivos.length && (gravadoSig.mods !== enviado.mods || gravadoSig.abas !== enviado.abas) && gravadoSig.tipo === "personalizado") {
+                    diferencas.push("Alguns itens foram ajustados pelo servidor. A tela mostra agora o que ficou gravado.");
+                }
+                setResultado({ ok: true, cod: cod, nome: u.full_name, efetivo: u.efetivo, avisos: motivos.concat(diferencas) });
+                showToast("Permissões de " + primeiroNome(u.full_name) + " salvas.", "success");
+                // relê do banco em segundo plano: a tela sempre fica igual ao que está gravado
+                carregar(cod);
+            }).catch(function (e) {
+                setResultado({ ok: false, cod: cod, nome: sel.full_name, erro: e.message || "O servidor não respondeu." });
+            }).finally(function () { setSalvando(false); });
         }
 
-        // --- Salvar todos ---
-        function salvarTodos() {
-            setLoading(true);
-            var lista = admins.filter(function(a) { return perms[a.codProfissional]; });
-            Promise.all(lista.map(function(a) { return patchAdmin(a.codProfissional, perms); }))
-                .then(function(rs) {
-                    var ok = rs.filter(Boolean).length;
-                    showToast(ok > 0 ? ("" + ok + " admin(s) salvos!") : "Nada para salvar",
-                              ok > 0 ? "success" : "warning");
-                })
-                .finally(function() { setLoading(false); });
-        }
-
-        // --- Toggles ---
-        function mutar(fn) {
-            var novo = JSON.parse(JSON.stringify(perms));
-            fn(novo);
-            setPerms(novo);
-        }
-        function garante(obj, cod) {
-            if (!obj[cod]) obj[cod] = { modulos: {}, abas: {} };
-            if (!obj[cod].modulos) obj[cod].modulos = {};
-            if (!obj[cod].abas) obj[cod].abas = {};
-        }
-        function toggleModulo(cod, modId, atual) {
-            mutar(function(n) { garante(n, cod); n[cod].modulos[modId] = !atual; });
-        }
-        function toggleAba(cod, abaKey, permitida) {
-            mutar(function(n) {
-                garante(n, cod);
-                if (permitida) n[cod].abas[abaKey] = false;
-                else delete n[cod].abas[abaKey];
-            });
-        }
-        function marcarModulos(cod, valor) {
-            mutar(function(n) {
-                garante(n, cod);
-                MODULOS.forEach(function(m) { n[cod].modulos[m.id] = valor; });
-            });
-        }
-
-        // --- Replicar (grava direto no banco) ---
-        function abrirReplicar(codOrigem) {
-            setOrigem(codOrigem || "");
-            setAlvos({});
-            setModalOpen(true);
-        }
-        function aplicarReplicar() {
-            if (!origem) { showToast("Escolha o admin de origem", "error"); return; }
-            var origemPerms = perms[origem];
-            if (!origemPerms) { showToast("Permissões da origem não carregadas", "error"); return; }
-            var lista = Object.keys(alvos).filter(function(c) { return alvos[c]; });
-            if (lista.length === 0) { showToast("Selecione ao menos um admin de destino", "error"); return; }
-
-            setBusy(true);
-            var novo = JSON.parse(JSON.stringify(perms));
-            lista.forEach(function(c) {
-                novo[c] = {
-                    modulos: JSON.parse(JSON.stringify(origemPerms.modulos || {})),
-                    abas: JSON.parse(JSON.stringify(origemPerms.abas || {}))
-                };
-            });
-            setPerms(novo);
-            Promise.all(lista.map(function(c) { return patchAdmin(c, novo); }))
-                .then(function(rs) {
-                    var ok = rs.filter(Boolean).length;
-                    setModalOpen(false);
-                    showToast(ok === lista.length
-                        ? ("Replicado para " + ok + " admin(s)!")
-                        : ("" + ok + "/" + lista.length + " salvos"),
-                        ok === lista.length ? "success" : "warning");
-                })
-                .finally(function() { setBusy(false); });
-        }
-
-        // --- Excluir admin (somente admin_master) ---
-        function excluirAdmin(admin) {
-            var cod = admin.codProfissional;
-            if (!confirm("Excluir o admin \"" + (admin.fullName || cod) + "\"?\n\n" +
-                "A conta será removida. O histórico de auditoria e os registros do sistema são preservados.\n\n" +
-                "Esta ação não pode ser desfeita.")) return;
-            setLoading(true);
-            fetchAuth(API_URL + "/users/" + encodeURIComponent(cod), { method: "DELETE" })
-                .then(function(res) {
-                    if (res.ok) {
-                        showToast("Admin excluído!", "success");
-                        setExp(null);
-                        if (recarregar) recarregar();
-                    } else {
-                        return res.json().catch(function() { return {}; }).then(function(e) {
-                            showToast("" + (e.error || "Erro ao excluir"), "error");
-                        });
-                    }
-                })
-                .catch(function() { showToast("Erro ao excluir", "error"); })
-                .finally(function() { setLoading(false); });
-        }
-
-        // --- Métricas de um admin ---
-        function statsDe(cod) {
-            var pr = perms[cod] || { modulos: {}, abas: {} };
-            var mods = pr.modulos || {}, abas = pr.abas || {};
-            var ativos = MODULOS.filter(function(m) { return mods[m.id] === true; }).length;
-            var restr = Object.keys(abas).filter(function(k) { return abas[k] === false; }).length;
-            return { ativos: ativos, restr: restr };
-        }
-
-        // ---- Resumo ----
-        var totalAdmins = admins.length;
-        var acessoTotal = 0, comRestricoes = 0;
-        admins.forEach(function(a) {
-            var st = statsDe(a.codProfissional);
-            if (st.ativos === TOTAL && st.restr === 0) acessoTotal++;
-            else comRestricoes++;
+        // ---------- contagens ----------
+        var cont = { todos: linhas.length, personalizado: 0, total: 0, nenhum: 0 };
+        linhas.forEach(function (x) { if (cont[x.acesso_tipo] !== undefined) cont[x.acesso_tipo]++; });
+        var termo = busca.trim().toLowerCase();
+        var visiveis = linhas.filter(function (x) {
+            if (filtro !== "todos" && x.acesso_tipo !== filtro) return false;
+            if (!termo) return true;
+            return String(x.full_name || "").toLowerCase().indexOf(termo) >= 0 || String(x.cod_profissional || "").toLowerCase().indexOf(termo) >= 0;
         });
 
-        function corAvatar(role) { return role === "admin" ? "bg-blue-600" : "bg-green-600"; }
-        function labelRole(role) { return role === "admin" ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-crown" })), "Admin") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-wallet" })), "Admin Fin."); }
-
-        function metricCard(label, valor, cor) {
-            return React.createElement("div", { className: "bg-gray-50 rounded-lg p-3" },
-                React.createElement("p", { className: "text-xs text-gray-500" }, label),
-                React.createElement("p", { className: "text-2xl font-bold " + cor }, valor)
-            );
+        function resumoLinha(x) {
+            var ef = x.efetivo && x.efetivo.modulos ? x.efetivo.modulos : {};
+            var n = MODULOS.filter(function (m) { return !m.sempreLiberado && ef[m.id]; }).length;
+            if (x.acesso_tipo === "total") return papelTxt(x.role);
+            if (x.acesso_tipo === "nenhum") return papelTxt(x.role) + " · nenhum módulo";
+            return papelTxt(x.role) + " · " + n + (n === 1 ? " módulo" : " módulos");
         }
 
-        // ---- Pílula de toggle (módulo) ----
-        function pilulaModulo(ativo, onClick) {
-            return React.createElement("button", {
-                onClick: onClick,
-                className: "px-3 py-1 rounded-full text-xs font-bold transition-colors flex-shrink-0 " +
-                    (ativo ? "bg-green-100 text-green-700 hover:bg-green-200"
-                           : "bg-red-100 text-red-700 hover:bg-red-200")
-            }, ativo ? React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Permitido") : React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Bloqueado"));
+        // ---------- estilos ----------
+        var card = { background: "#fff", border: "1px solid " + C.borda, borderRadius: 16 };
+        var btnSec = { height: 40, padding: "0 14px", borderRadius: 10, border: "1px solid " + C.borda, background: "#fff", color: C.texto2, fontWeight: 600, fontSize: 13, display: "inline-flex", gap: 8, alignItems: "center", cursor: "pointer", fontFamily: "inherit" };
+        function chip(tipo) { var c = CHIP[tipo] || CHIP.total; return h("span", { style: { fontSize: 11, fontWeight: 600, borderRadius: 99, padding: "3px 9px", background: c[0], color: c[1], whiteSpace: "nowrap" } }, c[2]); }
+        function sw(on, travado) {
+            return h("span", { "aria-hidden": "true", style: { width: 38, height: 22, borderRadius: 99, position: "relative", flexShrink: 0, background: on ? (travado ? "#c4a5e0" : C.roxo) : "#d1d5db", transition: "background .15s" } },
+                h("span", { style: { position: "absolute", top: 3, width: 16, height: 16, borderRadius: "50%", background: "#fff", left: on ? 19 : 3, transition: "left .15s" } }));
         }
 
-        // ---- Bloco de módulos de um admin ----
-        function blocoModulos(admin) {
-            var cod = admin.codProfissional;
-            return React.createElement("div", { className: "border-t bg-gray-50 p-3" },
-                // atalhos
-                React.createElement("div", { className: "flex flex-wrap gap-2 mb-3 items-center" },
-                    React.createElement("button", {
-                        onClick: function() { marcarModulos(cod, true); },
-                        className: "px-3 py-1.5 text-xs font-semibold rounded-lg border bg-white hover:bg-gray-50"
-                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })), "Marcar todos")),
-                    React.createElement("button", {
-                        onClick: function() { marcarModulos(cod, false); },
-                        className: "px-3 py-1.5 text-xs font-semibold rounded-lg border bg-white hover:bg-gray-50"
-                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })), "Limpar tudo")),
-                    React.createElement("button", {
-                        onClick: function() { abrirReplicar(cod); },
-                        className: "px-3 py-1.5 text-xs font-semibold rounded-lg border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100"
-                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Usar como modelo")),
-                    ehMaster && React.createElement("button", {
-                        onClick: function() { excluirAdmin(admin); },
-                        className: "ml-auto px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-300 bg-red-50 text-red-700 hover:bg-red-100"
-                    }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#dc2626" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-trash" })), "Excluir admin"))
-                ),
-                // lista de módulos
-                React.createElement("div", { className: "space-y-1.5" },
-                    MODULOS.map(function(mod) {
-                        var pr = perms[cod] || { modulos: {}, abas: {} };
-                        var modAtivo = (pr.modulos || {})[mod.id] === true;
-                        var modAbas = mod.abas || [];
-                        var abaKeyBase = mod.id;
-                        var modExpKey = cod + "_" + mod.id;
-                        var isModExp = expMod === modExpKey;
-                        var restrModulo = modAbas.filter(function(aba) {
-                            var k = abaKeyBase + "_" + aba.id.replace(/-/g, "");
-                            return (pr.abas || {})[k] === false;
-                        }).length;
-
-                        return React.createElement("div", {
-                            key: mod.id,
-                            className: "border rounded-lg overflow-hidden bg-white " +
-                                (modAtivo ? "border-green-200" : "border-red-200")
-                        },
-                            React.createElement("div", {
-                                className: "flex items-center gap-2 p-2 " + (modAtivo ? "bg-green-50" : "bg-red-50")
-                            },
-                                React.createElement("div", {
-                                    className: "flex items-center gap-2 flex-1 min-w-0 " + (modAbas.length > 0 ? "cursor-pointer" : ""),
-                                    onClick: function() {
-                                        if (modAbas.length > 0) setExpMod(isModExp ? null : modExpKey);
-                                    }
-                                },
-                                    React.createElement("span", { className: "text-gray-400 w-3 text-center" },
-                                        modAbas.length > 0 ? (isModExp ? "" : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-play" }))) : ""),
-                                    React.createElement("span", null, mod.icon),
-                                    React.createElement("span", { className: "font-medium text-sm truncate" }, mod.label),
-                                    modAbas.length > 0 && React.createElement("span", { className: "text-xs text-gray-400 flex-shrink-0" },
-                                        "(" + modAbas.length + " abas" +
-                                        (restrModulo > 0 ? ", " + restrModulo + " restritas" : "") + ")")
-                                ),
-                                pilulaModulo(modAtivo, function() { toggleModulo(cod, mod.id, modAtivo); })
-                            ),
-                            // abas
-                            isModExp && modAbas.length > 0 && React.createElement("div", { className: "border-t bg-gray-50 p-3" },
-                                React.createElement("p", { className: "text-xs text-gray-500 mb-2 font-semibold" }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-filetext" })), "Abas do módulo")),
-                                React.createElement("div", { className: "flex flex-wrap gap-2" },
-                                    modAbas.map(function(aba) {
-                                        var k = abaKeyBase + "_" + aba.id.replace(/-/g, "");
-                                        var permitida = (pr.abas || {})[k] !== false;
-                                        return React.createElement("button", {
-                                            key: k,
-                                            onClick: function() { toggleAba(cod, k, permitida); },
-                                            className: "text-xs px-3 py-1.5 rounded-full border font-medium transition-colors " +
-                                                (permitida ? "bg-white border-green-200 text-green-700 hover:bg-green-50"
-                                                           : "bg-red-50 border-red-200 text-red-700 hover:bg-red-100")
-                                        }, (permitida ? React.createElement("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-check" })) : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" }))) + aba.label);
-                                    })
-                                )
-                            )
-                        );
-                    })
-                )
-            );
+        if (lista === null) {
+            return h("div", { style: Object.assign({}, card, { padding: 40, textAlign: "center", color: C.cinza }) }, "Carregando permissões…");
+        }
+        if (erroCarga) {
+            return h("div", { style: Object.assign({}, card, { padding: 24, display: "flex", gap: 12, alignItems: "center", borderColor: "#fecaca" }) },
+                ico("alert", 20, "#991b1b"),
+                h("div", { style: { flex: 1 } }, h("b", null, "Não deu para carregar as permissões"), h("div", { style: { fontSize: 12, color: C.cinza2 } }, erroCarga)),
+                h("button", { type: "button", style: Object.assign({}, btnSec, { background: C.roxo, color: "#fff", border: "none" }), onClick: function () { setLista(null); carregar(selCod); } }, "Tentar de novo"));
         }
 
-        // ---- Card de admin ----
-        function cardAdmin(admin) {
-            var cod = admin.codProfissional;
-            var st = statsDe(cod);
-            var full = st.ativos === TOTAL;
-            var pct = TOTAL > 0 ? Math.round(st.ativos / TOTAL * 100) : 0;
-            var aberto = exp === cod;
+        // ---------- lista de usuários ----------
+        var painelLista = h("aside", { style: Object.assign({}, card, { flex: "1 1 300px", maxWidth: 380, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden", alignSelf: "flex-start" }) },
+            h("div", { style: { padding: "16px 16px 12px", display: "flex", flexDirection: "column", gap: 10, borderBottom: "1px solid " + C.bordaLeve } },
+                h("h2", { style: { margin: 0, fontFamily: FONTE_TIT, fontSize: 17, color: C.texto } }, "Quem acessa o quê"),
+                h("label", { style: { display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: C.cinza2, fontWeight: 600 } }, "Buscar usuário",
+                    h("input", { type: "search", value: busca, placeholder: "Nome ou código", onChange: function (e) { setBusca(e.target.value); },
+                        style: { height: 38, border: "1px solid " + C.borda, borderRadius: 10, padding: "0 12px", fontSize: 13, fontFamily: "inherit", outline: "none" } })),
+                h("div", { role: "group", "aria-label": "Filtrar por acesso", style: { display: "flex", gap: 6, flexWrap: "wrap" } },
+                    [["todos", "Todos"], ["personalizado", "Personalizado"], ["total", "Total"], ["nenhum", "Sem acesso"]].map(function (f) {
+                        var on = filtro === f[0];
+                        return h("button", { key: f[0], type: "button", "aria-pressed": on, onClick: function () { setFiltro(f[0]); },
+                            style: { height: 30, padding: "0 11px", borderRadius: 99, border: "1px solid " + (on ? C.roxo : C.borda), background: on ? C.lilas : "#fff", color: on ? C.roxoEsc : C.texto2, fontWeight: on ? 600 : 500, fontSize: 12, cursor: "pointer", fontFamily: "inherit" } },
+                            f[1] + " · " + cont[f[0]]);
+                    }))),
+            h("div", { style: { maxHeight: 640, overflowY: "auto" } },
+                visiveis.length === 0
+                    ? h("div", { style: { padding: 24, textAlign: "center", color: C.cinza, fontSize: 13 } },
+                        linhas.length === 0 ? "Nenhum Admin ou Admin financeiro ativo. Cadastre na aba Usuários." : "Ninguém com esse filtro.",
+                        (termo || filtro !== "todos") && h("div", null, h("button", { type: "button", onClick: function () { setBusca(""); setFiltro("todos"); }, style: { marginTop: 8, background: "none", border: "none", color: C.roxo, fontWeight: 600, cursor: "pointer" } }, "Limpar filtros")))
+                    : visiveis.map(function (x) {
+                        var on = x.cod_profissional === selCod;
+                        return h("button", { key: x.cod_profissional, type: "button", onClick: function () { selecionar(x.cod_profissional); }, "aria-current": on ? "true" : undefined,
+                            style: { display: "flex", gap: 12, alignItems: "center", padding: "12px 16px", border: "none", borderBottom: "1px solid " + C.bordaLeve, cursor: "pointer", width: "100%", minHeight: 60, textAlign: "left", fontFamily: "inherit",
+                                     background: on ? C.lilasFundo : "#fff", boxShadow: on ? "inset 3px 0 0 " + C.roxo : "none" } },
+                            h("span", { style: { width: 36, height: 36, borderRadius: "50%", background: "#ede4f6", color: C.roxoEsc, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } }, iniciais(x.full_name)),
+                            h("span", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 } },
+                                h("b", { style: { fontSize: 13, color: C.texto, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, x.full_name || x.cod_profissional),
+                                h("span", { style: { fontSize: 11, color: C.cinza } }, resumoLinha(x))),
+                            on && sujo ? h("span", { title: "Alterações não salvas", style: { width: 8, height: 8, borderRadius: "50%", background: C.laranja, flexShrink: 0 } }) : null,
+                            chip(x.acesso_tipo));
+                    })));
 
-            return React.createElement("div", {
-                key: cod,
-                className: "bg-white rounded-xl shadow-sm border overflow-hidden"
-            },
-                React.createElement("div", {
-                    className: "flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors",
-                    onClick: function() { setExp(aberto ? null : cod); }
-                },
-                    React.createElement("div", {
-                        className: "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 " + corAvatar(admin.role)
-                    }, admin.fullName ? admin.fullName.charAt(0).toUpperCase() : "?"),
-                    React.createElement("div", { className: "min-w-0 flex-1" },
-                        React.createElement("p", { className: "font-semibold truncate" }, admin.fullName),
-                        React.createElement("p", { className: "text-xs text-gray-500" }, labelRole(admin.role))
-                    ),
-                    // barra de progresso de módulos
-                    React.createElement("div", { className: "w-32 flex-shrink-0 hidden sm:block" },
-                        React.createElement("div", { className: "flex justify-between text-xs mb-1" },
-                            React.createElement("span", { className: "text-gray-500" }, "módulos"),
-                            React.createElement("span", { className: "font-semibold " + (full ? "text-green-600" : "text-orange-600") },
-                                st.ativos + "/" + TOTAL)
-                        ),
-                        React.createElement("div", { className: "h-1.5 bg-gray-100 rounded-full overflow-hidden" },
-                            React.createElement("div", {
-                                className: "h-full rounded-full " + (full ? "bg-green-500" : "bg-purple-600"),
-                                style: { width: pct + "%" }
-                            })
-                        )
-                    ),
-                    // chip de status (verde só em acesso realmente total)
-                    (st.restr > 0
-                        ? React.createElement("span", { className: "bg-red-100 text-red-700 text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0" },
-                            st.restr + " abas restritas")
-                        : full
-                            ? React.createElement("span", { className: "bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0" },
-                                "acesso total")
-                            : React.createElement("span", { className: "bg-gray-100 text-gray-600 text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0" },
-                                "abas liberadas")),
-                    React.createElement("span", { className: "text-gray-400 text-lg flex-shrink-0" }, aberto ? "" : React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-play" })))
-                ),
-                aberto && blocoModulos(admin)
-            );
+        if (!sel || !rascunho) {
+            return h("div", { style: { display: "flex", flexWrap: "wrap", gap: 20 } }, painelLista);
         }
 
-        // ---- Modal Replicar ----
-        function renderModal() {
-            if (!modalOpen) return null;
-            var alvosAdmins = admins.filter(function(a) { return a.codProfissional !== origem; });
-            var marcados = alvosAdmins.filter(function(a) { return alvos[a.codProfissional]; }).length;
-            var todosMarcados = alvosAdmins.length > 0 && marcados === alvosAdmins.length;
+        var ef = efetivoDe(rascunho, sel.role);
+        var configuraveis = MODULOS.filter(function (m) { return !m.sempreLiberado && !bloqueadoPapel(m, sel.role); });
+        var nLiberados = configuraveis.filter(function (m) { return ef[m.id]; }).length;
+        var nAbas = 0;
+        configuraveis.forEach(function (m) { if (ef[m.id]) (m.abas || []).forEach(function (a) { if (rascunho.tipo !== "personalizado" || rascunho.abas[chaveAba(m.id, a.id)] !== false) nAbas++; }); });
 
-            return React.createElement("div", {
-                className: "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4",
-                onClick: function() { if (!busy) setModalOpen(false); }
-            },
-                React.createElement("div", {
-                    className: "bg-white rounded-xl w-full max-w-md flex flex-col max-h-[90vh]",
-                    onClick: function(e) { e.stopPropagation(); }
-                },
-                    // header
-                    React.createElement("div", { className: "p-5 border-b" },
-                        React.createElement("div", { className: "flex items-center justify-between" },
-                            React.createElement("h3", { className: "text-lg font-bold flex items-center gap-2" },
-                                React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" }))), "Replicar permissões"),
-                            React.createElement("button", {
-                                onClick: function() { if (!busy) setModalOpen(false); },
-                                className: "text-gray-400 hover:text-gray-600 text-xl"
-                            }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-x" })))
-                        ),
-                        React.createElement("p", { className: "text-sm text-gray-500 mt-1" },
-                            "Copia os módulos e abas de um admin para vários de uma vez.")
-                    ),
-                    // corpo
-                    React.createElement("div", { className: "p-5 overflow-y-auto space-y-4" },
-                        React.createElement("div", null,
-                            React.createElement("label", { className: "block text-sm font-semibold mb-1" }, "Copiar de"),
-                            React.createElement("select", {
-                                value: origem,
-                                onChange: function(e) { setOrigem(e.target.value); setAlvos({}); },
-                                className: "w-full px-3 py-2 border rounded-lg"
-                            },
-                                React.createElement("option", { value: "" }, "— selecione o admin —"),
-                                admins.map(function(a) {
-                                    var st = statsDe(a.codProfissional);
-                                    return React.createElement("option", { key: a.codProfissional, value: a.codProfissional },
-                                        a.fullName + " (" + st.ativos + "/" + TOTAL + " módulos)");
-                                })
-                            )
-                        ),
-                        React.createElement("div", null,
-                            React.createElement("div", { className: "flex items-center justify-between mb-1" },
-                                React.createElement("label", { className: "text-sm font-semibold" }, "Aplicar em"),
-                                origem && alvosAdmins.length > 0 && React.createElement("button", {
-                                    onClick: function() {
-                                        var novo = {};
-                                        if (!todosMarcados) alvosAdmins.forEach(function(a) { novo[a.codProfissional] = true; });
-                                        setAlvos(novo);
-                                    },
-                                    className: "text-xs text-purple-600 font-semibold hover:underline"
-                                }, todosMarcados ? "Limpar seleção" : "Selecionar todos")
-                            ),
-                            !origem
-                                ? React.createElement("p", { className: "text-sm text-gray-400 py-3 text-center border rounded-lg" },
-                                    "Escolha o admin de origem acima")
-                                : React.createElement("div", { className: "border rounded-lg divide-y max-h-52 overflow-y-auto" },
-                                    alvosAdmins.map(function(a) {
-                                        var marcado = !!alvos[a.codProfissional];
-                                        return React.createElement("label", {
-                                            key: a.codProfissional,
-                                            className: "flex items-center gap-3 p-2.5 cursor-pointer hover:bg-gray-50"
-                                        },
-                                            React.createElement("input", {
-                                                type: "checkbox", checked: marcado,
-                                                onChange: function() {
-                                                    var novo = Object.assign({}, alvos);
-                                                    if (marcado) delete novo[a.codProfissional];
-                                                    else novo[a.codProfissional] = true;
-                                                    setAlvos(novo);
-                                                },
-                                                className: "w-4 h-4 rounded"
-                                            }),
-                                            React.createElement("div", {
-                                                className: "w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold " + corAvatar(a.role)
-                                            }, a.fullName ? a.fullName.charAt(0).toUpperCase() : "?"),
-                                            React.createElement("span", { className: "text-sm flex-1" }, a.fullName),
-                                            React.createElement("span", { className: "text-xs text-gray-400" }, labelRole(a.role))
-                                        );
-                                    })
-                                )
-                        ),
-                        React.createElement("div", { className: "flex gap-2 items-start bg-amber-50 border border-amber-200 rounded-lg p-3" },
-                            React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 18, height: 18, color: "#d97706" }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-alert" }))),
-                            React.createElement("p", { className: "text-xs text-amber-800" },
-                                "Os módulos e abas dos admins selecionados serão sobrescritos e salvos imediatamente no banco.")
-                        )
-                    ),
-                    // footer
-                    React.createElement("div", { className: "p-5 border-t flex gap-3 justify-end" },
-                        React.createElement("button", {
-                            onClick: function() { if (!busy) setModalOpen(false); },
-                            disabled: busy,
-                            className: "px-4 py-2 border rounded-lg font-semibold hover:bg-gray-100 disabled:opacity-50"
-                        }, "Cancelar"),
-                        React.createElement("button", {
-                            onClick: aplicarReplicar,
-                            disabled: busy || !origem || marcados === 0,
-                            className: "px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50"
-                        }, busy ? "Aplicando..." : ("Aplicar a " + marcados + " admin" + (marcados === 1 ? "" : "s")))
-                    )
-                )
-            );
-        }
-
-        // ---- Filtragem ----
-        var buscaNorm = busca.toLowerCase().trim();
-        var adminsFiltrados = admins.filter(function(a) {
-            if (!buscaNorm) return true;
-            return (a.fullName || "").toLowerCase().indexOf(buscaNorm) !== -1 ||
-                   String(a.codProfissional || "").toLowerCase().indexOf(buscaNorm) !== -1;
+        // diferença em relação ao salvo (barra de alterações)
+        var salvoEf = efetivoDe(rascunhoDe(sel), sel.role);
+        var mudancas = [];
+        if (rascunho.tipo !== sel.acesso_tipo) mudancas.push("Tipo: " + CHIP[rascunho.tipo][2]);
+        configuraveis.forEach(function (m) { if (ef[m.id] !== salvoEf[m.id]) mudancas.push((ef[m.id] ? "+ " : "− ") + limpa(m.label)); });
+        var abasSalvas = rascunhoDe(sel).abas;
+        configuraveis.forEach(function (m) {
+            if (!ef[m.id]) return;
+            (m.abas || []).forEach(function (a) {
+                var k = chaveAba(m.id, a.id);
+                var agora = rascunho.tipo === "personalizado" && rascunho.abas[k] === false;
+                var antes = sel.acesso_tipo === "personalizado" && abasSalvas[k] === false;
+                if (agora !== antes && salvoEf[m.id]) mudancas.push((agora ? "− " : "+ ") + limpa(a.label));
+            });
         });
 
-        return React.createElement("div", null,
-            // header
-            React.createElement("div", { className: "bg-white rounded-xl shadow-sm border p-5 mb-4" },
-                React.createElement("div", { className: "flex items-center justify-between flex-wrap gap-3 mb-4" },
-                    React.createElement("div", null,
-                        React.createElement("h2", { className: "text-lg font-bold flex items-center gap-2" },
-                            React.createElement("span", null, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-lock" }))), "Sistema de Permissões"),
-                        React.createElement("p", { className: "text-sm text-gray-500" },
-                            "Clique em um admin para expandir e configurar")
-                    ),
-                    React.createElement("div", { className: "flex gap-2 flex-wrap" },
-                        React.createElement("button", {
-                            onClick: function() { abrirReplicar(""); },
-                            className: "px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 flex items-center gap-1.5"
-                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-clipboard" })), "Replicar permissões")),
-                        React.createElement("button", {
-                            onClick: function() { carregar(true); },
-                            title: "Atualizar",
-                            className: "px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-200"
-                        }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-refresh" }))),
-                        React.createElement("button", {
-                            onClick: salvarTodos,
-                            className: "px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 flex items-center gap-1.5"
-                        }, React.createElement("span", { className: "inline-flex items-center gap-1.5" }, React.createElement("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-save" })), "Salvar"))
-                    )
-                ),
-                React.createElement("div", { className: "grid grid-cols-3 gap-3" },
-                    metricCard("Administradores", totalAdmins, "text-gray-800"),
-                    metricCard("Acesso total", acessoTotal, "text-green-600"),
-                    metricCard("Com restrições", comRestricoes, "text-orange-600")
-                )
-            ),
-            // busca
-            admins.length > 0 && React.createElement("div", { className: "relative mb-4" },
-                React.createElement("input", {
-                    type: "text", value: busca,
-                    onChange: function(e) { setBusca(e.target.value); },
-                    placeholder: "Buscar administrador...",
-                    className: "w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                }),
-                React.createElement("span", { className: "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" }, React.createElement("svg", { className: "ico", style: { width: 18, height: 18 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" })))
-            ),
-            // lista
-            admins.length === 0
-                ? React.createElement("div", { className: "bg-white rounded-xl p-8 text-center text-gray-500" },
-                    React.createElement("span", { className: "text-4xl block mb-2" }, React.createElement("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-user" }))),
-                    "Nenhum administrador cadastrado")
-                : adminsFiltrados.length === 0
-                    ? React.createElement("div", { className: "bg-white rounded-xl p-8 text-center text-gray-500" },
-                        React.createElement("span", { className: "text-4xl block mb-2" }, React.createElement("svg", { className: "ico", style: { width: 38, height: 38 }, "aria-hidden": "true" }, React.createElement("use", { href: "#i-search" }))),
-                        "Nenhum admin encontrado")
-                    : React.createElement("div", { className: "space-y-2" },
-                        adminsFiltrados.map(cardAdmin)),
-            renderModal()
-        );
+        // ---------- cabeçalho do usuário ----------
+        var outros = linhas.filter(function (x) { return x.cod_profissional !== sel.cod_profissional; });
+        var cabecalho = h("div", { style: Object.assign({}, card, { padding: "18px 20px", display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "space-between", alignItems: "center" }) },
+            h("div", { style: { display: "flex", gap: 14, alignItems: "center", minWidth: 0 } },
+                h("span", { style: { width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg," + C.roxo + "," + C.roxoEsc + ")", color: "#fff", fontFamily: FONTE_TIT, fontWeight: 700, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } }, iniciais(sel.full_name)),
+                h("div", { style: { display: "flex", flexDirection: "column", gap: 3, minWidth: 0 } },
+                    h("h2", { style: { margin: 0, fontFamily: FONTE_TIT, fontSize: 19, color: C.texto } }, sel.full_name || sel.cod_profissional),
+                    h("span", { style: { fontSize: 12, color: C.cinza } }, papelTxt(sel.role) + " · cód. " + sel.cod_profissional +
+                        (sel.permissoes_atualizadas_em ? " · salvo por " + (sel.permissoes_atualizadas_por || "—") + " em " + fmtData(sel.permissoes_atualizadas_em) : " · ainda não editado nesta tela")))),
+            h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", position: "relative" } },
+                h("button", { type: "button", style: btnSec, disabled: outros.length === 0, onClick: function () { setCopiarAberto(!copiarAberto); }, "aria-expanded": copiarAberto }, ico("copy", 16), "Copiar de outro usuário"),
+                h("button", { type: "button", style: btnSec, onClick: function () { setPrevia(!previa); }, "aria-expanded": previa }, ico("eye", 16), "Ver como " + primeiroNome(sel.full_name)),
+                copiarAberto && h("div", { role: "dialog", "aria-label": "Copiar permissões", style: { position: "absolute", right: 0, top: 46, zIndex: 30, width: 300, maxHeight: 340, overflowY: "auto", background: "#fff", border: "1px solid " + C.borda, borderRadius: 12, boxShadow: "0 12px 32px rgba(17,24,39,.14)", padding: 6 } },
+                    h("div", { style: { padding: "8px 10px", fontSize: 12, color: C.cinza } }, "Copia para a tela. Só vale depois de salvar."),
+                    outros.map(function (x) {
+                        return h("button", { key: x.cod_profissional, type: "button", onClick: function () { copiarDe(x.cod_profissional); },
+                            style: { display: "flex", width: "100%", gap: 10, alignItems: "center", padding: "10px", border: "none", background: "#fff", borderRadius: 8, cursor: "pointer", textAlign: "left", fontFamily: "inherit", minHeight: 44 } },
+                            h("span", { style: { flex: 1, minWidth: 0 } }, h("b", { style: { fontSize: 13, display: "block" } }, x.full_name), h("span", { style: { fontSize: 11, color: C.cinza } }, resumoLinha(x))),
+                            chip(x.acesso_tipo));
+                    }))));
+
+        // ---------- tipo de acesso ----------
+        var blocoTipo = h("div", { style: Object.assign({}, card, { padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }) },
+            h("h3", { style: { margin: 0, fontSize: 14, color: C.texto } }, "Tipo de acesso"),
+            h("div", { role: "radiogroup", "aria-label": "Tipo de acesso", style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 } },
+                TIPOS.map(function (t) {
+                    var on = rascunho.tipo === t.id;
+                    return h("button", { key: t.id, type: "button", role: "radio", "aria-checked": on, onClick: function () { setTipo(t.id); },
+                        style: { textAlign: "left", padding: on ? "11px 13px" : "12px 14px", borderRadius: 12, border: (on ? "2px solid " + C.roxo : "1px solid " + C.borda), background: on ? C.lilasFundo : "#fff", display: "flex", flexDirection: "column", gap: 4, cursor: "pointer", fontFamily: "inherit" } },
+                        h("b", { style: { fontSize: 13, color: on ? C.roxoEsc : C.texto } }, t.nome),
+                        h("span", { style: { fontSize: 12, color: on ? C.cinza2 : C.cinza } }, t.desc));
+                })));
+
+        // ---------- módulos ----------
+        function linhaModulo(m) {
+            var travado = m.sempreLiberado || bloqueadoPapel(m, sel.role);
+            var on = ef[m.id];
+            var abas = m.abas || [];
+            var nOn = abas.filter(function (a) { return rascunho.tipo !== "personalizado" || rascunho.abas[chaveAba(m.id, a.id)] !== false; }).length;
+            var aberto = expandido === m.id && on && !travado && abas.length > 0;
+            var det = travado ? (m.sempreLiberado ? "sempre liberado" : "não disponível para " + papelTxt(sel.role).toLowerCase())
+                : !on ? "desligado" : abas.length ? (nOn + " de " + abas.length + " abas") : "sem abas";
+            var topo = h("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", minHeight: 56, boxSizing: "border-box", background: aberto ? C.lilasFundo : (travado ? C.fundo : "#fff") } },
+                h("button", { type: "button", role: "switch", "aria-checked": on, "aria-label": limpa(m.label), disabled: travado, onClick: function () { toggleModulo(m); },
+                    style: { border: "none", background: "transparent", padding: 0, cursor: travado ? "not-allowed" : "pointer", display: "flex", alignItems: "center", minHeight: 44 } }, sw(on, travado)),
+                h("span", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 } },
+                    h("b", { style: { fontSize: 13, color: C.texto } }, limpa(m.label)),
+                    h("span", { style: { fontSize: 11, color: aberto ? C.roxoEsc : C.cinza, fontWeight: aberto ? 600 : 400 } }, det)),
+                travado && h("span", { style: { fontSize: 11, fontWeight: 600, color: C.cinza2, background: "#f3f4f6", borderRadius: 99, padding: "3px 9px", display: "inline-flex", gap: 5, alignItems: "center" } }, ico("lock", 12), m.sempreLiberado ? "Sempre" : "Bloqueado"),
+                !travado && on && abas.length > 0 && h("button", { type: "button", "aria-expanded": aberto, "aria-label": (aberto ? "Recolher" : "Ver") + " abas de " + limpa(m.label), onClick: function () { setExpandido(aberto ? null : m.id); },
+                    style: { width: 36, height: 36, borderRadius: 8, border: "none", background: "transparent", color: C.roxoEsc, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } },
+                    h("span", { style: { display: "inline-flex", transform: aberto ? "rotate(180deg)" : "none", transition: "transform .15s" } }, ico("arrowdown", 16))));
+            return h("div", { key: m.id, style: { gridColumn: aberto ? "1 / -1" : "auto", border: "1px solid " + (aberto ? C.lilasBorda : (on && !travado ? C.lilasBorda : C.borda)), borderRadius: 12, overflow: "hidden" } },
+                topo,
+                aberto && h("div", { style: { padding: "12px 14px 14px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 8 } },
+                    abas.map(function (a) {
+                        var k = chaveAba(m.id, a.id);
+                        var liberada = rascunho.tipo !== "personalizado" || rascunho.abas[k] !== false;
+                        return h("label", { key: k, style: { display: "flex", gap: 8, alignItems: "center", minHeight: 38, padding: "0 10px", borderRadius: 9, fontSize: 12, cursor: "pointer",
+                                border: "1px solid " + (liberada ? C.lilasBorda : C.bordaLeve), background: liberada ? "#fff" : C.fundo, color: liberada ? C.texto : C.cinza } },
+                            h("input", { type: "checkbox", checked: liberada, onChange: function () {
+                                if (rascunho.tipo !== "personalizado") { toggleModuloParaPersonalizado(); }
+                                toggleAba(m, a);
+                            }, style: { accentColor: C.roxo, width: 16, height: 16, margin: 0 } }),
+                            limpa(a.label));
+                    })));
+        }
+        function toggleModuloParaPersonalizado() {
+            mudar(function (n) {
+                var base = efetivoDe(n, sel.role);
+                n.modulos = {};
+                MODULOS.forEach(function (x) { if (!x.sempreLiberado && base[x.id]) n.modulos[x.id] = true; });
+                n.tipo = "personalizado";
+            });
+        }
+
+        var ordenados = configuraveis.concat(MODULOS.filter(function (m) { return m.sempreLiberado || bloqueadoPapel(m, sel.role); }));
+        var blocoModulos = h("div", { style: Object.assign({}, card, { padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }) },
+            h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 } },
+                h("div", { style: { display: "flex", flexDirection: "column", gap: 2 } },
+                    h("h3", { style: { margin: 0, fontSize: 14, color: C.texto } }, "Módulos e abas"),
+                    h("span", { style: { fontSize: 12, color: C.cinza } }, nLiberados + " de " + configuraveis.length + " módulos liberados · " + nAbas + " abas")),
+                h("div", { style: { display: "flex", gap: 6 } },
+                    h("button", { type: "button", onClick: function () { marcarTodos(true); }, style: Object.assign({}, btnSec, { height: 34, fontSize: 12 }) }, "Marcar todos"),
+                    h("button", { type: "button", onClick: function () { marcarTodos(false); }, style: Object.assign({}, btnSec, { height: 34, fontSize: 12 }) }, "Desmarcar todos"))),
+            rascunho.tipo === "total" && h("div", { style: { fontSize: 12, color: C.cinza2, background: C.fundo, borderRadius: 10, padding: "10px 12px" } },
+                "Com acesso total, tudo fica liberado e módulos novos entram sozinhos. Mexer em qualquer chave muda para Personalizado."),
+            rascunho.tipo === "nenhum" && h("div", { style: { fontSize: 12, color: "#991b1b", background: "#fef2f2", borderRadius: 10, padding: "10px 12px" } },
+                "Sem acesso: entra só nos módulos sempre liberados. Ligar qualquer módulo muda para Personalizado."),
+            h("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8, gridAutoFlow: "row dense" } }, ordenados.map(linhaModulo)));
+
+        // ---------- conferência pós-salvar ----------
+        var blocoResultado = null;
+        if (resultado && resultado.cod === sel.cod_profissional) {
+            if (resultado.ok) {
+                var efs = resultado.efetivo && resultado.efetivo.modulos ? resultado.efetivo.modulos : {};
+                var nm = MODULOS.filter(function (m) { return !m.sempreLiberado && efs[m.id]; }).length;
+                var na = 0;
+                var abasRes = (resultado.efetivo && resultado.efetivo.abas) || {};
+                MODULOS.forEach(function (m) { if (!m.sempreLiberado && efs[m.id]) (m.abas || []).forEach(function (a) { if (abasRes[chaveAba(m.id, a.id)] !== false) na++; }); });
+                blocoResultado = h("div", { role: "status", style: Object.assign({}, card, { padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12, borderColor: "#a7f3d0" }) },
+                    h("div", { style: { display: "flex", gap: 12, alignItems: "center" } },
+                        h("span", { style: { width: 36, height: 36, borderRadius: "50%", background: "#ecfdf5", color: "#065f46", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } }, ico("check", 18)),
+                        h("div", { style: { flex: 1, display: "flex", flexDirection: "column", gap: 2 } },
+                            h("b", { style: { fontSize: 14 } }, "Permissões de " + primeiroNome(resultado.nome) + " salvas"),
+                            h("span", { style: { fontSize: 12, color: C.cinza } }, "Conferido com o servidor. O bloqueio vale na hora; o menu dela se atualiza ao recarregar a página ou voltar para a aba.")),
+                        h("button", { type: "button", "aria-label": "Fechar aviso", onClick: function () { setResultado(null); }, style: { width: 36, height: 36, borderRadius: 9, border: "none", background: "transparent", color: C.cinza, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, ico("x", 16))),
+                    h("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 } },
+                        [["Módulos", resultado.efetivo && resultado.efetivo.tipo === "total" ? "Todos" : String(nm)], ["Abas", resultado.efetivo && resultado.efetivo.tipo === "total" ? "Todas" : String(na)], ["Tipo", CHIP[(resultado.efetivo || {}).tipo || "total"][2]]].map(function (k) {
+                            return h("div", { key: k[0], style: { background: C.fundo, borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 4 } },
+                                h("span", { style: { fontSize: 11, color: C.cinza } }, k[0]),
+                                h("b", { style: { fontFamily: FONTE_TIT, fontSize: 18, color: k[0] === "Tipo" ? C.roxoEsc : C.texto } }, k[1]));
+                        })),
+                    resultado.avisos && resultado.avisos.length > 0 && h("div", { style: { background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6 } },
+                        h("b", { style: { color: "#92400e" } }, resultado.avisos.length === 1 ? "1 ajuste feito pelo servidor" : resultado.avisos.length + " ajustes feitos pelo servidor"),
+                        resultado.avisos.map(function (t, i) { return h("span", { key: i, style: { color: C.texto2, fontSize: 13 } }, t); })));
+            } else {
+                blocoResultado = h("div", { role: "alert", style: Object.assign({}, card, { padding: "16px 20px", display: "flex", gap: 12, alignItems: "center", borderColor: "#fecaca", flexWrap: "wrap" }) },
+                    h("span", { style: { width: 36, height: 36, borderRadius: "50%", background: "#fef2f2", color: "#991b1b", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } }, ico("alert", 18)),
+                    h("div", { style: { flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 2 } },
+                        h("b", null, "Não deu para salvar as permissões de " + primeiroNome(resultado.nome)),
+                        h("span", { style: { fontSize: 12, color: C.cinza2 } }, resultado.erro + " Suas marcações continuam na tela, nada foi perdido.")),
+                    h("button", { type: "button", onClick: salvar, style: Object.assign({}, btnSec, { background: C.roxo, color: "#fff", border: "none" }) }, "Tentar de novo"));
+            }
+        }
+
+        // ---------- ver como o usuário ----------
+        var blocoPrevia = null;
+        if (previa) {
+            var menu = MODULOS.filter(function (m) { return ef[m.id]; });
+            var focoId = expandido && ef[expandido] ? expandido : ((menu.find(function (m) { return !m.sempreLiberado && (m.abas || []).length; }) || {}).id);
+            var foco = MODULOS.find(function (m) { return m.id === focoId; });
+            var abasFoco = foco ? (foco.abas || []) : [];
+            var vis = abasFoco.filter(function (a) { return rascunho.tipo !== "personalizado" || rascunho.abas[chaveAba(foco.id, a.id)] !== false; });
+            var esc = abasFoco.filter(function (a) { return vis.indexOf(a) < 0; });
+            blocoPrevia = h("div", { style: Object.assign({}, card, { overflow: "hidden", display: "flex", flexDirection: "column" }) },
+                h("div", { style: { padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid " + C.bordaLeve, gap: 12 } },
+                    h("div", { style: { display: "flex", flexDirection: "column", gap: 2 } },
+                        h("b", { style: { fontSize: 15 } }, "O menu que " + primeiroNome(sel.full_name) + " vai ver"),
+                        h("span", { style: { fontSize: 12, color: C.cinza } }, sujo ? "Com as alterações da tela (ainda não salvas)" : "Montado com a mesma regra do login")),
+                    h("button", { type: "button", "aria-label": "Fechar prévia", onClick: function () { setPrevia(false); }, style: { width: 36, height: 36, borderRadius: 9, border: "1px solid " + C.borda, background: "#fff", color: C.texto2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, ico("x", 16))),
+                h("div", { style: { display: "flex", flexWrap: "wrap", minHeight: 280 } },
+                    h("div", { style: { flex: "0 1 220px", minWidth: 180, background: "linear-gradient(180deg," + C.fundoRoxo + ",#26093a)", color: "#fff", padding: "16px 12px", display: "flex", flexDirection: "column", gap: 4 } },
+                        h("span", { style: { fontFamily: FONTE_TIT, fontWeight: 800, fontSize: 16, padding: "0 8px 12px" } }, "Tutts"),
+                        menu.map(function (m) {
+                            var on = foco && m.id === foco.id;
+                            return h("button", { key: m.id, type: "button", onClick: function () { if ((m.abas || []).length && !m.sempreLiberado) setExpandido(m.id); },
+                                style: { textAlign: "left", padding: "9px 12px", borderRadius: 10, fontSize: 13, border: "none", cursor: "pointer", fontFamily: "inherit", background: on ? "rgba(255,255,255,.14)" : "transparent", color: on ? "#fff" : "#e9d5f9", fontWeight: on ? 600 : 400 } }, limpa(m.label));
+                        })),
+                    h("div", { style: { flex: "1 1 300px", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 } },
+                        foco ? h(React.Fragment, null,
+                            h("b", { style: { fontFamily: FONTE_TIT, fontSize: 16 } }, limpa(foco.label)),
+                            h("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, vis.map(function (a) { return h("span", { key: a.id, style: { fontSize: 12, padding: "6px 10px", borderRadius: 99, background: C.lilas, color: C.roxoEsc, fontWeight: 500 } }, limpa(a.label)); })),
+                            esc.length > 0 && h("span", { style: { fontSize: 12, color: C.cinza, borderTop: "1px dashed " + C.borda, paddingTop: 10 } }, "Escondidas: " + esc.map(function (a) { return limpa(a.label); }).join(", ")))
+                            : h("span", { style: { color: C.cinza } }, "Só os módulos sempre liberados."))));
+        }
+
+        // ---------- barra de alterações ----------
+        var barra = (sujo || salvando) && h("div", { style: { position: "sticky", bottom: 0, zIndex: 20, marginTop: 4, background: C.fundoRoxo, color: "#fff", borderRadius: 14, padding: "12px 16px", display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "space-between", alignItems: "center", boxShadow: "0 -6px 24px rgba(58,21,86,.18)" } },
+            h("span", { style: { display: "flex", gap: 10, alignItems: "center", minWidth: 0, flex: "1 1 260px" } },
+                h("span", { style: { width: 8, height: 8, borderRadius: "50%", background: C.laranja, flexShrink: 0 } }),
+                h("b", { style: { whiteSpace: "nowrap" } }, mudancas.length === 1 ? "1 alteração não salva" : (mudancas.length || 1) + " alterações não salvas"),
+                h("span", { style: { color: "#e9d5f9", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, mudancas.slice(0, 4).join(" · ") + (mudancas.length > 4 ? " · +" + (mudancas.length - 4) : ""))),
+            h("div", { style: { display: "flex", gap: 8 } },
+                h("button", { type: "button", onClick: descartar, disabled: salvando, style: { height: 40, padding: "0 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,.3)", background: "transparent", color: "#fff", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" } }, "Descartar"),
+                h("button", { type: "button", onClick: salvar, disabled: salvando, style: { height: 40, padding: "0 18px", borderRadius: 10, border: "none", background: "#fff", color: C.roxoEsc, fontWeight: 700, cursor: salvando ? "wait" : "pointer", fontFamily: "inherit", opacity: salvando ? .75 : 1 } },
+                    salvando ? "Salvando…" : "Salvar permissões de " + primeiroNome(sel.full_name))));
+
+        return h("div", { style: { display: "flex", flexWrap: "wrap", gap: 20, alignItems: "flex-start", fontFamily: "Inter, system-ui, sans-serif", fontSize: 13, color: C.texto } },
+            painelLista,
+            h("section", { style: { flex: "999 1 560px", minWidth: 0, display: "flex", flexDirection: "column", gap: 16 } },
+                cabecalho, blocoResultado, blocoPrevia, blocoTipo, blocoModulos, barra));
     }
 
-// ClientesApiAutoLoad definido fora do render - referencia estavel
     var _ClientesApiAutoLoad = function ClientesApiAutoLoad(innerProps) {
                 var innerP = innerProps.p;
                 var innerX = innerProps.x;

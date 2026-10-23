@@ -261,7 +261,14 @@ const marcarRefreshFeito = () => {
                         sessionStorage.setItem('tutts_csrf', data.csrfToken);
                     }
                     if (data.user) {
-                        sessionStorage.setItem("tutts_user", JSON.stringify(data.user));
+                        // PERM_V6: mantém codProfissional/fullName e as permissões da sessão
+                        let anterior = null;
+                        try { anterior = JSON.parse(sessionStorage.getItem("tutts_user") || "null"); } catch (_) {}
+                        const u = { ...data.user,
+                            codProfissional: data.user.cod_profissional || data.user.codProfissional,
+                            fullName: data.user.full_name || data.user.fullName };
+                        u.permissions = montarPermissoesSessao(data.user.permissoes) || (anterior && anterior.permissions) || null;
+                        sessionStorage.setItem("tutts_user", JSON.stringify(u));
                     }
                     console.log('🔄 Token restaurado via refresh cookie');
                     // 🔧 FIX: Iniciar refresh proativo após restaurar sessão
@@ -328,7 +335,13 @@ const renovarToken = async () => {
                         codProfissional: data.user.cod_profissional || data.user.codProfissional,
                         fullName: data.user.full_name || data.user.fullName
                     };
+                    // PERM_V6: refresh não apaga mais as permissões da sessão
+                    let anterior = null;
+                    try { anterior = JSON.parse(sessionStorage.getItem("tutts_user") || "null"); } catch (_) {}
+                    const permsNovas = montarPermissoesSessao(data.user.permissoes);
+                    userNormalizado.permissions = permsNovas || (anterior && anterior.permissions) || null;
                     sessionStorage.setItem("tutts_user", JSON.stringify(userNormalizado));
+                    if (permsNovas) { try { window.dispatchEvent(new CustomEvent("tutts-permissoes", { detail: permsNovas })); } catch (_) {} }
                 }
                 console.log('🔄 Token renovado automaticamente');
                 return data.token;
@@ -468,6 +481,59 @@ if (typeof window !== 'undefined') {
 
 // ==================== FIM FUNÇÕES DE AUTENTICAÇÃO ====================
 
+// PERM_V6: permissões da sessão montadas a partir das permissões EFETIVAS que o backend
+// calcula (mesma regra do middleware). tipo: total | personalizado | nenhum.
+function montarPermissoesSessao(ef) {
+    if (!ef || typeof ef !== "object" || !ef.tipo || !ef.modulos) return null;
+    const abas = ef.abas && typeof ef.abas === "object" ? ef.abas : {};
+    return {
+        tipo: ef.tipo,
+        hasConfig: ef.tipo !== "total",
+        modulos: ef.modulos,
+        abas: abas,
+        allowed_modules: Array.isArray(ef.liberados) ? ef.liberados : [],
+        allowed_tabs: abas
+    };
+}
+// PERM_V6: recarrega catálogo de módulos + permissões do usuário logado (F5, refresh de token,
+// volta pra aba). Atualiza o sessionStorage e avisa o App (evento "tutts-permissoes").
+let _permAtualizando = null;
+async function atualizarPermissoesSessao() {
+    if (_permAtualizando) return _permAtualizando;
+    _permAtualizando = (async () => {
+        try {
+            const salvo = JSON.parse(sessionStorage.getItem("tutts_user") || "null");
+            if (!salvo) return null;
+            try {
+                const mc = await fetchAuth(`${API_URL}/modules-config`);
+                if (mc.ok) {
+                    const d = await mc.json();
+                    if (d && Array.isArray(d.modulos) && d.modulos.length > 0 && d.modulos.every(m => m && m.id)) SISTEMA_MODULOS_CONFIG = d.modulos;
+                }
+            } catch (_) {}
+            if (salvo.role !== "admin" && salvo.role !== "admin_financeiro") return null;
+            const cod = salvo.codProfissional || salvo.cod_profissional;
+            if (!cod) return null;
+            const res = await fetchAuth(`${API_URL}/admin-permissions/${encodeURIComponent(cod)}`);
+            if (!res.ok) return null;
+            const dados = await res.json();
+            const perms = montarPermissoesSessao(dados && dados.efetivo);
+            if (!perms) return null;
+            const atual = JSON.parse(sessionStorage.getItem("tutts_user") || "null");
+            if (atual) sessionStorage.setItem("tutts_user", JSON.stringify({ ...atual, permissions: perms }));
+            try { window.dispatchEvent(new CustomEvent("tutts-permissoes", { detail: perms })); } catch (_) {}
+            return perms;
+        } catch (e) {
+            console.warn("[permissoes] nao foi possivel atualizar:", e && e.message);
+            return null;
+        } finally {
+            setTimeout(() => { _permAtualizando = null; }, 0);
+        }
+    })();
+    return _permAtualizando;
+}
+if (typeof window !== "undefined") window.atualizarPermissoesSessao = atualizarPermissoesSessao;
+
 // Função helper para verificar permissões de módulo
 // Retorna true se o usuário tem acesso ao módulo
 function hasModuleAccess(user, moduleId) {
@@ -475,6 +541,11 @@ function hasModuleAccess(user, moduleId) {
     
     // Admin master tem acesso a tudo
     if (user.role === "admin_master") return true;
+
+    // PERM_V6: com permissões efetivas do backend, a resposta é a do backend (sem regra paralela aqui)
+    if ((user.role === "admin" || user.role === "admin_financeiro") && user.permissions && user.permissions.tipo && user.permissions.modulos) {
+        return user.permissions.modulos[moduleId] === true;
+    }
     
     // PERM_V5: Admin financeiro — se o master configurou permissões, elas valem;
     // sem configuração, mantém o padrão histórico (financeiro + solicitações + disponibilidade + CRM).
@@ -739,9 +810,10 @@ let SISTEMA_MODULOS_CONFIG = [
     { id: "gerencial", label: "Análise Gerencial", icon: "📊", abas: [] },
     { id: "locacao", label: "Locação de Motos", icon: "🏍️", abas: [] }, // LOCACAO_MOTOS_V1
     { id: "uber", label: "Hub Logístico", icon: "🚚", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"regras",label:"Regras"},{id:"barrados",label:"Barrados"},{id:"frequentes",label:"Frequentes"},{id:"provedores",label:"Provedores"},{id:"relatorio",label:"Relatório"},{id:"cancelamentos",label:"Cancelamentos"},{id:"chat",label:"Chat 99"}] },  // id "uber" e slug interno estavel (permissoes/rotas) — label e o que o usuario ve
-    { id: "confirmafacil", label: "ConfirmaFácil", icon: "🔗", admin: true, abas: [] },
-    { id: "painel", label: "Meu Painel", icon: "📈", admin: true, abas: [] }, // PAINEL_V1
-    { id: "roadmap", label: "Desenvolvimentos", icon: "⚡", admin: true, abas: [] }
+    { id: "controle-maquinas", label: "Controle de Máquinas", icon: "🔒", admin: true, abas: [] }, // PERM_V6
+    { id: "confirmafacil", label: "ConfirmaFácil", icon: "🔗", admin: true, sempreLiberado: true, abas: [] },
+    { id: "painel", label: "Meu Painel", icon: "📈", admin: true, sempreLiberado: true, abas: [] }, // PAINEL_V1
+    { id: "roadmap", label: "Desenvolvimentos", icon: "⚡", admin: true, sempreLiberado: true, abas: [] }
 ];
 
 // ==================== COMPONENTE OVERFLOW NAV (módulos + abas com dropdown inteligente) ====================
@@ -3318,6 +3390,34 @@ const hideLoadingScreen = () => {
         };
         /* HOME_CLEAN_V1: contexto da paleta Ctrl+K (usuário + mesma navegação do menu) */
         window._tuttsCmdK = { usuario: l, navegar: navegarSidebar, irHome: () => he("home") };
+
+        // PERM_V6: permissões sempre vindas do backend — no F5, a cada refresh de token
+        // e quando a janela volta ao foco (mudança feita pelo master vale sem relogar).
+        useEffect(() => {
+            const aoReceber = (ev) => {
+                const perms = ev && ev.detail;
+                if (!perms) return;
+                r(prev => (prev && (prev.role === "admin" || prev.role === "admin_financeiro")) ? { ...prev, permissions: perms } : prev);
+            };
+            window.addEventListener("tutts-permissoes", aoReceber);
+            let ultimo = 0;
+            const aoFocar = () => {
+                if (document.visibilityState !== "visible") return;
+                if (Date.now() - ultimo < 60000) return;
+                ultimo = Date.now();
+                atualizarPermissoesSessao();
+            };
+            document.addEventListener("visibilitychange", aoFocar);
+            (async () => {
+                try { await _authBootstrapPromise; } catch (_) {}
+                ultimo = Date.now();
+                atualizarPermissoesSessao();
+            })();
+            return () => {
+                window.removeEventListener("tutts-permissoes", aoReceber);
+                document.removeEventListener("visibilitychange", aoFocar);
+            };
+        }, [l && l.codProfissional]);
 
         // ==================== PERSISTIR ESTADO DE NAVEGAÇÃO ====================
         // Sempre que o módulo ativo (Ee) ou qualquer state de aba mudar,
@@ -9370,8 +9470,7 @@ const hideLoadingScreen = () => {
                     sessionStorage.setItem('tutts_csrf', t.csrfToken);
                 }
                 
-                // PERM_V5: catálogo do registry ANTES de montar o mapa de permissões
-                // (antes vinha depois → módulo só no registry ficava sem entrada no mapa).
+                // PERM_V6: catálogo do registry + permissões EFETIVAS calculadas pelo backend
                 try {
                     const mcRes0 = await fetchAuth(`${API_URL}/modules-config`);
                     if (mcRes0.ok) {
@@ -9383,60 +9482,15 @@ const hideLoadingScreen = () => {
                     }
                 } catch (e) { console.log("modules-config indisponivel, usando catalogo local"); }
 
-                // Carregar permissões se for admin
                 let perms = null;
                 if (t.role === "admin" || t.role === "admin_financeiro") {
-                    try {
-                        const permRes = await fetchAuth(`${API_URL}/admin-permissions/${t.cod_profissional}`);
-                        if (permRes.ok) {
-                            const permData = await permRes.json();
-                            let allowedMods = Array.isArray(permData.allowed_modules) ? permData.allowed_modules : [];
-                            const allowedTabs = permData.allowed_tabs && typeof permData.allowed_tabs === 'object' ? permData.allowed_tabs : {};
-
-                            // 2026-07: "acesso total" antigo (lista com TODOS os módulos) vira lista vazia = irrestrito,
-                            // pra módulos novos entrarem sozinhos pros admins full.
-                            if (allowedMods.length > 0 && SISTEMA_MODULOS_CONFIG.every(function(m) { return allowedMods.includes(m.id); })) {
-                                allowedMods = [];
-                            }
-
-                            // Restrição de MÓDULO é independente de restrição de ABA.
-                            const temRestricaoModulos = allowedMods.length > 0;
-                            const hasConfig = temRestricaoModulos || Object.keys(allowedTabs).length > 0;
-
-                            // 2026-07: mapa de módulos DINÂMICO a partir do SISTEMA_MODULOS_CONFIG.
-                            // (Antes era hardcoded e ignorava módulos como coleta/gerencial/uber/loja,
-                            //  quebrando a cada módulo novo — causa raiz dos Bugs 1 e 2.)
-                            const modulosPerm = {};
-                            SISTEMA_MODULOS_CONFIG.forEach(function(m) {
-                                modulosPerm[m.id] = !temRestricaoModulos || allowedMods.includes(m.id);
-                            });
-
-                            perms = {
-                                allowed_modules: allowedMods,
-                                allowed_tabs: allowedTabs,
-                                hasConfig: hasConfig,
-                                modulos: modulosPerm,
-                                abas: allowedTabs
-                            };
-                            console.log("Permissões carregadas:", perms);
-                        }
-                    } catch (err) {
-                        console.log("Sem permissões definidas, usando padrão");
+                    perms = montarPermissoesSessao(t.permissoes);
+                    if (!perms) {
+                        try {
+                            const permRes = await fetchAuth(`${API_URL}/admin-permissions/${encodeURIComponent(t.cod_profissional)}`);
+                            if (permRes.ok) perms = montarPermissoesSessao((await permRes.json()).efetivo);
+                        } catch (err) { console.log("Permissões indisponíveis no login"); }
                     }
-                }
-                // 2026-07 (Fase 2): catalogo de modulos do backend (registry). Fallback TOTAL:
-                // qualquer erro/formato invalido mantem o SISTEMA_MODULOS_CONFIG local intacto.
-                try {
-                    const mcRes = await fetchAuth(`${API_URL}/modules-config`);
-                    if (mcRes.ok) {
-                        const mcData = await mcRes.json();
-                        if (mcData && Array.isArray(mcData.modulos) && mcData.modulos.length > 0
-                            && mcData.modulos.every(function (m) { return m && m.id; })) {
-                            SISTEMA_MODULOS_CONFIG = mcData.modulos;
-                        }
-                    }
-                } catch (e) {
-                    console.log("modules-config indisponivel, usando catalogo local");
                 }
                 o({
                     ...t,
@@ -15554,7 +15608,7 @@ const hideLoadingScreen = () => {
         }
         
         // ========== MÓDULO ROADMAP / DESENVOLVIMENTOS (admin only) ==========
-        if ("controle-maquinas" === Ee) {
+        if ("controle-maquinas" === Ee && hasModuleAccess(l, "controle-maquinas") /* PERM_V6 */) {
             return React.createElement("div", {
                 className: "min-h-screen bg-gray-50"
             },
@@ -16730,7 +16784,7 @@ const hideLoadingScreen = () => {
             );
         }
 
-        if ("bi-monitoramento" === Ee && (l?.role === "admin" || l?.role === "admin_master")) {
+        if ("bi-monitoramento" === Ee && (l?.role === "admin" || l?.role === "admin_master") && hasModuleAccess(l, "bi-monitoramento") /* PERM_V6 */) {
             if (typeof window.ModuloBiMonitoramento !== "undefined") {
                 return React.createElement(window.ModuloBiMonitoramento, {
                     apiUrl: API_URL,
@@ -20727,7 +20781,7 @@ const hideLoadingScreen = () => {
                         )
                     ),
                     // 🆕 2026-05 — Controle de Máquinas (liberação de saque) — só admin
-                    (l.role === "admin" || l.role === "admin_master" || l.role === "admin_financeiro") &&
+                    (l.role === "admin" || l.role === "admin_master" || l.role === "admin_financeiro") && hasModuleAccess(l, "controle-maquinas") /* PERM_V6 */ &&
                     React.createElement("div", {
                         onClick: () => he("controle-maquinas"),
                         className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-violet-300"
@@ -21000,7 +21054,7 @@ const hideLoadingScreen = () => {
                     ),
                     
                     // BI Monitoramento
-                    (l?.role === "admin" || l?.role === "admin_master") &&
+                    (l?.role === "admin" || l?.role === "admin_master") && hasModuleAccess(l, "bi-monitoramento") /* PERM_V6 */ &&
                     React.createElement("div", { onClick: () => he("bi-monitoramento"), className: "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group overflow-hidden border border-gray-100 hover:border-emerald-300" },
                         React.createElement("div", {className: "h-1.5 bg-gradient-to-r from-emerald-500 to-teal-600"}),
                         React.createElement("div", {className: "p-5"},
