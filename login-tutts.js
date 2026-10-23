@@ -221,9 +221,7 @@
         h('span', { className: 'tl-prog', ref: progRef }),
         loading ? h(React.Fragment, null, ico(h('path', { d: 'M21 12a9 9 0 1 1-6.2-8.56' }), { className: 'tl-spin', strokeWidth: 2.5 }), h('span', null, 'Validando acesso…'))
                 : h(React.Fragment, null, h('span', null, 'Entrar'), ico(h('path', { d: 'M5 12h14m-6-6 6 6-6 6' }), { strokeWidth: 2.5 }))),
-      onPrimeiroAcesso && h('div', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', background: '#faf7fd', border: '1px solid #e9d5f9', borderRadius: 12, padding: '10px 12px', fontSize: 12.5, color: '#374151', textAlign: 'left' } },
-        ico(h('g', null, h('circle', { cx: 12, cy: 12, r: 9 }), h('path', { d: 'M12 8h.01M11 12h1v4h1' })), { width: 16, height: 16, style: { color: '#770fa8', flex: 'none', marginTop: 1 } }),
-        h('div', null, h('b', null, 'Alugou uma moto Tutts?'), ' Entre com seu CPF. ', h('button', { type: 'button', onClick: onPrimeiroAcesso, style: { background: 'none', border: 0, padding: 0, font: 'inherit', fontWeight: 700, color: '#770fa8', cursor: 'pointer', textDecoration: 'underline' } }, 'Primeiro acesso?'))),
+      /* LOCACAO_SEM_PRIMEIRO_ACESSO_V1: aviso de locação/primeiro acesso removido do login */
       h('p', { style: { margin: '4px 0 0', textAlign: 'center', fontSize: 13, color: '#6b7280' } }, 'Ainda não tem conta? ', h('button', { type: 'button', onClick: onCriar, style: { background: 'none', border: 0, padding: 0, font: 'inherit', fontWeight: 700, color: '#770fa8', cursor: 'pointer' } }, 'Criar nova conta')));
   }
 
