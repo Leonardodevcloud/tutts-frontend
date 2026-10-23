@@ -1669,7 +1669,14 @@
   // por saque (padrão ou próprio) em vez de 4,5% (+ R$ 0,40). Mesma dinâmica
   // da isenção. Ordem no saque: gratuidade › isenção › taxa fixa › taxa normal.
   // ═══════════════════════════════════════════════════════════════════════
-  function tfNum(v) { const n = Number(String(v == null ? '' : v).replace(/\./g, '').replace(',', '.')); return isFinite(n) ? n : NaN; }
+  // TAXA_FIXA_V2: aceita "4,00", "4.00", "1.234,50" e "4"
+  function tfNum(v) {
+    let t = String(v == null ? '' : v).trim();
+    if (!t) return NaN;
+    if (t.indexOf(',') >= 0) t = t.replace(/\./g, '').replace(',', '.');
+    const n = Number(t);
+    return isFinite(n) ? n : NaN;
+  }
   function tfTaxaNormal(v) { let f = v * 0.045; if (v >= 15 && v <= 100) f += 0.40; return Math.round(f * 100) / 100; }
   function tfCalc(v, fixa, menor) {
     const normal = tfTaxaNormal(v);
@@ -1709,6 +1716,7 @@
     const [valorTxt, setValorTxt] = useState('');
     const [menor, setMenor] = useState(true);
     const [salvandoCfg, setSalvandoCfg] = useState(false);
+    const [configErro, setConfigErro] = useState(null); // TAXA_FIXA_V2
     const [modalCadastro, setModalCadastro] = useState(false);
     const [editando, setEditando] = useState(null);
     const [modalMotivos, setModalMotivos] = useState(false);
@@ -1721,10 +1729,16 @@
     }, [busca]);
 
     const carregarConfig = useCallback(async () => {
+      setConfigErro(null);
       try {
         const c = await api('/taxa-fixa/config');
+        if (!c || c.valor == null) throw new Error('O servidor não devolveu a regra da taxa fixa.');
         setConfig(c); setValorTxt(Number(c.valor).toFixed(2).replace('.', ',')); setMenor(c.cobrar_menor !== false);
-      } catch (e) { _toast(e.message, 'erro'); }
+      } catch (e) {
+        // TAXA_FIXA_V2: antes falhava calado e a tela ficava travada
+        const m = String(e && e.message || '');
+        setConfigErro(/404/.test(m) ? 'O servidor ainda não tem a taxa fixa. Confira se o deploy do backend terminou no Railway.' : (m || 'Não deu para carregar a regra.'));
+      }
     }, [api]);
     const carregarKpis = useCallback(async () => {
       try { setKpis(await api('/taxa-fixa/kpis')); } catch (e) { console.error(e); }
@@ -1750,7 +1764,7 @@
     useEffect(() => { carregarLista(); }, [carregarLista]);
     useEffect(() => { carregarKpis(); carregarMotivos(); carregarConfig(); }, [carregarKpis, carregarMotivos, carregarConfig]);
 
-    const valorNovo = tfNum(valorTxt);
+    const valorNovo = tfNum(valorTxt); // TAXA_FIXA_V2
     const cfgSuja = !!config && (Math.abs(valorNovo - Number(config.valor)) > 0.0001 || menor !== (config.cobrar_menor !== false));
     const salvarConfig = async () => {
       if (!(valorNovo >= 0) || valorNovo > 100) { _toast('Informe um valor entre R$ 0,00 e R$ 100,00', 'erro'); return; }
@@ -1785,6 +1799,9 @@
       React.createElement('div', null,
         React.createElement('h2', { className: 'fin-sec-t', style: { margin: 0 } }, 'Regra da taxa fixa'),
         React.createElement('p', { style: { fontSize: 12, color: cores.textMuted, margin: '2px 0 0' } }, 'Vale para todos os cadastrados, menos quem tem valor próprio')),
+      configErro && React.createElement('div', { role: 'alert', style: { background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, color: '#991b1b' } },
+        React.createElement('span', null, 'Não deu para carregar a regra: ' + configErro),
+        React.createElement('button', { type: 'button', onClick: carregarConfig, style: Object.assign(btnSecondary(), { alignSelf: 'flex-start' }) }, 'Tentar de novo')),
       React.createElement('label', { style: { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 600, color: cores.textMuted } },
         'Valor descontado por saque',
         React.createElement('span', { style: { display: 'flex', alignItems: 'center', gap: 6, border: `1px solid ${cores.border}`, borderRadius: 10, height: 44, padding: '0 12px', background: '#fff' } },
@@ -1812,7 +1829,7 @@
       React.createElement('span', { style: { fontSize: 11, color: cores.textMuted } }, 'Ordem aplicada no saque: gratuidade › isenção › taxa fixa › taxa normal. A taxa fixa não conta como saque gratuito do mês.'),
       config && config.atualizado_por ? React.createElement('span', { style: { fontSize: 11, color: cores.textMuted } }, `Última alteração: ${config.atualizado_por} em ${fmt.data(config.atualizado_em)}`) : null,
       React.createElement('button', { onClick: salvarConfig, disabled: !cfgSuja || salvandoCfg, style: Object.assign(btnPrimary(), { height: 42, opacity: (!cfgSuja || salvandoCfg) ? 0.55 : 1, cursor: (!cfgSuja || salvandoCfg) ? 'not-allowed' : 'pointer' }) },
-        salvandoCfg ? 'Salvando…' : cfgSuja ? 'Salvar regra' : 'Regra salva')
+        salvandoCfg ? 'Salvando…' : !config ? (configErro ? 'Regra indisponível' : 'Carregando…') : cfgSuja ? 'Salvar regra' : 'Regra salva')
     );
 
     const thL = (i) => ({ textAlign: i === 5 ? 'center' : i === 6 ? 'right' : 'left', padding: '10px 14px', fontWeight: 600, color: cores.textMuted, fontSize: 12, background: '#f9fafb', borderBottom: `1px solid ${cores.border}`, whiteSpace: 'nowrap' });
