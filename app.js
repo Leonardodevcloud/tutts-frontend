@@ -86,7 +86,7 @@ const escapeAttr = (text) => {
 // ==================== FIM FUNÇÕES DE SEGURANÇA ====================
 
 // ==================== SISTEMA DE VERSÃO E CACHE ====================
-const APP_VERSION = "2.7.4"; // Coleta -> Consultar Enderecos + paginacao
+const APP_VERSION = "2.8.0"; // 20261023_V280: metas, BI financeiro, locacao, permissoes V6
 const VERSION_KEY = "tutts_app_version";
 
 // Verificar se precisa limpar cache (versão diferente)
