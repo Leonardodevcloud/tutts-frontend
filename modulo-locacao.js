@@ -658,6 +658,7 @@
     var _e = useState(null), erro = _e[0], setErro = _e[1];
     var _s = useState(props.selecionar || null), sel = _s[0], setSel = _s[1];
     var _o = useState('todas'), orig = _o[0], setOrig = _o[1]; // LOCACAO_V4: origem
+    var _xp = useState(null), excluirPre = _xp[0], setExcluirPre = _xp[1]; // LOCACAO_PRECAD_EXCLUIR_V1
     var carregar = useCallback(function () {
       setErro(null);
       api('/precadastros').then(function (r) {
@@ -687,7 +688,7 @@
       return true;
     });
     return h('div', { className: 'grid gap-4 xl:grid-cols-[minmax(0,1fr)_520px] items-start' },
-      h(Card, { pad: false },
+      h('div', { style: { minWidth: 0 } }, h(Card, { pad: false }, /* LOCACAO_PRECAD_EXCLUIR_V1: minWidth 0 segura a tabela no celular */
         h('div', { style: { padding: '12px 16px', borderBottom: '1px solid #f3f4f6', display: 'flex', flexWrap: 'wrap', gap: 8 } },
           Chips([
             { id: 'todos', t: 'Todos', n: lista.length },
@@ -712,15 +713,24 @@
             var on = sel === p.id;
             var sub = p.origem === 'central' ? 'da Central · cód. ' + (p.cod_profissional || '—') : [p.cpf_mascarado ? 'CPF ' + p.cpf_mascarado : null, p.whatsapp ? fTel(p.whatsapp) : null].filter(Boolean).join(' · ');
             return Linha(p.id, [
-              { td: 1, v: h('div', null, h('div', { style: { fontWeight: 600 } }, p.nome), h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, sub)) },
+              { td: 1, v: h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } }, h('div', { style: { flex: 1, minWidth: 0 } }, h('div', { style: { fontWeight: 600 } }, p.nome), h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, sub)),
+                h('button', { type: 'button', className: 'loc-pre-lixo', title: 'Excluir pré-cadastro', 'aria-label': 'Excluir pré-cadastro de ' + p.nome, /* LOCACAO_PRECAD_EXCLUIR_V1 */
+                onClick: function (e) { e.stopPropagation(); setExcluirPre(p); }, onKeyDown: function (e) { e.stopPropagation(); },
+                style: { width: 32, height: 32, borderRadius: 8, border: '1px solid transparent', background: 'transparent', color: '#b91c1c', display: 'inline-grid', placeItems: 'center', cursor: 'pointer' } }, ico('trash', 15))) },
               { td: 1, v: h('div', null, TagTipo(tipoDe(p), p.tipo_label), tipoDe(p) === 'tutts_confirmar' && p.cod_profissional ? h('div', { style: { fontSize: 11, color: p.cod_confere === false ? '#991b1b' : '#6b7280', marginTop: 2 } }, 'cód. ' + p.cod_profissional + (p.cod_confere === true ? ' · confere' : p.cod_confere === false ? ' · não achado' : '')) : null) },
               { td: 1, v: fDHc(p.criado_em), st: { whiteSpace: 'nowrap', color: '#374151' } },
               { td: 1, v: txtAl, st: { fontSize: 12, color: corAl, fontWeight: txtAl !== '—' ? 600 : 400, whiteSpace: 'normal', maxWidth: 220 } },
               { td: 1, v: Pill(p.status_label || ROT_PRE[p.status] || p.status, p.status_label === 'Locatário excluído' ? 'cinza' /* LOCACAO_CRLV_V1 */ : TOM_PRE[p.status] || 'cinza') }
             ], function () { setSel(p.id); }, on ? { background: '#faf7fd', boxShadow: 'inset 3px 0 0 ' + ROXO } : null);
-          }))),
-      sel ? h(RevisaoPrecadastro, { key: sel, id: sel, api: api, toast: toast, nav: nav, item: lista.find(function (x) { return x.id === sel; }) || null, editar: props.editar && sel === props.selecionar, aoMudar: function () { carregar(); props.recarregarPainel && props.recarregarPainel(); } })
-        : h(Card, null, Vazio('Selecione um pré-cadastro', 'A revisão aparece aqui.')));
+          })))),
+      sel ? h(RevisaoPrecadastro, { key: sel, id: sel, api: api, toast: toast, nav: nav, item: lista.find(function (x) { return x.id === sel; }) || null, editar: props.editar && sel === props.selecionar, aoMudar: function () { carregar(); props.recarregarPainel && props.recarregarPainel(); },
+          aoExcluir: function () { setSel(null); carregar(); props.recarregarPainel && props.recarregarPainel(); } /* LOCACAO_PRECAD_EXCLUIR_V1 */ })
+        : h(Card, null, Vazio('Selecione um pré-cadastro', 'A revisão aparece aqui.')),
+      h('style', null, '.loc-pre-lixo{opacity:0;transition:opacity .15s,background .15s}tr:hover .loc-pre-lixo,.loc-pre-lixo:focus-visible{opacity:1}.loc-pre-lixo:hover{background:#fef2f2!important;border-color:#fecaca!important}.loc-pre-lixo:focus-visible{outline:2px solid #b91c1c;outline-offset:1px}@media (hover:none),(pointer:coarse),(max-width:1023px){.loc-pre-lixo{opacity:1}}'),
+      excluirPre ? h(ExcluirPrecadastroModal, { api: api, toast: toast, item: { id: excluirPre.id, nome: excluirPre.nome, doc: excluirPre.cpf_mascarado ? 'CPF ' + excluirPre.cpf_mascarado : (excluirPre.cod_profissional ? 'cód. ' + excluirPre.cod_profissional : null) },
+        aprovado: excluirPre.status === 'aprovado' || excluirPre.status === 'contrato_criado', tipo: tipoDe(excluirPre),
+        onClose: function () { setExcluirPre(null); },
+        onFeito: function () { var id = excluirPre.id; setExcluirPre(null); if (sel === id) setSel(null); carregar(); props.recarregarPainel && props.recarregarPainel(); } }) : null);
   }
 
   var PRE_AVISADOS = {};
@@ -754,6 +764,9 @@
     var emRevisao = { novo: 1, em_analise: 1, aguardando_documentos: 1 }[p.status];
     var faltaCampo = !tipo || !dia || (tipo === 'tutts' && !String(cod).trim());
     var podeAprovar = emRevisao && d.pode_aprovar !== false && !bloqueia && !faltaCampo;
+    var btnExcluirPre = function () { /* LOCACAO_PRECAD_EXCLUIR_V1 */
+      return Btn({ key: 'xpre', variant: 'link', icon: 'trash', onClick: function () { setModal('excluir'); }, disabled: salvando, style: { color: '#b91c1c', marginRight: 'auto', padding: '0 4px' }, children: 'Excluir pré-cadastro' });
+    };
     var acao = function (url, body, msg) {
       setSalvando(true);
       return api(url, { method: 'POST', body: body || {} })
@@ -843,23 +856,23 @@
             h(Field, { label: 'Dia de vencimento', req: true },
               Select({ value: dia, onChange: function (e) { setDia(e.target.value); } }, [h('option', { key: '', value: '' }, 'Escolha o dia')].concat(DIA_VENC.map(function (o) { return h('option', { key: o[0], value: o[0] }, o[1]); }))))),
           tipo === 'tutts' ? h(Field, { label: 'Código do profissional na Central', req: true, hint: central ? 'Login dele na Central' : 'Vincula ao login dele na Central' }, Input({ value: cod, readOnly: central, onChange: function (e) { setCod(e.target.value); }, inputMode: 'numeric', placeholder: 'Ex.: 4821', style: Object.assign({ maxWidth: 200 }, central ? { background: '#f9fafb' } : {}) })) : null,
-          h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' } },
+          h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center' } },
+            btnExcluirPre(), /* LOCACAO_PRECAD_EXCLUIR_V1 */
             Btn({ variant: 'perigo', onClick: function () { setModal('reprovar'); }, disabled: salvando, children: 'Reprovar…' }),
             Btn({ onClick: function () { setEditando(true); }, disabled: salvando, icon: 'pencil', children: 'Editar dados' }), // LOCACAO_V4
             central ? null : Btn({ onClick: function () { setModal('docs'); }, disabled: salvando, icon: 'upload', children: 'Pedir documentos' }),
             Btn({ variant: 'pri', icon: 'check', onClick: aprovar, disabled: !podeAprovar || salvando, title: bloqueia ? 'Resolva os alertas que bloqueiam a aprovação' : faltaCampo ? 'Defina tipo de cliente e dia de vencimento' : null, children: salvando ? 'Salvando...' : 'Aprovar cadastro' })),
           bloqueia ? h('div', { style: { fontSize: 12, color: '#991b1b', textAlign: 'right' } }, 'A aprovação fica bloqueada enquanto houver alerta vermelho.') : null)
-          : p.status === 'aprovado' && d.cliente_excluido ? h('div', { style: { borderTop: '1px solid #f3f4f6', paddingTop: 14 } }, Aviso('cinza', 'Locatário excluído', 'Esse cadastro não está mais na locação. O histórico de contratos, se tiver, continua guardado.')) /* LOCACAO_CRLV_V1 */
+          : p.status === 'aprovado' && d.cliente_excluido ? h('div', { style: { borderTop: '1px solid #f3f4f6', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 10 } }, Aviso('cinza', 'Locatário excluído', 'Esse cadastro não está mais na locação. O histórico de contratos, se tiver, continua guardado.'), h('div', null, btnExcluirPre())) /* LOCACAO_CRLV_V1 */
           : p.status === 'aprovado' ? h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid #f3f4f6', paddingTop: 14, flexWrap: 'wrap', alignItems: 'center' } },
-            d.cliente_id ? Btn({ variant: 'link', icon: 'trash', onClick: function () { setModal('excluir'); }, style: { color: '#b91c1c', marginRight: 'auto', padding: '0 4px' }, children: 'Excluir locatário' }) : null, /* LOCACAO_CRLV_V1 */
+            btnExcluirPre(), /* LOCACAO_PRECAD_EXCLUIR_V1: substitui o "Excluir locatário" */
             Btn({ variant: 'pri', icon: 'filetext', onClick: function () { props.nav({ tela: 'novoContrato', cliente_id: d.cliente_id }); }, children: 'Criar contrato' }))
-          : null),
-      modal === 'excluir' ? h(ExcluirModal, { api: api, url: '/clientes/' + d.cliente_id, titulo: 'Excluir locatário', botao: 'Excluir locatário', nome: p.nome + ' · CPF ' + (p.cpf || ''), /* LOCACAO_CRLV_V1 */
-        regras: ['Sem contrato nenhum: o cadastro é apagado.', 'Com contratos encerrados: ele sai das listas e o histórico fica guardado.',
-          d.cliente_tipo === 'tutts' ? 'Motoboy da Central: o login dele na Central continua. Ele só sai da locação.' : 'Pessoa de fora: o login dela na Central (CPF) é removido.',
-          'Com contrato em andamento não dá: encerre o contrato antes.'],
+          : h('div', { style: { display: 'flex', borderTop: '1px solid #f3f4f6', paddingTop: 14 } }, btnExcluirPre())),
+      modal === 'excluir' ? h(ExcluirPrecadastroModal, { api: api, toast: toast, /* LOCACAO_PRECAD_EXCLUIR_V1 */
+        item: { id: p.id, nome: p.nome, doc: p.cpf ? 'CPF ' + p.cpf : (p.cod_profissional ? 'cód. ' + p.cod_profissional : null) },
+        aprovado: !!d.cliente_id || p.status === 'aprovado' || p.status === 'contrato_criado', tipo: d.cliente_tipo || (p.origem === 'central' ? 'tutts' : tipo),
         onClose: function () { setModal(null); },
-        onFeito: function (r) { setModal(null); toast(r && r.modo === 'arquivado' ? 'Locatário excluído · histórico mantido' + (r.login_removido ? ' · login removido' : '') : 'Locatário excluído' + (r && r.login_removido ? ' · login removido' : ''), 'success'); carregar(); props.aoMudar && props.aoMudar(); } }) : null,
+        onFeito: function () { setModal(null); if (props.aoExcluir) props.aoExcluir(); else props.aoMudar && props.aoMudar(); } }) : null,
       modal === 'reprovar' ? h(MotivoModal, { titulo: 'Reprovar cadastro', label: 'Motivo da reprovação', hint: 'O motivo é enviado ao entregador pelo WhatsApp.', botao: 'Reprovar cadastro', perigo: true, obrigatorio: true,
         onClose: function () { setModal(null); }, onConfirm: function (m) { return acao('/precadastros/' + p.id + '/reprovar', { motivo: m }, 'Cadastro reprovado'); } }) : null,
       modal === 'docs' ? h(PedirDocsModal, { p: p, api: api, toast: toast, onClose: function () { setModal(null); }, aoEnviar: function () { carregar(); props.aoMudar && props.aoMudar(); } }) : null,
@@ -1238,6 +1251,31 @@
         h('div', { style: { background: '#f9fafb', border: '1px solid #f3f4f6', borderRadius: 10, padding: '10px 12px', fontWeight: 600, color: '#111827' } }, props.nome),
         h('ul', { style: { margin: 0, paddingLeft: 18, listStyle: 'disc', display: 'flex', flexDirection: 'column', gap: 4 } }, (props.regras || []).map(function (t, i) { return h('li', { key: i }, t); })),
         erro ? Aviso('vermelho', 'Não dá para excluir agora', erro, 'alert') : null));
+  }
+
+  /* LOCACAO_PRECAD_EXCLUIR_V1: excluir pré-cadastro (qualquer status); se já virou locatário, exclui o locatário junto */
+  function ExcluirPrecadastroModal(props) {
+    var it = props.item || {};
+    var aprovado = !!props.aprovado;
+    var regras = aprovado ? [
+      'Apaga o pré-cadastro e os documentos enviados.',
+      'Ele já virou locatário: o locatário sai da locação junto.',
+      'Com contratos encerrados: o histórico fica guardado.',
+      props.tipo === 'tutts' ? 'Motoboy da Central: o login dele na Central continua.' : 'Pessoa de fora: o login dela na Central (CPF) é removido.',
+      'Com contrato em andamento não dá: encerre o contrato antes.'
+    ] : [
+      'Apaga o pré-cadastro e os documentos enviados.',
+      'O link de cadastro dessa pessoa deixa de funcionar.',
+      'Não dá para desfazer. Se precisar, gere um convite novo.'
+    ];
+    return h(ExcluirModal, { api: props.api, url: '/precadastros/' + it.id, titulo: 'Excluir pré-cadastro', botao: 'Excluir pré-cadastro',
+      nome: [it.nome || 'Pré-cadastro #' + it.id, it.doc].filter(Boolean).join(' · '), regras: regras, onClose: props.onClose,
+      onFeito: function (r) {
+        var cli = r && r.cliente;
+        var msg = r && r.modo === 'arquivado' ? 'Pré-cadastro excluído · histórico do locatário mantido' : cli ? 'Pré-cadastro e locatário excluídos' : 'Pré-cadastro excluído';
+        if (cli && cli.login_removido) msg += ' · login removido';
+        props.toast(msg, 'success'); props.onFeito && props.onFeito(r);
+      } });
   }
 
   var MOTO_VAZIA = { modelo: '', ano: '', cor: '', placa: '', chassi: '', renavam: '', valor_aquisicao: '', valor_documentacao: '', hodometro: '', tem_seguro: null, tem_rastreador: null, status_manual: 'disponivel', tipo: '', condicao: '', numero_motor: '' }; // LOCACAO_V3: condicao + nº motor
