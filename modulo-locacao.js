@@ -716,7 +716,7 @@
               { td: 1, v: h('div', null, TagTipo(tipoDe(p), p.tipo_label), tipoDe(p) === 'tutts_confirmar' && p.cod_profissional ? h('div', { style: { fontSize: 11, color: p.cod_confere === false ? '#991b1b' : '#6b7280', marginTop: 2 } }, 'cód. ' + p.cod_profissional + (p.cod_confere === true ? ' · confere' : p.cod_confere === false ? ' · não achado' : '')) : null) },
               { td: 1, v: fDHc(p.criado_em), st: { whiteSpace: 'nowrap', color: '#374151' } },
               { td: 1, v: txtAl, st: { fontSize: 12, color: corAl, fontWeight: txtAl !== '—' ? 600 : 400, whiteSpace: 'normal', maxWidth: 220 } },
-              { td: 1, v: Pill(p.status_label || ROT_PRE[p.status] || p.status, TOM_PRE[p.status] || 'cinza') }
+              { td: 1, v: Pill(p.status_label || ROT_PRE[p.status] || p.status, p.status_label === 'Locatário excluído' ? 'cinza' /* LOCACAO_CRLV_V1 */ : TOM_PRE[p.status] || 'cinza') }
             ], function () { setSel(p.id); }, on ? { background: '#faf7fd', boxShadow: 'inset 3px 0 0 ' + ROXO } : null);
           }))),
       sel ? h(RevisaoPrecadastro, { key: sel, id: sel, api: api, toast: toast, nav: nav, item: lista.find(function (x) { return x.id === sel; }) || null, editar: props.editar && sel === props.selecionar, aoMudar: function () { carregar(); props.recarregarPainel && props.recarregarPainel(); } })
@@ -797,7 +797,7 @@
         h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' } },
           h('h2', { style: { margin: 0, fontFamily: SORA, fontSize: 19, fontWeight: 700 } }, p.nome),
           TagTipo(tipoSug),
-          Pill(p.status_label || ROT_PRE[p.status] || p.status, TOM_PRE[p.status] || 'cinza'))),
+          d.cliente_excluido ? Pill('Locatário excluído', 'cinza') /* LOCACAO_CRLV_V1 */ : Pill(p.status_label || ROT_PRE[p.status] || p.status, TOM_PRE[p.status] || 'cinza'))),
       h('div', { style: { padding: 18, display: 'flex', flexDirection: 'column', gap: 16 } },
         emRevisao && faltamP.length ? h('div', { style: { border: '1px solid #fde68a', borderRadius: 12, overflow: 'hidden' } },
           h('div', { style: { padding: '8px 12px', background: '#fffbeb', color: '#92400e', fontSize: 12.5, fontWeight: 600 } },
@@ -849,9 +849,17 @@
             central ? null : Btn({ onClick: function () { setModal('docs'); }, disabled: salvando, icon: 'upload', children: 'Pedir documentos' }),
             Btn({ variant: 'pri', icon: 'check', onClick: aprovar, disabled: !podeAprovar || salvando, title: bloqueia ? 'Resolva os alertas que bloqueiam a aprovação' : faltaCampo ? 'Defina tipo de cliente e dia de vencimento' : null, children: salvando ? 'Salvando...' : 'Aprovar cadastro' })),
           bloqueia ? h('div', { style: { fontSize: 12, color: '#991b1b', textAlign: 'right' } }, 'A aprovação fica bloqueada enquanto houver alerta vermelho.') : null)
-          : p.status === 'aprovado' ? h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid #f3f4f6', paddingTop: 14 } },
+          : p.status === 'aprovado' && d.cliente_excluido ? h('div', { style: { borderTop: '1px solid #f3f4f6', paddingTop: 14 } }, Aviso('cinza', 'Locatário excluído', 'Esse cadastro não está mais na locação. O histórico de contratos, se tiver, continua guardado.')) /* LOCACAO_CRLV_V1 */
+          : p.status === 'aprovado' ? h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid #f3f4f6', paddingTop: 14, flexWrap: 'wrap', alignItems: 'center' } },
+            d.cliente_id ? Btn({ variant: 'link', icon: 'trash', onClick: function () { setModal('excluir'); }, style: { color: '#b91c1c', marginRight: 'auto', padding: '0 4px' }, children: 'Excluir locatário' }) : null, /* LOCACAO_CRLV_V1 */
             Btn({ variant: 'pri', icon: 'filetext', onClick: function () { props.nav({ tela: 'novoContrato', cliente_id: d.cliente_id }); }, children: 'Criar contrato' }))
           : null),
+      modal === 'excluir' ? h(ExcluirModal, { api: api, url: '/clientes/' + d.cliente_id, titulo: 'Excluir locatário', botao: 'Excluir locatário', nome: p.nome + ' · CPF ' + (p.cpf || ''), /* LOCACAO_CRLV_V1 */
+        regras: ['Sem contrato nenhum: o cadastro é apagado.', 'Com contratos encerrados: ele sai das listas e o histórico fica guardado.',
+          d.cliente_tipo === 'tutts' ? 'Motoboy da Central: o login dele na Central continua. Ele só sai da locação.' : 'Pessoa de fora: o login dela na Central (CPF) é removido.',
+          'Com contrato em andamento não dá: encerre o contrato antes.'],
+        onClose: function () { setModal(null); },
+        onFeito: function (r) { setModal(null); toast(r && r.modo === 'arquivado' ? 'Locatário excluído · histórico mantido' + (r.login_removido ? ' · login removido' : '') : 'Locatário excluído' + (r && r.login_removido ? ' · login removido' : ''), 'success'); carregar(); props.aoMudar && props.aoMudar(); } }) : null,
       modal === 'reprovar' ? h(MotivoModal, { titulo: 'Reprovar cadastro', label: 'Motivo da reprovação', hint: 'O motivo é enviado ao entregador pelo WhatsApp.', botao: 'Reprovar cadastro', perigo: true, obrigatorio: true,
         onClose: function () { setModal(null); }, onConfirm: function (m) { return acao('/precadastros/' + p.id + '/reprovar', { motivo: m }, 'Cadastro reprovado'); } }) : null,
       modal === 'docs' ? h(PedirDocsModal, { p: p, api: api, toast: toast, onClose: function () { setModal(null); }, aoEnviar: function () { carregar(); props.aoMudar && props.aoMudar(); } }) : null,
@@ -929,6 +937,309 @@
         })));
   }
 
+  // ───────────────────────── LOCACAO_CRLV_V1: importar o CRLV-e (PDF) ─────────────────────────
+  /* Lê o CRLV-e no navegador (pdf.js), acha cada campo pelo rótulo (valor logo abaixo/ao lado) e valida.
+     window.LocacaoCRLV.parse(itens) é puro: itens = [{ str, x, y, w, h, page }] com y medido do topo da página. */
+  var CRLV = (function () {
+    var PDFJS_VER = '3.11.174';
+    var PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VER + '/pdf.min.js';
+    var PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VER + '/pdf.worker.min.js';
+    var _carregando = null;
+    function carregarPdfJs() {
+      if (window.pdfjsLib && window.pdfjsLib.getDocument) return Promise.resolve(window.pdfjsLib);
+      if (_carregando) return _carregando;
+      _carregando = new Promise(function (ok, falha) {
+        var s = document.createElement('script');
+        s.src = PDFJS_URL; s.async = true; s.crossOrigin = 'anonymous';
+        s.onload = function () {
+          if (!window.pdfjsLib) { _carregando = null; falha(new Error('Leitor de PDF não carregou')); return; }
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+          ok(window.pdfjsLib);
+        };
+        s.onerror = function () { _carregando = null; falha(new Error('Não deu para carregar o leitor de PDF. Confira a internet e tente de novo.')); };
+        document.head.appendChild(s);
+      });
+      return _carregando;
+    }
+    function norm(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[:：]/g, ' ').replace(/\s*\/\s*/g, ' / ').replace(/\s+/g, ' ').trim(); }
+    var ROTULOS = {
+      renavam: ['CODIGO RENAVAM', 'RENAVAM', 'COD RENAVAM'],
+      placa: ['PLACA'],
+      exercicio: ['EXERCICIO'],
+      ano_fab: ['ANO FABRICACAO', 'ANO DE FABRICACAO', 'ANO FAB'],
+      ano_mod: ['ANO MODELO', 'ANO MOD'],
+      numero_crv: ['NUMERO DO CRV', 'N DO CRV', 'NUMERO CRV', 'N° DO CRV', 'Nº DO CRV'],
+      marca_modelo: ['MARCA / MODELO / VERSAO', 'MARCA / MODELO', 'MARCA / MODELO / VERSAO DO VEICULO'],
+      especie: ['ESPECIE / TIPO'],
+      chassi: ['CHASSI', 'CHASSI / VIN'],
+      cor: ['COR PREDOMINANTE', 'COR'],
+      combustivel: ['COMBUSTIVEL'],
+      potencia: ['POTENCIA / CILINDRADA', 'POT / CIL', 'CILINDRADA'],
+      motor: ['MOTOR', 'NUMERO DO MOTOR', 'N DO MOTOR'],
+      nome: ['NOME', 'NOME DO PROPRIETARIO', 'PROPRIETARIO'],
+      doc: ['CPF / CNPJ', 'CPF / CNPJ DO PROPRIETARIO'],
+      local: ['LOCAL'],
+    };
+    var OUTROS = ['CATEGORIA', 'CAPACIDADE', 'PESO BRUTO TOTAL', 'CMT', 'EIXOS', 'LOTACAO', 'CARROCERIA', 'DATA', 'PLACA ANTERIOR / UF', 'CODIGO DE SEGURANCA DO CLA', 'CAT',
+      'OBSERVACOES DO VEICULO', 'MENSAGENS SENATRAN', 'CERTIFICADO DE REGISTRO E LICENCIAMENTO DE VEICULO', 'CERTIFICADO DE REGISTRO E LICENCIAMENTO DE VEICULO - DIGITAL', 'ASSINATURA', 'VALIDO EM TODO O TERRITORIO NACIONAL'];
+    var TODOS = {};
+    Object.keys(ROTULOS).forEach(function (k) { ROTULOS[k].forEach(function (r) { TODOS[norm(r)] = k; }); });
+    OUTROS.forEach(function (r) { TODOS[norm(r)] = TODOS[norm(r)] || '_'; });
+    function ehRotulo(t) { return Object.prototype.hasOwnProperty.call(TODOS, t); }
+
+    /* junta pedaços na mesma linha e colados (pdf.js às vezes quebra uma palavra em vários itens) */
+    function blocos(itens) {
+      var it = (itens || []).filter(function (i) { return String(i.str || '').trim(); }).map(function (i) { return { str: String(i.str), x: +i.x || 0, y: +i.y || 0, w: +i.w || 0, h: +i.h || 8, page: i.page || 1 }; });
+      it.sort(function (a, b) { return a.page - b.page || a.y - b.y || a.x - b.x; });
+      var out = [];
+      it.forEach(function (i) {
+        var u = out[out.length - 1];
+        var tol = Math.max(1.5, Math.min(u ? u.h : i.h, i.h) * 0.35);
+        if (u && u.page === i.page && Math.abs(u.y - i.y) <= tol && i.x - (u.x + u.w) <= Math.max(3, i.h * 0.45) && i.x - (u.x + u.w) > -i.h) {
+          var gap = i.x - (u.x + u.w);
+          u.str += (gap > i.h * 0.15 && !/\s$/.test(u.str) ? ' ' : '') + i.str;
+          u.w = Math.max(u.x + u.w, i.x + i.w) - u.x; u.h = Math.max(u.h, i.h);
+        } else out.push(Object.assign({}, i));
+      });
+      out.forEach(function (b) { b.n = norm(b.str); b.rotulo = ehRotulo(b.n); });
+      return out;
+    }
+    function candidatos(rot, bs) {
+      var abaixo = [], lado = [];
+      bs.forEach(function (b) {
+        if (b === rot || b.page !== rot.page || b.rotulo) return;
+        var dy = b.y - rot.y;
+        if (dy > rot.h * 0.4 && dy < Math.max(34, rot.h * 4.2) && b.x >= rot.x - 8 && b.x < rot.x + Math.max(rot.w, 70)) abaixo.push({ b: b, d: dy * 3 + Math.abs(b.x - rot.x) });
+        else if (Math.abs(dy) <= rot.h * 0.5 && b.x > rot.x + rot.w - 1 && b.x - (rot.x + rot.w) < 160) lado.push({ b: b, d: 200 + (b.x - rot.x - rot.w) });
+      });
+      return abaixo.concat(lado).sort(function (a, c) { return a.d - c.d; }).map(function (c) { return c.b; });
+    }
+    function titulo(s) { return String(s || '').toLowerCase().replace(/(^|[\s\/(-])([a-zà-ú])/g, function (m, a, l) { return a + l.toUpperCase(); }); }
+    function renavamOk(r) {
+      if (!/^\d{11}$/.test(r)) return false;
+      var base = r.slice(0, 10).split('').reverse(), pesos = [2, 3, 4, 5, 6, 7, 8, 9, 2, 3], s = 0;
+      for (var i = 0; i < 10; i++) s += Number(base[i]) * pesos[i];
+      var dv = (s * 10) % 11; if (dv === 10) dv = 0;
+      return dv === Number(r[10]);
+    }
+    var PLACA = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/;
+    var VIN = /^[A-HJ-NPR-Z0-9]{17}$/;
+    /* cada campo: limpa → { valor, conferir, hint } ou null se não serve */
+    var VAL = {
+      placa: function (s) { var v = norm(s).replace(/[^A-Z0-9]/g, ''); return PLACA.test(v) ? { valor: v } : null; },
+      renavam: function (s) {
+        var cru = norm(s).replace(/[\s.\-]/g, '');
+        if (!/^[0-9OIL]{8,11}$/.test(cru) || !/\d{6}/.test(cru)) return null;
+        var troca = /[OIL]/.test(cru);
+        var v = cru.replace(/O/g, '0').replace(/[IL]/g, '1');
+        while (v.length < 11) v = '0' + v;
+        var ok = renavamOk(v);
+        return { valor: v, conferir: troca || !ok, hint: troca ? 'Tinha letra no meio dos números. Confira no documento.' : !ok ? 'O dígito verificador não bateu. Confira no documento.' : 'Dígito verificador ok' };
+      },
+      chassi: function (s) {
+        var v = norm(s).replace(/[^A-Z0-9]/g, '');
+        if (v.length < 15 || v.length > 18 || !/\d/.test(v) || !/[A-Z]/.test(v)) return null;
+        if (VIN.test(v)) return { valor: v, hint: '17 caracteres · formato válido' };
+        return { valor: v, conferir: true, hint: v.length !== 17 ? 'Tem ' + v.length + ' caracteres (o normal é 17). Confira.' : 'Tem letra I, O ou Q, que não existe em chassi. Pode ser 1 ou 0.' };
+      },
+      motor: function (s) {
+        var v = norm(s).replace(/[\s*.\-]/g, '');
+        if (v.length < 4 || v.length > 24 || !/\d/.test(v) || !/^[A-Z0-9]+$/.test(v)) return null;
+        var susp = /\d[OIQ]|[OIQ]\d{2}/.test(v.replace(/^[A-Z]+/, ''));
+        return { valor: v, conferir: susp, hint: susp ? 'Tem a letra "O" ou "I" no meio dos números. Pode ser zero ou um.' : null };
+      },
+      marca_modelo: function (s) { var v = String(s).replace(/\s+/g, ' ').trim(); return /[A-Za-z]{2}/.test(v) && v.length >= 3 && !ehRotulo(norm(v)) ? { valor: v.toUpperCase() } : null; },
+      ano: function (s) { var m = /\b(19[5-9]\d|20\d\d)\b/.exec(String(s)); return m ? { valor: m[1] } : null; },
+      cor: function (s) { var v = norm(s); return /^[A-Z ]{3,20}$/.test(v) ? { valor: titulo(v) } : null; },
+      texto: function (s) { var v = String(s).replace(/\s+/g, ' ').trim(); return v && /[A-Za-zÀ-ú]/.test(v) && !ehRotulo(norm(v)) ? { valor: v } : null; },
+      combustivel: function (s) { var v = norm(s); return /[A-Z]{3}/.test(v) && v.length <= 40 ? { valor: titulo(v) } : null; },
+      potencia: function (s) {
+        var v = norm(s).replace(/\s/g, '');
+        var m = /\/0*(\d{2,4})$/.exec(v) || /^0*(\d{2,4})(CC)?$/.exec(v);
+        return m ? { valor: m[1] } : null;
+      },
+      doc: function (s) { var v = String(s).replace(/\D/g, ''); return v.length === 11 || v.length === 14 ? { valor: v } : null; },
+      digitos: function (s) { var v = String(s).replace(/\D/g, ''); return v.length >= 6 && v.length <= 14 ? { valor: v } : null; },
+    };
+    var CAMPO_VAL = { placa: 'placa', renavam: 'renavam', chassi: 'chassi', motor: 'motor', marca_modelo: 'marca_modelo', ano_fab: 'ano', ano_mod: 'ano', exercicio: 'ano', cor: 'cor',
+      combustivel: 'combustivel', potencia: 'potencia', nome: 'texto', doc: 'doc', local: 'texto', especie: 'texto', numero_crv: 'digitos' };
+    function rect(b) { return { page: b.page, x: b.x, y: b.y, w: b.w, h: b.h }; }
+    function uniao(a, b) { if (!a) return b; if (!b || a.page !== b.page) return a; var x = Math.min(a.x, b.x), y = Math.min(a.y, b.y); return { page: a.page, x: x, y: y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y }; }
+
+    function parse(itens) {
+      var bs = blocos(itens);
+      var textoTotal = bs.map(function (b) { return b.str; }).join(' ');
+      var achados = {};
+      Object.keys(CAMPO_VAL).forEach(function (k) {
+        var nomes = (ROTULOS[k] || ROTULOS[k.replace(/_(fab|mod)$/, '')] || []).map(norm);
+        if (k === 'ano_fab') nomes = ROTULOS.ano_fab.map(norm);
+        if (k === 'ano_mod') nomes = ROTULOS.ano_mod.map(norm);
+        var rots = bs.filter(function (b) { return nomes.indexOf(b.n) >= 0; });
+        for (var i = 0; i < rots.length && !achados[k]; i++) {
+          var cs = candidatos(rots[i], bs);
+          for (var j = 0; j < cs.length; j++) {
+            var r = VAL[CAMPO_VAL[k]](cs[j].str);
+            if (r) { achados[k] = Object.assign({ rect: rect(cs[j]), rotulo: rect(rots[i]) }, r); break; }
+          }
+        }
+      });
+      // reserva por padrão no texto todo, quando o rótulo não apareceu
+      var porTexto = function (k, re, val) {
+        if (achados[k]) return;
+        for (var i = 0; i < bs.length; i++) {
+          if (bs[i].rotulo) continue;
+          var m = re.exec(bs[i].str.toUpperCase().replace(/[\s.\-]/g, ''));
+          if (m) { var r = val(m[0]); if (r) { achados[k] = Object.assign({ rect: rect(bs[i]), porPadrao: true }, r); return; } }
+        }
+      };
+      porTexto('chassi', /[A-HJ-NPR-Z0-9]{17}/, VAL.chassi);
+      porTexto('placa', /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/, VAL.placa);
+      if (!achados.renavam) {
+        for (var i = 0; i < bs.length && !achados.renavam; i++) {
+          var mm = /\b\d{11}\b/.exec(bs[i].str.replace(/[\s.\-]/g, ' '));
+          if (mm && renavamOk(mm[0])) achados.renavam = { valor: mm[0], rect: rect(bs[i]), porPadrao: true, hint: 'Dígito verificador ok' };
+        }
+      }
+      var A = achados;
+      var campos = {};
+      var put = function (k, v, rc, extra) { if (v) campos[k] = Object.assign({ valor: v, rect: rc || null, conferir: false, hint: null }, extra || {}); };
+      if (A.marca_modelo) put('modelo', A.marca_modelo.valor, A.marca_modelo.rect);
+      if (A.ano_fab || A.ano_mod) {
+        var fab = (A.ano_fab || A.ano_mod).valor, mod = (A.ano_mod || A.ano_fab).valor;
+        put('ano', fab + '/' + mod, uniao(A.ano_fab && A.ano_fab.rect, A.ano_mod && A.ano_mod.rect), !(A.ano_fab && A.ano_mod) ? { conferir: true, hint: 'Só achamos um dos anos. Confira.' } : (Number(mod) < Number(fab) || Number(mod) - Number(fab) > 1 ? { conferir: true, hint: 'Ano modelo e fabricação estranhos. Confira.' } : null));
+      }
+      if (A.cor) put('cor', A.cor.valor, A.cor.rect);
+      if (A.placa) put('placa', A.placa.valor, A.placa.rect);
+      if (A.renavam) put('renavam', A.renavam.valor, A.renavam.rect, { conferir: !!A.renavam.conferir, hint: A.renavam.hint });
+      if (A.chassi) put('chassi', A.chassi.valor, A.chassi.rect, { conferir: !!A.chassi.conferir, hint: A.chassi.hint });
+      if (A.motor) put('numero_motor', A.motor.valor, A.motor.rect, { conferir: !!A.motor.conferir, hint: A.motor.hint });
+      var extras = {
+        combustivel: A.combustivel ? A.combustivel.valor : null, cilindrada: A.potencia ? A.potencia.valor : null, exercicio: A.exercicio ? A.exercicio.valor : null,
+        especie: A.especie ? A.especie.valor : null, proprietario_nome: A.nome ? A.nome.valor : null, proprietario_doc: A.doc ? A.doc.valor : null,
+        local: A.local ? A.local.valor : null, numero_crv: A.numero_crv ? A.numero_crv.valor : null,
+      };
+      var rectsExtras = {};
+      [['combustivel', 'combustivel'], ['cilindrada', 'potencia'], ['exercicio', 'exercicio'], ['proprietario_nome', 'nome'], ['proprietario_doc', 'doc']].forEach(function (p) { if (A[p[1]]) rectsExtras[p[0]] = A[p[1]].rect; });
+      var marca = A.marca_modelo ? titulo(String(A.marca_modelo.valor).split('/')[0].trim()) : null;
+      return { campos: campos, extras: extras, rectsExtras: rectsExtras, marca: marca, semTexto: textoTotal.replace(/\s/g, '').length < 40,
+        pareceCrlv: /RENAVAM|LICENCIAMENTO|CHASSI/.test(norm(textoTotal)), total: Object.keys(campos).length,
+        conferir: Object.keys(campos).filter(function (k) { return campos[k].conferir; }).length };
+    }
+
+    /* PDF → itens com posição (pt, origem no topo) + o documento aberto do pdf.js */
+    function lerArquivo(file) {
+      return Promise.all([carregarPdfJs(), file.arrayBuffer()]).then(function (r) {
+        var lib = r[0];
+        return lib.getDocument({ data: new Uint8Array(r[1]) }).promise.then(function (pdf) {
+          var paginas = [], itens = [];
+          var seq = Promise.resolve();
+          for (var p = 1; p <= Math.min(pdf.numPages, 4); p++) (function (pn) {
+            seq = seq.then(function () {
+              return pdf.getPage(pn).then(function (page) {
+                var vp = page.getViewport({ scale: 1 });
+                paginas.push({ w: vp.width, h: vp.height });
+                return page.getTextContent().then(function (tc) {
+                  tc.items.forEach(function (it) {
+                    if (!it.str) return;
+                    var t = lib.Util.transform(vp.transform, it.transform);
+                    var fh = Math.hypot(t[2], t[3]) || it.height || 8;
+                    itens.push({ str: it.str, x: t[4], y: t[5] - fh, w: it.width * (vp.scale || 1), h: fh, page: pn });
+                  });
+                });
+              });
+            });
+          })(p);
+          return seq.then(function () { return { pdf: pdf, paginas: paginas, itens: itens, numPages: pdf.numPages }; });
+        });
+      });
+    }
+    return { parse: parse, blocos: blocos, lerArquivo: lerArquivo, carregarPdfJs: carregarPdfJs, renavamOk: renavamOk, norm: norm, titulo: titulo };
+  })();
+  window.LocacaoCRLV = CRLV;
+
+  /* visualizador do PDF: páginas em canvas + retângulos dos campos lidos */
+  function VisorPdf(props) {
+    var _z = useState(1), zoom = _z[0], setZoom = _z[1];
+    var _l = useState(0), largura = _l[0], setLargura = _l[1];
+    var caixa = useRef(null), canvases = useRef({}), ativoRef = useRef(null);
+    var pdf = props.pdf, paginas = props.paginas || [];
+    useEffect(function () {
+      var el = caixa.current; if (!el) return;
+      var medir = function () { setLargura(el.clientWidth); };
+      medir();
+      var ro = window.ResizeObserver ? new ResizeObserver(medir) : null;
+      if (ro) ro.observe(el); else window.addEventListener('resize', medir);
+      return function () { if (ro) ro.disconnect(); else window.removeEventListener('resize', medir); };
+    }, []);
+    var escalaDe = function (pg) { var base = Math.max(200, (largura || 460) - 32); return (base / (pg.w || 595)) * zoom; };
+    useEffect(function () {
+      if (!pdf || !largura) return;
+      var cancel = false;
+      paginas.forEach(function (pg, i) {
+        pdf.getPage(i + 1).then(function (page) {
+          if (cancel) return;
+          var c = canvases.current[i]; if (!c) return;
+          var esc = escalaDe(pg), dpr = Math.min(2, window.devicePixelRatio || 1);
+          var vp = page.getViewport({ scale: esc * dpr });
+          c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+          c.style.width = Math.floor(vp.width / dpr) + 'px'; c.style.height = Math.floor(vp.height / dpr) + 'px';
+          page.render({ canvasContext: c.getContext('2d'), viewport: vp });
+        });
+      });
+      return function () { cancel = true; };
+    }, [pdf, largura, zoom, paginas.length]);
+    useEffect(function () {
+      if (props.ativo && ativoRef.current && ativoRef.current.scrollIntoView) ativoRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }, [props.ativo]);
+    var abrir = function () { if (props.arquivo) { var u = URL.createObjectURL(props.arquivo); window.open(u, '_blank', 'noopener'); setTimeout(function () { URL.revokeObjectURL(u); }, 60000); } };
+    var bz = { width: 32, height: 32, border: '1px solid #e5e7eb', borderRadius: 8, background: '#ffffff', color: '#374151', display: 'grid', placeItems: 'center', cursor: 'pointer' };
+    var kb = function (n) { return n > 1024 * 1024 ? (n / 1024 / 1024).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; };
+    return h(Card, { pad: false, label: 'Documento importado' },
+      h('div', { style: { padding: '10px 12px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 8 } },
+        h('span', { style: { width: 30, height: 30, borderRadius: 8, background: '#fef2f2', color: '#b91c1c', display: 'grid', placeItems: 'center', fontSize: 10, fontWeight: 800, flex: 'none' } }, 'PDF'),
+        h('div', { style: { flex: 1, minWidth: 0 } },
+          h('div', { title: props.nome, style: { fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, props.nome),
+          h('div', { style: { fontSize: 11, color: '#6b7280' } }, (props.numPages || paginas.length) + (paginas.length === 1 ? ' página' : ' páginas') + (props.tamanho ? ' · ' + kb(props.tamanho) : ''))),
+        h('button', { type: 'button', 'aria-label': 'Diminuir zoom', onClick: function () { setZoom(function (z) { return Math.max(0.5, Math.round((z - 0.25) * 100) / 100); }); }, style: bz }, ico('minus', 14)),
+        h('span', { style: Object.assign({ fontSize: 12, color: '#374151', width: 42, textAlign: 'center' }, TAB) }, Math.round(zoom * 100) + '%'),
+        h('button', { type: 'button', 'aria-label': 'Aumentar zoom', onClick: function () { setZoom(function (z) { return Math.min(3, Math.round((z + 0.25) * 100) / 100); }); }, style: bz }, ico('plus', 14)),
+        h('button', { type: 'button', 'aria-label': 'Abrir o PDF em nova aba', title: 'Abrir em nova aba', onClick: abrir, style: bz }, ico('link', 14))),
+      h('div', { ref: caixa, style: { background: '#eef0f3', padding: 16, maxHeight: '78vh', overflow: 'auto' } },
+        !pdf ? h('div', { style: { padding: 30 } }, Spinner('Abrindo o PDF...')) :
+        paginas.map(function (pg, i) {
+          var esc = escalaDe(pg);
+          return h('div', { key: i, style: { position: 'relative', width: Math.floor(pg.w * esc), height: Math.floor(pg.h * esc), margin: '0 auto 12px', background: '#ffffff', boxShadow: '0 2px 10px rgba(17,24,39,.12)' } },
+            h('canvas', { ref: function (el) { canvases.current[i] = el; }, 'aria-label': 'Página ' + (i + 1) + ' do documento', style: { display: 'block' } }),
+            (props.marcas || []).filter(function (mk) { return mk.rect && mk.rect.page === i + 1; }).map(function (mk) {
+              var on = props.ativo === mk.k, pad = 1.5;
+              var cor = mk.conferir ? '#f59e0b' : ROXO;
+              return h('div', { key: mk.k, ref: on ? ativoRef : null, title: mk.titulo, style: { position: 'absolute', left: (mk.rect.x - pad) * esc, top: (mk.rect.y - pad) * esc, width: (mk.rect.w + pad * 2) * esc, height: (mk.rect.h + pad * 2) * esc,
+                border: (on ? 3 : 2) + 'px solid ' + cor, background: mk.conferir ? 'rgba(245,158,11,' + (on ? '.22' : '.1') + ')' : 'rgba(119,15,168,' + (on ? '.18' : '.07') + ')', borderRadius: 3,
+                boxShadow: on ? '0 0 0 4px ' + (mk.conferir ? 'rgba(245,158,11,.25)' : 'rgba(119,15,168,.2)') : 'none', transition: 'all .15s', pointerEvents: 'none' } });
+            }));
+        })),
+      h('div', { style: { padding: '10px 12px', borderTop: '1px solid #f3f4f6', fontSize: 12, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 8 } },
+        h('span', { style: { width: 12, height: 12, border: '2px solid ' + ROXO, borderRadius: 3, flex: 'none' } }),
+        props.semTexto ? 'Esse PDF não tem texto: preencha olhando o documento.' : 'De onde veio cada campo. Passe o mouse num campo do cadastro para ver o trecho no documento.'));
+  }
+
+  /* confirmação de exclusão (moto ou locatário) com o motivo do bloqueio quando há contrato */
+  function ExcluirModal(props) {
+    var _s = useState(false), s = _s[0], setS = _s[1];
+    var _e = useState(null), erro = _e[0], setErro = _e[1];
+    var confirmar = function () {
+      setS(true); setErro(null);
+      props.api(props.url, { method: 'DELETE' }).then(function (r) { setS(false); props.onFeito(r); })
+        .catch(function (e) { setS(false); setErro(e.message || 'Não deu para excluir'); });
+    };
+    return h(Modal, { titulo: props.titulo, onClose: props.onClose, largura: 520,
+      rodape: [Btn({ key: 'c', onClick: props.onClose, children: 'Voltar' }), Btn({ key: 'o', variant: 'perigoCheio', icon: 'trash', disabled: s || !!erro, onClick: confirmar, children: s ? 'Excluindo...' : props.botao })] },
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13.5, color: '#374151', lineHeight: 1.5 } },
+        h('div', { style: { background: '#f9fafb', border: '1px solid #f3f4f6', borderRadius: 10, padding: '10px 12px', fontWeight: 600, color: '#111827' } }, props.nome),
+        h('ul', { style: { margin: 0, paddingLeft: 18, listStyle: 'disc', display: 'flex', flexDirection: 'column', gap: 4 } }, (props.regras || []).map(function (t, i) { return h('li', { key: i }, t); })),
+        erro ? Aviso('vermelho', 'Não dá para excluir agora', erro, 'alert') : null));
+  }
+
   var MOTO_VAZIA = { modelo: '', ano: '', cor: '', placa: '', chassi: '', renavam: '', valor_aquisicao: '', valor_documentacao: '', hodometro: '', tem_seguro: null, tem_rastreador: null, status_manual: 'disponivel', tipo: '', condicao: '', numero_motor: '' }; // LOCACAO_V3: condicao + nº motor
   function placaTipo(p) { var s = String(p || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (/^[A-Z]{3}\d[A-Z]\d{2}$/.test(s)) return 'Mercosul'; if (/^[A-Z]{3}\d{4}$/.test(s)) return 'Padrão antigo'; return s ? 'Formato inválido' : null; }
   function moedaParse(v) { if (v === '' || v == null) return null; var s = String(v).replace(/[^\d,.-]/g, ''); if (s.indexOf(',') >= 0) s = s.replace(/\./g, '').replace(',', '.'); var n = parseFloat(s); return isFinite(n) ? n : null; }
@@ -948,6 +1259,21 @@
     var _cmp = useState(false), comparar = _cmp[0], setComparar = _cmp[1];
     var _no = useState(null), novaOc = _no[0], setNovaOc = _no[1];
     var _lc = useState(false), lancar = _lc[0], setLancar = _lc[1]; // LOCACAO_V3: lançar cobrança do tarifário
+    /* LOCACAO_CRLV_V1: importar CRLV-e, placa repetida, excluir moto */
+    var _imp = useState(null), imp = _imp[0], setImp = _imp[1];
+    var _fo = useState(null), foco = _fo[0], setFoco = _fo[1];
+    var _ex = useState(false), excluir = _ex[0], setExcluir = _ex[1];
+    var _pd = useState(null), placaDup = _pd[0], setPlacaDup = _pd[1];
+    var _ar = useState(false), arrastando = _ar[0], setArrastando = _ar[1];
+    var arqRef = useRef(null);
+    var placaAtual = form ? String(form.placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
+    useEffect(function () {
+      if (placaAtual.length < 7) { setPlacaDup(null); return; }
+      var t = setTimeout(function () {
+        api('/motos-placa?placa=' + encodeURIComponent(placaAtual) + (novo ? '' : '&ignorar=' + props.id)).then(function (r) { setPlacaDup(r && r.existe ? r.moto : null); }).catch(function () { setPlacaDup(null); });
+      }, 450);
+      return function () { clearTimeout(t); };
+    }, [placaAtual]);
     useEffect(function () {
       if (props.secao !== 'documentos' || !d) return;
       setTimeout(function () { var el = document.getElementById('loc-docs-moto'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
@@ -972,6 +1298,39 @@
     if (!d || !form) return Spinner('Abrindo moto...');
     var m = d.moto || {}, vist = d.vistorias || [], ct = d.contrato_atual;
     var set = function (k, v) { setForm(function (f) { var n = Object.assign({}, f); n[k] = v; return n; }); };
+    /* LOCACAO_CRLV_V1: importar o documento */
+    var CAMPOS_CRLV = ['modelo', 'ano', 'cor', 'placa', 'renavam', 'chassi', 'numero_motor'];
+    var ROT_CRLV = { modelo: 'Marca / modelo', ano: 'Ano/modelo', cor: 'Cor', placa: 'Placa', renavam: 'Renavam', chassi: 'Chassi', numero_motor: 'Nº do motor' };
+    var normCmp = function (k, v) { v = String(v == null ? '' : v).toUpperCase(); return /^(placa|renavam|chassi|numero_motor)$/.test(k) ? v.replace(/[^A-Z0-9]/g, '') : CRLV.norm(v); };
+    var impOk = imp && imp.fase === 'pronto' ? imp : null;
+    var importar = function (file) {
+      if (!file) return;
+      if (!/pdf/i.test(file.type || '') && !/\.pdf$/i.test(file.name || '')) { toast('Escolha o CRLV-e em PDF', 'error'); return; }
+      if (file.size > 8 * 1024 * 1024) { toast('PDF acima de 8 MB. Use o arquivo baixado do app.', 'error'); return; }
+      var antes = imp && imp.antes ? imp.antes : Object.assign({}, form);
+      setImp({ fase: 'lendo', nome: file.name, tamanho: file.size, antes: antes });
+      var dataUrl = new Promise(function (ok, falha) { var fr = new FileReader(); fr.onload = function () { ok(fr.result); }; fr.onerror = function () { falha(new Error('Não deu para ler o arquivo')); }; fr.readAsDataURL(file); });
+      Promise.all([CRLV.lerArquivo(file), dataUrl]).then(function (r) {
+        var lido = r[0], res = CRLV.parse(lido.itens);
+        var nf = Object.assign({}, antes), aplicados = {}, conflitos = {};
+        CAMPOS_CRLV.forEach(function (k) {
+          var c = res.campos[k]; if (!c) return;
+          if (!String(antes[k] == null ? '' : antes[k]).trim()) { nf[k] = c.valor; aplicados[k] = true; }
+          else if (normCmp(k, antes[k]) === normCmp(k, c.valor)) aplicados[k] = true;
+          else conflitos[k] = c.valor;
+        });
+        setForm(nf);
+        setImp({ fase: 'pronto', nome: file.name, tamanho: file.size, arquivo: file, dataUrl: r[1], pdf: lido.pdf, paginas: lido.paginas, numPages: lido.numPages, res: res, aplicados: aplicados, conflitos: conflitos, antes: antes });
+      }).catch(function (e) { setImp(null); toast(e && e.message ? e.message : 'Não deu para abrir o PDF', 'error'); });
+    };
+    var escolherArquivo = function () { if (arqRef.current) { arqRef.current.value = ''; arqRef.current.click(); } };
+    var desfazerImp = function () { if (imp && imp.antes) setForm(imp.antes); setImp(null); setFoco(null); };
+    var usarDoc = function (ks) {
+      setForm(function (f) { var n = Object.assign({}, f); ks.forEach(function (k) { n[k] = imp.conflitos[k]; }); return n; });
+      setImp(function (x) { var c = Object.assign({}, x.conflitos), a = Object.assign({}, x.aplicados); ks.forEach(function (k) { delete c[k]; a[k] = true; }); return Object.assign({}, x, { conflitos: c, aplicados: a }); });
+    };
+    var manterAtual = function (k) { setImp(function (x) { var c = Object.assign({}, x.conflitos); delete c[k]; return Object.assign({}, x, { conflitos: c }); }); };
+    var inputArquivo = h('input', { key: 'arq', ref: arqRef, type: 'file', accept: 'application/pdf,.pdf', 'aria-label': 'Escolher o CRLV-e em PDF', style: { display: 'none' }, onChange: function (e) { importar(e.target.files && e.target.files[0]); } });
     var tipoPlaca = placaTipo(form.placa);
     var faltas = [];
     if (!form.modelo.trim()) faltas.push('modelo');
@@ -985,11 +1344,27 @@
       var body = { modelo: form.modelo.trim(), ano: String(form.ano || '').trim() || null, cor: form.cor.trim() || null, placa: form.placa.toUpperCase().replace(/[^A-Z0-9]/g, ''), chassi: form.chassi.trim() || null, renavam: soDig(form.renavam) || null,
         valor_aquisicao: moedaParse(form.valor_aquisicao), valor_documentacao: moedaParse(form.valor_documentacao), hodometro: form.hodometro === '' ? null : parseInt(soDig(form.hodometro), 10), tem_seguro: form.tem_seguro, tem_rastreador: form.tem_rastreador, status_manual: form.status_manual, tipo: form.tipo || MotoArte.tipoPorModelo(form.modelo),
         condicao: form.condicao || null, numero_motor: String(form.numero_motor || '').trim().toUpperCase() || null }; // LOCACAO_V3
+      if (impOk && impOk.res) { /* LOCACAO_CRLV_V1 */
+        var ex = impOk.res.extras || {};
+        if (Object.keys(ex).some(function (k) { return ex[k]; })) body.crlv_dados = ex;
+        if (impOk.res.marca) body.marca = impOk.res.marca;
+      }
+      var docImp = impOk && impOk.dataUrl ? impOk : null;
       api(novo ? '/motos' : '/motos/' + props.id, { method: novo ? 'POST' : 'PUT', body: body })
         .then(function (r) {
-          toast(novo ? 'Moto cadastrada' : 'Alterações salvas', 'success');
+          var nid = novo ? (r.id || (r.moto && r.moto.id)) : props.id;
+          if (!docImp || !nid) return { r: r, nid: nid, doc: null };
+          var exer = (docImp.res && docImp.res.extras && docImp.res.extras.exercicio) || '';
+          return api('/motos/' + nid + '/documentos', { method: 'POST', body: { tipo: 'licenciamento', referencia: ('CRLV-e ' + exer).trim(), arquivo: docImp.dataUrl, nome_arquivo: docImp.nome } })
+            .then(function () { return { r: r, nid: nid, doc: 'ok' }; }, function (e) { return { r: r, nid: nid, doc: e.message || 'erro' }; });
+        })
+        .then(function (x) {
+          var r = x.r, nid = novo ? x.nid : null;
+          if (x.doc === 'ok') toast((novo ? 'Moto cadastrada' : 'Alterações salvas') + ' · CRLV-e salvo em Documentos', 'success');
+          else if (x.doc) toast((novo ? 'Moto cadastrada' : 'Alterações salvas') + ', mas o PDF não foi anexado: ' + x.doc + '. Anexe em Documentos da moto.', 'error');
+          else toast(novo ? 'Moto cadastrada' : 'Alterações salvas', 'success');
+          setImp(null); setFoco(null);
           props.aoMudar && props.aoMudar();
-          var nid = novo ? (r.id || (r.moto && r.moto.id)) : null;
           if (novo && nid) nav({ tela: 'moto', id: nid }, true); else if (novo) nav({ tela: 'lista', tab: 'motos' }); else carregar();
         })
         .catch(function (e) { toast(e.message, 'error'); }).then(function () { setSalvando(false); });
@@ -1017,17 +1392,87 @@
     var contaTipo = function (t) { return vist.filter(function (v) { return v.tipo === t; }).length; };
     var vistF = vist.filter(function (v) { return fTipo === 'todas' || v.tipo === fTipo; });
 
+    var tagMini = function (txt, ambar) { return h('span', { style: { fontSize: 10, fontWeight: 700, borderRadius: 99, padding: '1px 7px', color: ambar ? '#92400e' : ROXO_ESC, background: ambar ? '#fffbeb' : '#f3e8fb', border: '1px solid ' + (ambar ? '#fde68a' : '#f3e8fb') } }, txt); };
     var campo = function (k, label, extra) {
       extra = extra || {};
-      return h(Field, { key: k, label: label, req: extra.req, hint: extra.hint, hintCor: extra.hintCor, style: extra.span ? { gridColumn: '1 / -1' } : null },
-        Input({ value: form[k], onChange: function (e) { set(k, e.target.value); }, placeholder: extra.ph || '', inputMode: extra.mode || null, style: extra.mono ? { fontFamily: MONO } : null }));
+      var ci = impOk && impOk.res.campos[k] ? impOk.res.campos[k] : null; /* LOCACAO_CRLV_V1 */
+      var doDoc = !!(ci && impOk.aplicados[k] && normCmp(k, form[k]) === normCmp(k, ci.valor));
+      var conferir = doDoc && ci.conferir;
+      var conflito = impOk && impOk.conflitos[k] != null ? impOk.conflitos[k] : null;
+      var hint = conferir ? ci.hint : extra.hint || (doDoc && ci.hint ? ci.hint : null);
+      var hintCor = conferir ? '#92400e' : extra.hint ? extra.hintCor : (doDoc && ci.hint ? '#15803d' : extra.hintCor);
+      var st = Object.assign({}, extra.mono ? { fontFamily: MONO } : {}, conferir || conflito ? { borderColor: '#f59e0b', background: '#fffbeb' } : doDoc ? { borderColor: '#c4a5e0', background: '#fcfaff' } : {});
+      var lbl = doDoc || conflito ? h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' } }, label, conferir ? tagMini('Conferir', true) : doDoc ? tagMini('CRLV') : tagMini('Diferente do documento', true)) : label;
+      var foca = ci ? function () { setFoco(k); } : null, solta = ci ? function () { setFoco(function (f) { return f === k ? null : f; }); } : null;
+      return h('div', { key: k, style: Object.assign({ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }, extra.span ? { gridColumn: '1 / -1' } : {}), onMouseEnter: foca, onMouseLeave: solta },
+        h(Field, { label: lbl, req: extra.req, hint: hint, hintCor: hintCor },
+          Input({ value: form[k], onChange: function (e) { set(k, e.target.value); }, onFocus: foca, onBlur: solta, placeholder: extra.ph || '', inputMode: extra.mode || null, style: st })),
+        conflito != null ? h('div', { style: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, background: '#faf7fd', border: '1px solid #e9d5f9', borderRadius: 10, padding: '8px 10px', fontSize: 12.5 } },
+          h('span', { style: { flex: '1 1 160px', minWidth: 0, overflowWrap: 'anywhere' } }, 'No documento: ', h('b', { style: extra.mono ? { fontFamily: MONO } : null }, conflito)),
+          Btn({ small: true, variant: 'pri', onClick: function () { usarDoc([k]); }, children: 'Usar do documento' }),
+          Btn({ small: true, onClick: function () { manterAtual(k); }, children: 'Manter o atual' })) : null,
+        k === 'placa' && placaDup ? h('div', { role: 'alert', style: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '8px 10px', fontSize: 12.5, color: '#374151' } },
+          h('span', { style: { flex: '1 1 160px' } }, h('b', { style: { color: '#991b1b' } }, 'Essa placa já está cadastrada'), ' na moto "' + [placaDup.modelo, placaDup.cor].filter(Boolean).join(' · ') + '".'),
+          Btn({ small: true, variant: 'link', onClick: function () { nav({ tela: 'moto', id: placaDup.id }); }, children: 'Abrir essa moto' })) : null);
     };
     var simNao = function (k, label) {
       return h(Field, { label: label, req: true, hint: form[k] == null ? 'Obrigatório marcar Sim ou Não' : null, hintCor: '#92400e' }, Segmented([[true, 'Sim'], [false, 'Não']], form[k], function (v) { set(k, v); }, label));
     };
+    /* LOCACAO_CRLV_V1: área de importação, faixa de resultado e dados extras do documento */
+    var nPre = impOk ? CAMPOS_CRLV.filter(function (k) { return impOk.aplicados[k]; }).length : 0;
+    var nConferir = impOk ? CAMPOS_CRLV.filter(function (k) { var c = impOk.res.campos[k]; return impOk.aplicados[k] && c && c.conferir && normCmp(k, form[k]) === normCmp(k, c.valor); }).length : 0;
+    var conflitosK = impOk ? Object.keys(impOk.conflitos) : [];
+    var exerc = impOk && impOk.res.extras.exercicio;
+    var soltar = { onDragOver: function (e) { e.preventDefault(); if (!arrastando) setArrastando(true); }, onDragLeave: function () { setArrastando(false); },
+      onDrop: function (e) { e.preventDefault(); setArrastando(false); importar(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]); } };
+    var icoBox = function (nome, bg, cor, tam) { return h('span', { style: { width: tam || 40, height: tam || 40, borderRadius: 11, background: bg, color: cor, display: 'grid', placeItems: 'center', flex: 'none' } }, ico(nome, 18)); };
+    var acoesImp = [Btn({ key: 't', small: true, icon: 'upload', onClick: escolherArquivo, children: 'Trocar arquivo' }), Btn({ key: 'd', small: true, variant: 'link', onClick: desfazerImp, style: { color: '#6b7280', padding: '0 6px' }, children: 'Desfazer importação' })];
+    var areaImport = !imp ? (novo
+      ? h('div', Object.assign({ key: 'imp' }, soltar),
+          h('button', { type: 'button', onClick: escolherArquivo, className: 'hover:bg-purple-50', style: { width: '100%', textAlign: 'left', border: '2px dashed ' + (arrastando ? ROXO : '#c4a5e0'), background: arrastando ? '#f3e8fb' : '#fcfaff', borderRadius: 14, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', cursor: 'pointer' } },
+            icoBox('filetext', '#f3e8fb', ROXO),
+            h('span', { style: { flex: '1 1 260px', minWidth: 0 } },
+              h('b', { style: { display: 'block', fontSize: 14, color: '#111827' } }, 'Preencher com o documento da moto'),
+              h('span', { style: { fontSize: 12.5, color: '#6b7280' } }, 'Solte aqui o CRLV-e em PDF ou clique para escolher. A gente lê placa, Renavam, chassi, motor, marca/modelo, ano e cor.')),
+            h('span', { style: { height: 38, padding: '0 14px', borderRadius: 10, background: ROXO, color: '#ffffff', fontWeight: 600, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 8, flex: 'none' } }, ico('upload', 15), 'Escolher PDF')))
+      : h('div', Object.assign({ key: 'imp' }, soltar), h('button', { type: 'button', onClick: escolherArquivo, className: 'hover:bg-purple-50', style: { width: '100%', textAlign: 'left', border: '1.5px dashed ' + (arrastando ? ROXO : '#d8c3ea'), background: arrastando ? '#f3e8fb' : '#ffffff', borderRadius: 12, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', color: '#374151', fontSize: 12.5 } },
+          icoBox('filetext', '#f3e8fb', ROXO, 30), h('span', { style: { flex: 1, minWidth: 0 } }, h('b', { style: { color: ROXO_ESC } }, 'Conferir com o documento da moto'), h('span', { style: { display: 'block', color: '#6b7280' } }, 'Solte o CRLV-e em PDF: mostra o que está diferente do cadastro.')))))
+      : imp.fase === 'lendo' ? h('div', { key: 'imp', role: 'status', style: Object.assign({}, CARD, { padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }) },
+          h('span', { style: { width: 40, height: 40, borderRadius: 11, background: '#fef2f2', color: '#b91c1c', display: 'grid', placeItems: 'center', fontSize: 10, fontWeight: 800, flex: 'none' } }, 'PDF'),
+          h('div', { style: { flex: 1, minWidth: 0 } }, h('b', { style: { display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, imp.nome), h('span', { style: { fontSize: 12.5, color: '#6b7280' } }, 'Lendo o documento…'),
+            h('div', { style: { height: 6, borderRadius: 99, background: '#f3e8fb', marginTop: 8, overflow: 'hidden' } }, h('div', { className: 'animate-pulse', style: { width: '62%', height: '100%', background: ROXO, borderRadius: 99 } }))))
+      : impOk.res.semTexto || !impOk.res.total ? h('div', { key: 'imp', role: 'alert', style: { background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 14, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' } },
+          icoBox('alert', '#fde68a', '#92400e', 32),
+          h('div', { style: { flex: '1 1 260px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 } },
+            h('b', { style: { color: '#92400e' } }, impOk.res.semTexto ? 'Não deu para ler este PDF' : 'Não achamos os campos do CRLV nesse PDF'),
+            h('span', { style: { color: '#374151' } }, impOk.res.semTexto ? 'Ele parece uma foto do documento, sem texto dentro. Preencha os campos olhando o documento ao lado: ele fica salvo junto da moto.' : 'Confira se é o CRLV-e. Dá para preencher à mão olhando o documento ao lado: ele fica salvo junto da moto.'),
+            impOk.res.semTexto ? h('span', { style: { color: '#6b7280', fontSize: 12 } }, 'Dica: o CRLV-e baixado direto do app (não o print) sempre tem texto.') : null),
+          h('div', { style: { display: 'flex', gap: 6, alignItems: 'center' } }, acoesImp))
+      : h('div', { key: 'imp', role: 'status', style: { background: '#faf7fd', border: '1px solid #e9d5f9', borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' } },
+          icoBox('check', ROXO, '#ffffff', 32),
+          h('div', { style: { flex: '1 1 260px', minWidth: 0, fontSize: 13 } },
+            h('b', null, 'Lemos o CRLV-e' + (exerc ? ' de ' + exerc : '')),
+            h('div', { style: { color: '#374151' } }, nPre + (nPre === 1 ? ' campo preenchido' : ' campos preenchidos'),
+              nConferir ? h('span', { style: { color: '#92400e', fontWeight: 600 } }, ' · ' + nConferir + ' para conferir') : null,
+              conflitosK.length ? h('span', { style: { color: '#92400e', fontWeight: 600 } }, ' · ' + conflitosK.length + (conflitosK.length === 1 ? ' diferente do cadastro' : ' diferentes do cadastro')) : null,
+              ' · o PDF fica salvo em Documentos da moto como Licenciamento' + (exerc ? ' ' + exerc : ''))),
+          h('div', { style: { display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' } },
+            conflitosK.length > 1 ? Btn({ small: true, variant: 'pri', onClick: function () { usarDoc(conflitosK); }, children: 'Usar o documento em todos' }) : null, acoesImp));
+    var fmtDoc = function (d) { d = String(d || ''); return d.length === 14 ? d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : d.length === 11 ? d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4') : d; };
+    var ext = impOk ? impOk.res.extras : (m.crlv_dados || null);
+    var extrasCard = ext && (ext.combustivel || ext.cilindrada || ext.exercicio || ext.proprietario_nome) ? h('div', { key: 'ext', style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+      h('div', { style: { border: '1px solid #f3f4f6', background: '#f9fafb', borderRadius: 10, padding: '10px 12px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px 14px', fontSize: 12 } },
+        [['Combustível', ext.combustivel, 'combustivel'], ['Cilindrada', ext.cilindrada ? ext.cilindrada + ' cc' : null, 'cilindrada'], ['Exercício do licenciamento', ext.exercicio, 'exercicio'],
+          ['Proprietário no documento', ext.proprietario_nome ? ext.proprietario_nome + (ext.proprietario_doc ? ' · ' + fmtDoc(ext.proprietario_doc) : '') : null, 'proprietario_nome']].filter(function (x) { return x[1]; }).map(function (x) {
+          var rx = impOk && impOk.res.rectsExtras[x[2]];
+          return h('div', { key: x[0], style: { minWidth: 0, gridColumn: x[2] === 'proprietario_nome' ? '1 / -1' : null }, onMouseEnter: rx ? function () { setFoco('x_' + x[2]); } : null, onMouseLeave: rx ? function () { setFoco(null); } : null },
+            h('span', { style: { color: '#6b7280' } }, x[0]), h('div', { style: { fontWeight: 600, color: '#111827', overflowWrap: 'anywhere' } }, x[1]));
+        })),
+      h('span', { style: { fontSize: 11.5, color: '#6b7280' } }, impOk ? 'Ficam guardados junto da moto quando você salvar.' : 'Do CRLV-e importado' + (ext.importado_em ? ' em ' + fD(ext.importado_em) : '') + '.')) : null;
     var formCard = h(Card, { pad: false },
-      CardHead('Cadastro da moto', h('span', { style: { fontSize: 12, color: '#6b7280' } }, '* obrigatório')),
+      CardHead('Cadastro da moto', h('span', { style: { fontSize: 12, color: '#6b7280' } }, impOk && nPre ? h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5 } }, h('span', { style: { width: 8, height: 8, borderRadius: 99, background: ROXO } }), 'veio do documento · ') : null, '* obrigatório')),
       h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 14 } },
+        !novo ? areaImport : null,
         h('div', { className: 'grid grid-cols-2', style: { gap: 12 } },
           campo('modelo', 'Marca / modelo', { req: true, span: true, ph: 'Ex.: Honda CG 160 Start' }),
           campo('ano', 'Ano/modelo', { ph: '2024/2024' }), campo('cor', 'Cor', { ph: 'Vermelha' }),
@@ -1040,22 +1485,37 @@
           campo('valor_documentacao', 'Documentação', { ph: 'R$ 0,00', mode: 'decimal', hint: 'Despachante + vistoria' }),
           campo('hodometro', 'Hodômetro (km)', { mode: 'numeric' }),
           h('div', { key: 'custo', style: { display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2 } }, h('span', { style: { fontSize: 11.5, color: '#6b7280' } }, 'Custo total da moto'), h('span', { style: Object.assign({ fontWeight: 700, fontSize: 15 }, TAB) }, fR(custo)))),
+        extrasCard, /* LOCACAO_CRLV_V1 */
         h('div', { className: 'grid grid-cols-2', style: { gap: 12 } }, simNao('tem_seguro', 'Tem seguro?'), simNao('tem_rastreador', 'Tem rastreador?')),
         h(Field, { label: 'Tipo de moto', hint: form.tipo ? 'Usado no desenho enquanto não há foto de vistoria.' : 'Marcado pelo modelo digitado. Dá para trocar.' },
           Segmented(MotoArte.TIPOS, tipoEf, function (v) { set('tipo', v); }, 'Tipo de moto')),
         travadoContrato ? h(Field, { label: 'Status', req: true }, h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } }, pillMoto(ct ? Object.assign({}, m, { situacao: ct.situacao, situacao_label: ct.situacao_label, dias_atraso: ct.dias_atraso }) : m), h('span', { style: { fontSize: 12, color: '#6b7280' } }, 'automático pelo contrato')))
           : h(Field, { label: 'Status', req: true, hint: 'Só dá para mudar à mão entre Disponível e Manutenção, quando não há contrato.' }, Segmented([['disponivel', 'Disponível'], ['manutencao', 'Manutenção']], form.status_manual, function (v) { set('status_manual', v); }, 'Status')),
-        h('div', { style: { display: 'flex', gap: 8, justifyContent: 'flex-end' } },
-          Btn({ onClick: function () { if (novo) nav({ tela: 'lista', tab: 'motos' }); else carregar(); }, children: novo ? 'Cancelar' : 'Descartar' }),
+        h('div', { style: { display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap', alignItems: 'center' } },
+          !novo ? Btn({ variant: 'link', icon: 'trash', onClick: function () { setExcluir(true); }, style: { color: '#b91c1c', marginRight: 'auto', padding: '0 4px' }, children: 'Excluir moto' }) : null, /* LOCACAO_CRLV_V1 */
+          Btn({ onClick: function () { setImp(null); if (novo) nav({ tela: 'lista', tab: 'motos' }); else carregar(); }, children: novo ? 'Cancelar' : 'Descartar' }),
           Btn({ variant: 'pri', icon: 'save', onClick: salvar, disabled: salvando, children: salvando ? 'Salvando...' : novo ? 'Cadastrar moto' : 'Salvar alterações' }))));
 
+    /* LOCACAO_CRLV_V1: documento ao lado, abaixo do desenho */
+    var marcas = impOk ? CAMPOS_CRLV.filter(function (k) { return impOk.res.campos[k] && impOk.res.campos[k].rect; }).map(function (k) {
+      var c = impOk.res.campos[k]; return { k: k, rect: c.rect, conferir: !!c.conferir || impOk.conflitos[k] != null, titulo: ROT_CRLV[k] + ': ' + c.valor };
+    }).concat(Object.keys(impOk.res.rectsExtras || {}).map(function (k) { return { k: 'x_' + k, rect: impOk.res.rectsExtras[k], titulo: k }; })) : [];
+    var visor = impOk && impOk.pdf ? h(VisorPdf, { key: 'visor', pdf: impOk.pdf, paginas: impOk.paginas, numPages: impOk.numPages, nome: impOk.nome, tamanho: impOk.tamanho, arquivo: impOk.arquivo, marcas: marcas, ativo: foco, semTexto: impOk.res.semTexto || !impOk.res.total }) : null;
+    var modalExcluir = excluir ? h(ExcluirModal, { api: api, url: '/motos/' + props.id, titulo: 'Excluir moto', botao: 'Excluir moto', nome: (m.modelo || 'Moto') + ' · ' + (m.placa || ''),
+      regras: ['Sem histórico nenhum: a moto é apagada.', 'Com histórico (contratos encerrados, vistorias, ocorrências): ela sai da frota e das listas, e o histórico fica guardado. A placa fica livre para um cadastro novo.', 'Com contrato em andamento não dá: encerre o contrato antes.'],
+      onClose: function () { setExcluir(false); },
+      onFeito: function (r) { setExcluir(false); toast(r && r.modo === 'arquivada' ? 'Moto removida da frota · histórico mantido' : 'Moto excluída', 'success'); props.aoMudar && props.aoMudar(); nav({ tela: 'lista', tab: 'motos' }); } }) : null;
+
     if (novo) return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+      inputArquivo,
       voltar(function () { nav({ tela: 'lista', tab: 'motos' }); }, 'Motos'),
-      h('h2', { style: { margin: 0, fontFamily: SORA, fontSize: 20, fontWeight: 700 } }, 'Cadastrar moto'),
+      h('div', null, h('h2', { style: { margin: 0, fontFamily: SORA, fontSize: 20, fontWeight: 700 } }, 'Cadastrar moto'),
+        impOk && impOk.res.total ? h('p', { style: { margin: '4px 0 0', fontSize: 13, color: '#6b7280' } }, 'Os campos foram preenchidos com o documento. Confira e salve.') : null),
+      areaImport,
       h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start' } },
-        h('div', { style: { flex: '1 1 520px', maxWidth: 640, minWidth: 0 } }, formCard),
-        h('div', { style: { flex: '1 1 320px', maxWidth: 460, minWidth: 0, position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 8 } },
-          h('div', { style: { fontSize: 12, fontWeight: 600, color: '#6b7280', letterSpacing: '.04em', textTransform: 'uppercase' } }, 'Prévia'), capaCard)));
+        h('div', { style: { flex: '999 1 520px', maxWidth: visor ? 'none' : 640, minWidth: 0 } }, formCard),
+        h('div', { style: Object.assign({ flex: visor ? '1 1 420px' : '1 1 320px', maxWidth: visor ? 560 : 460, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }, visor ? {} : { position: 'sticky', top: 80 }) },
+          visor ? null : h('div', { style: { fontSize: 12, fontWeight: 600, color: '#6b7280', letterSpacing: '.04em', textTransform: 'uppercase' } }, 'Prévia'), capaCard, visor)));
 
     var novaOcModal = novaOc ? h(NovaOcorrenciaModal, { api: api, toast: toast, moto: m, contrato: ct, preset: novaOc, onClose: function () { setNovaOc(null); }, onSalvo: function () { setNovaOc(null); setComparar(false); setAba('ocorrencias'); carregar(); props.aoMudar && props.aoMudar(); } }) : null; // LOCACAO_V2
     if (comparar) return h(React.Fragment, null, h(CompararVistorias, { api: api, toast: toast, moto: m, vistorias: vist, voltar: function () { setComparar(false); carregar(); }, aoMudar: props.aoMudar, onApontar: function (pre) { setNovaOc(pre); } }), novaOcModal); // LOCACAO_V2
@@ -1080,6 +1540,7 @@
           h('div', { id: 'loc-docs-moto', style: { scrollMarginTop: 80 } }, h(DocumentosMoto, { moto: m, documentos: d.documentos || [], api: api, toast: toast, aoMudar: carregar }))), // LOCACAO_V2
         h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
           capaCard,
+          visor, /* LOCACAO_CRLV_V1 */
           ct ? h(Card, null,
             h('div', { style: { display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' } },
               h('div', { style: { width: 38, height: 38, borderRadius: 99, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 13, flex: 'none' } }, iniciais(ct.cliente_nome)),
@@ -1134,6 +1595,7 @@
       modal && modal.tipo === 'avaria' ? h(MotivoModal, { titulo: 'Apontar avaria', label: 'Descreva a avaria', hint: 'Fica registrada na vistoria e no histórico da moto.', botao: 'Registrar avaria', perigo: true, obrigatorio: true,
         onClose: function () { setModal(null); }, onConfirm: function (txt) { return acaoVist('/vistorias/' + modal.v.id + '/avaria', { descricao: txt }, 'Avaria registrada'); } }) : null,
       novaOcModal, // LOCACAO_V2
+      inputArquivo, modalExcluir, /* LOCACAO_CRLV_V1 */
       foto ? h(Lightbox, { titulo: foto.titulo, src: foto.src, legenda: foto.legenda, onClose: function () { setFoto(null); } }) : null);
   }
 
