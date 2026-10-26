@@ -2290,7 +2290,8 @@
         h('b', { style: { color: '#3a1556' } }, nLidosC ? 'Lemos o contrato' + (leitura.res.numero ? ' ' + leitura.res.numero : '') : leitura.res.semTexto ? 'Esse PDF não tem texto' : 'Não achamos o Quadro-Resumo nesse PDF'),
         h('span', { style: { fontSize: 12.5, color: '#4b5563' } }, nLidosC ? h(React.Fragment, null, nLidosC + ' campos preenchidos a partir do PDF', nConfC ? h(React.Fragment, null, ' · ', h('b', { style: { color: '#b45309' } }, nConfC + ' para conferir'), ' (em laranja aqui e na página)') : ' · passe o mouse num campo para ver de onde ele veio')
           : leitura.res.semTexto ? 'Parece uma foto do documento. Preencha os campos olhando a prévia ao lado.' : 'Ele pode ser de outro modelo. Preencha os campos olhando a prévia ao lado.')),
-      Btn({ icon: 'upload', onClick: escolherContrato, disabled: lendo, children: lendo ? 'Lendo...' : 'Trocar PDF' })) : null;
+      Btn({ icon: 'upload', onClick: escolherContrato, disabled: lendo, children: lendo ? 'Lendo...' : 'Trocar PDF' }),
+      Btn({ variant: 'pri', icon: 'check', onClick: gerar, disabled: !completo || salvando, title: completo ? null : 'Faltam campos obrigatórios', children: salvando ? 'Importando...' : 'Importar contrato' })) : null; /* LOCACAO_IMPORTAR_BOTAO_V2 */
     var dropzone = h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
       h('button', { type: 'button', onClick: escolherContrato, disabled: lendo,
         onDragOver: function (e) { e.preventDefault(); if (!arrastando) setArrastando(true); }, onDragLeave: function () { setArrastando(false); },
@@ -2325,7 +2326,7 @@
             h('div', { style: { padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 } },
               h('div', { style: { fontSize: 12, fontWeight: 700, color: '#6b7280', letterSpacing: '.04em', textTransform: 'uppercase' } }, importar ? 'Documentos' : 'Documentos para assinatura'),
               docs.map(function (dc) { return h('div', { key: dc.id, style: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 12.5, color: dc.incluso ? '#111827' : '#9ca3af' } }, h('span', { style: { color: dc.incluso ? '#16a34a' : '#d1d5db' } }, ico(dc.incluso ? 'check' : 'circle', 14)), h('span', { style: { flex: 1 } }, dc.titulo), dc.sub ? h('span', { style: { fontSize: 11.5 } }, dc.sub) : null); }),
-              importar ? null : Btn({ variant: 'pri', icon: importar ? 'upload' : 'filetext', onClick: gerar, disabled: !completo || salvando, style: { width: '100%', height: 44 }, children: salvando ? (importar ? 'Importando...' : 'Gerando contrato...') : importar ? 'Importar contrato assinado' : 'Gerar contrato e enviar ao Autentique' }),
+              Btn({ variant: 'pri', icon: importar ? 'upload' : 'filetext', onClick: gerar, disabled: !completo || salvando, style: { width: '100%', height: 44 }, children: salvando ? (importar ? 'Importando...' : 'Gerando contrato...') : importar ? 'Importar contrato assinado' : 'Gerar contrato e enviar ao Autentique' }),
               importar ? null : Btn({ icon: 'eye', disabled: !basico || !moto, onClick: function () { abrirPdfPost(api, '/contratos/previa-pdf', body(), toast); }, style: { width: '100%' }, children: 'Pré-visualizar PDF' }),
               h('div', { style: { fontSize: 12, color: '#6b7280', lineHeight: 1.5 } }, importar ? 'O contrato fica Ativo na hora e a moto, Alugada.' : h(React.Fragment, null, 'A moto fica ', h('b', null, 'Reservada'), ' até a assinatura. As parcelas só nascem quando o Autentique devolver o contrato assinado.'))));
     var colPrevia = h('div', { style: { position: 'sticky', top: 84, display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 } },
@@ -2341,6 +2342,10 @@
           h('p', { style: { margin: '4px 0 0', color: '#6b7280', fontSize: 13.5 } }, importar ? 'Para contratos assinados fora da Central: comece pelo PDF, a gente preenche o resto e as parcelas já pagas entram como pagas.' : 'Montado a partir do Demonstrativo de Contrato (Quadro-Resumo) · Tutts Aluguel ou Plano Conquista')),
         Segmented([[false, 'Novo contrato'], [true, 'Importar já assinado']], importar, function (v) { setImportar(v); if (!v) { setLeitura(null); setPdf(null); kmPdf.current = null; setFoco(null); } }, 'Modo')),
       importar ? inputContrato : null, /* LOCACAO_IMPORTAR_LEITURA_V1 */
+      importar && leitura ? h('div', { style: { position: 'sticky', bottom: 12, zIndex: 20, order: 99, display: 'flex', justifyContent: 'flex-end' } }, /* LOCACAO_IMPORTAR_BOTAO_V2: sempre à vista */
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: '#ffffff', border: '1px solid #e9d5f9', borderRadius: 14, padding: '10px 12px', boxShadow: '0 8px 24px rgba(58,21,86,.16)' } },
+          h('span', { style: { fontSize: 12.5, color: completo ? '#166534' : '#92400e' } }, completo ? 'Tudo preenchido. Confira e importe.' : 'Faltam campos obrigatórios: ' + [!cli ? 'locatário' : null, !moto ? 'moto' : null, !(vNum > 0) ? 'valor' : null, !(nPr > 0) ? 'prazo' : null, !f.inicio ? 'início' : null, !(dia > 0) ? 'vencimento' : null, !formas.length ? 'pagamento' : null, !(f.caucao_isento || caucaoN > 0) ? 'caução' : null, f.plano === 'conquista' && !(moedaParse(f.opcao) > 0) ? 'opção de compra' : null].filter(Boolean).join(', ')),
+          Btn({ variant: 'pri', icon: 'upload', onClick: gerar, disabled: !completo || salvando, style: { height: 42 }, children: salvando ? 'Importando...' : 'Importar contrato assinado' }))) : null,
       importar && !leitura ? dropzone :
       h('div', { className: 'grid gap-4 items-start ' + (importar ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,560px)]' : 'lg:grid-cols-[minmax(0,1fr)_380px]') },
         h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 } },
