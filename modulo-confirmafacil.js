@@ -1424,14 +1424,38 @@
       return { de, ate };
     };
 
+    // CF_SLA_SEMANAL_V1: no modo Semanal os números são da SEMANA escolhida
+    // (segunda a domingo); o gráfico mostra as últimas 8 semanas até ela.
+    const _addDias = (iso, n) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+    const _segunda = (iso) => { const d = new Date(iso + 'T12:00:00Z'); return _addDias(iso, -((d.getUTCDay() + 6) % 7)); };
+    const _hojeIso = () => new Intl.DateTimeFormat('en-CA', { timeZone: SLA_TZ }).format(new Date());
+    const [semanaRef, setSemanaRef] = useState(_segunda(_hojeIso())); // segunda-feira 'YYYY-MM-DD'
+    const [tendencia, setTendencia] = useState(null); // historico das 8 semanas (só gráfico)
+    const rangeAtual = modo === 'semanal' ? { de: semanaRef, ate: _addDias(semanaRef, 6) } : rangeDoMes(mesRef);
+
+    const trocarModo = (mo) => {
+      if (mo === modo) return;
+      if (mo === 'semanal') {
+        const hoje = _hojeIso();
+        const fimMes = rangeDoMes(mesRef).ate;
+        setSemanaRef(_segunda(hoje.slice(0, 7) === mesRef ? hoje : fimMes));
+      } else {
+        setMesRef(_addDias(semanaRef, 3).slice(0, 7)); // mês da quinta-feira da semana
+      }
+      setHist(null); setTendencia(null);
+      setModo(mo);
+    };
+
     const carregar = useCallback(() => {
       setLoading(true);
-      const { de, ate } = rangeDoMes(mesRef);
-      fetchAuth(API_URL + '/confirmafacil/sla-historico?de=' + de + '&ate=' + ate)
-        .then(r => r.json()).then(setHist)
+      const { de, ate } = rangeAtual;
+      const reqs = [fetchAuth(API_URL + '/confirmafacil/sla-historico?de=' + de + '&ate=' + ate).then(r => r.json())];
+      if (modo === 'semanal') reqs.push(fetchAuth(API_URL + '/confirmafacil/sla-historico?de=' + _addDias(de, -49) + '&ate=' + ate).then(r => r.json()));
+      Promise.all(reqs)
+        .then(([d, t]) => { setHist(d); setTendencia(t || null); })
         .catch(() => showToast && showToast('Erro ao carregar histórico', 'erro'))
         .finally(() => setLoading(false));
-    }, [mesRef, API_URL, fetchAuth]);
+    }, [modo, mesRef, semanaRef, API_URL, fetchAuth]);
 
     useEffect(() => { carregar(); }, [carregar]);
 
@@ -1460,7 +1484,9 @@
         const cv = chartRefs.current[f.cnpj];
         if (!cv) return;
         if (cv._chart) { cv._chart.destroy(); }
-        const pts = modo === 'semanal' ? agregarSemanal(f.serie) : f.serie.map((d) => ({ ...d, label: d.dia.slice(8, 10) }));
+        // CF_SLA_SEMANAL_V1: semanal = 8 semanas até a escolhida (destaque nela)
+        const fT = modo === 'semanal' && tendencia && tendencia.filiais ? tendencia.filiais.find((x) => x.cnpj === f.cnpj) : null;
+        const pts = modo === 'semanal' ? agregarSemanal((fT || f).serie) : f.serie.map((d) => ({ ...d, label: d.dia.slice(8, 10) }));
         // [cf-sla-melhorias-v1] cada ponto = um dia real. SEM tension (a curva
         // suavizada inventava vales entre pontos — parecia queda pra 0 que nao
         // existia). Ponto visivel em cada dia + tooltip com data completa.
@@ -1477,7 +1503,7 @@
             datasets: [
               { data: pts.map((p) => p.pct), borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.10)',
                 borderWidth: 2, fill: true, tension: 0,
-                pointRadius: pts.map((p) => p.pct == null ? 0 : 3),
+                pointRadius: pts.map((p) => p.pct == null ? 0 : (modo === 'semanal' && p.dia === semanaRef ? 6 : 3)),
                 pointHoverRadius: 6, pointBackgroundColor: '#16a34a', pointBorderColor: '#fff', pointBorderWidth: 1.5,
                 spanGaps: true },
               { data: pts.map(() => f.meta), borderColor: '#9ca3af', borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false },
@@ -1509,13 +1535,18 @@
           },
         });
       });
-    }, [hist, modo]);
+    }, [hist, tendencia, modo]);
 
     const mesLabel = (() => {
       const [y, m] = mesRef.split('-');
       const nomes = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
       return nomes[Number(m) - 1] + '/' + y;
     })();
+    // CF_SLA_SEMANAL_V1
+    const _ddmm = (iso) => iso.slice(8, 10) + '/' + iso.slice(5, 7);
+    const periodoLabel = modo === 'semanal' ? (_ddmm(semanaRef) + ' a ' + _ddmm(_addDias(semanaRef, 6))) : mesLabel;
+    const mudarPeriodo = (delta) => { if (modo === 'semanal') setSemanaRef(_addDias(semanaRef, 7 * delta)); else mudarMes(delta); };
+    const ehSemana = modo === 'semanal';
     const mudarMes = (delta) => {
       const [y, m] = mesRef.split('-').map(Number);
       const d = new Date(Date.UTC(y, m - 1 + delta, 1));
@@ -1535,13 +1566,13 @@
       // controles
       h('div', { className: 'flex items-center justify-between flex-wrap gap-2' },
         h('div', { className: 'flex items-center gap-2' },
-          h('button', { onClick: () => mudarMes(-1), className: 'w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50' }, '‹'),
-          h('span', { className: 'text-sm font-semibold text-gray-700 min-w-[80px] text-center' }, mesLabel),
-          h('button', { onClick: () => mudarMes(1), className: 'w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50' }, '›')
+          h('button', { onClick: () => mudarPeriodo(-1), 'aria-label': ehSemana ? 'Semana anterior' : 'Mês anterior', className: 'w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50' }, '‹'),
+          h('span', { className: 'text-sm font-semibold text-gray-700 min-w-[80px] text-center' }, ehSemana ? 'Semana ' + periodoLabel : mesLabel),
+          h('button', { onClick: () => mudarPeriodo(1), 'aria-label': ehSemana ? 'Próxima semana' : 'Próximo mês', className: 'w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50' }, '›')
         ),
         h('div', { className: 'inline-flex bg-gray-100 rounded-lg p-0.5' },
           ['mensal', 'semanal'].map((mo) =>
-            h('button', { key: mo, onClick: () => setModo(mo),
+            h('button', { key: mo, onClick: () => trocarModo(mo),
               className: 'text-xs px-3 py-1 rounded-md ' + (modo === mo ? 'bg-white text-gray-800 shadow-sm font-medium' : 'text-gray-500') },
               mo === 'mensal' ? 'Diário' : 'Semanal')
           )
@@ -1553,7 +1584,7 @@
           h('span', { className: 'w-9 h-9 rounded-xl bg-orange-50 text-orange-700 flex items-center justify-center flex-shrink-0' },
             h('svg', { className: 'ico', style: { width: 18, height: 18 }, 'aria-hidden': 'true' }, h('use', { href: '#i-user' }))),
           h('div', { className: 'min-w-0' },
-            h('div', { className: 'text-sm font-semibold text-gray-900' }, 'Finalizações manuais no mês'),
+            h('div', { className: 'text-sm font-semibold text-gray-900' }, ehSemana ? 'Finalizações manuais na semana' : 'Finalizações manuais no mês'),
             h('div', { className: 'text-xs text-gray-500' }, 'Feitas pelo painel do CF ("Finalizar no CF"), com o motivo informado'))
         ),
         h('div', { className: 'flex gap-5 items-center flex-wrap' },
@@ -1564,7 +1595,7 @@
             h('div', { className: 'text-sm font-semibold text-gray-800' }, motivoTop.motivo),
             h('div', { className: 'text-[11px] text-gray-500' }, 'motivo mais comum · ' + motivoTop.n)),
           resumoMan.total > 0 && h('button', {
-            type: 'button', onClick: () => setListaManuais({ titulo: 'Finalizações manuais · ' + mesLabel, cnpj: null }),
+            type: 'button', onClick: () => setListaManuais({ titulo: 'Finalizações manuais · ' + periodoLabel, cnpj: null }),
             className: 'h-9 px-3.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:border-purple-300',
           }, 'Ver todas as ' + fmtNum(resumoMan.total))
         )
@@ -1581,7 +1612,7 @@
                 // CF_FINALIZACAO_MANUAL_V1: centro de custo + CNPJ
                 h('div', { className: 'flex items-center gap-1.5 flex-wrap mt-0.5' },
                   f.centro_custo && h('span', { className: 'text-[11px] font-mono bg-[#f3e8fb] text-[#5d0b85] rounded-md px-1.5 py-0.5' }, f.centro_custo),
-                  h('span', { className: 'text-[11px] text-gray-400' }, fmtCnpjCF(f.cnpj) + ' · ' + f.total + ' entregas finalizadas · ' + mesLabel))
+                  h('span', { className: 'text-[11px] text-gray-400' }, fmtCnpjCF(f.cnpj) + ' · ' + f.total + ' entregas finalizadas · ' + (ehSemana ? 'semana ' + periodoLabel : mesLabel)))
               ),
               h('div', { className: 'text-right' },
                 h('div', { className: 'text-2xl font-bold ' + cor }, f.pct != null ? f.pct.toFixed(1) + '%' : '—'),
@@ -1598,7 +1629,7 @@
             ),
             h('div', { className: 'flex flex-wrap gap-3' },
               h('div', { style: { flex: '999 1 520px', minWidth: 0 } },
-                h('div', { className: 'text-[11px] text-gray-400 mb-1' }, 'SLA por ' + (modo === 'semanal' ? 'semana' : 'dia')),
+                h('div', { className: 'text-[11px] text-gray-400 mb-1' }, (modo === 'semanal' ? 'SLA por semana · últimas 8 semanas' : 'SLA por dia')),
                 h('div', { style: { position: 'relative', width: '100%', height: '150px' } },
                   h('canvas', { ref: (el) => { if (el) chartRefs.current[f.cnpj] = el; } })
                 )
@@ -1612,7 +1643,7 @@
                     h('span', { className: 'text-[11px] text-gray-500' }, fmtPct(f.manuais || 0, f.total)))
                 ),
                 !(f.manuais_ultimas && f.manuais_ultimas.length)
-                  ? h('p', { className: 'text-xs text-gray-500 py-2' }, 'Nenhuma finalização manual neste mês.')
+                  ? h('p', { className: 'text-xs text-gray-500 py-2' }, ehSemana ? 'Nenhuma finalização manual nesta semana.' : 'Nenhuma finalização manual neste mês.')
                   : f.manuais_ultimas.map((m) => h('button', {
                       key: m.id, type: 'button', onClick: () => setOsAberta(m.solicitacao_id),
                       className: 'text-left bg-white border border-gray-100 rounded-lg px-2.5 py-2 flex flex-col gap-0.5 hover:border-purple-300',
@@ -1624,7 +1655,7 @@
                       m.finalizado_por && h('span', { className: 'text-[11px] text-gray-500' }, 'por ' + m.finalizado_por)
                     )),
                 f.manuais > 0 && h('button', {
-                  type: 'button', onClick: () => setListaManuais({ titulo: f.nome + ' · ' + mesLabel, cnpj: f.cnpj }),
+                  type: 'button', onClick: () => setListaManuais({ titulo: f.nome + ' · ' + periodoLabel, cnpj: f.cnpj }),
                   className: 'h-8 text-sm font-semibold text-[#770fa8] hover:underline',
                 }, 'Ver todas desta filial')
               )
@@ -1632,7 +1663,7 @@
           );
         }),
       listaManuais && h(ModalFinalizacoesManuais, {
-        titulo: listaManuais.titulo, cnpj: listaManuais.cnpj, range: rangeDoMes(mesRef),
+        titulo: listaManuais.titulo, cnpj: listaManuais.cnpj, range: rangeAtual,
         fetchAuth, API_URL, fmtQuando, fmtCnpjCF,
         onAbrirOS: (id) => setOsAberta(id),
         onFechar: () => setListaManuais(null),
