@@ -408,7 +408,7 @@
       setSalvando(true);
       api('/convites', { method: 'POST', body: { nome_ref: nome.trim() || null, whatsapp: soDig(wpp) || null, enviar_whatsapp: !!enviar } })
         .then(function (r) {
-          setConv(r.convite); carregar();
+          setConv(r.convite); carregar(); try { window.dispatchEvent(new Event('locacao:convites')); } catch (_) {} /* LOCACAO_CONVITES_LISTA_V1 */
           if (enviar) {
             if (r.whatsapp && r.whatsapp.enviado) toast('Link enviado no WhatsApp', 'success');
             else abrirWa(r.convite);
@@ -423,7 +423,7 @@
       window.open('https://wa.me/' + (d || '') + '?text=' + encodeURIComponent(msgWa(c)), '_blank', 'noopener');
     };
     var cancelar = function (c) {
-      api('/convites/' + c.id + '/cancelar', { method: 'POST' }).then(function () { toast('Convite cancelado', 'success'); carregar(); }).catch(function (e) { toast(e.message, 'error'); });
+      api('/convites/' + c.id + '/cancelar', { method: 'POST' }).then(function () { toast('Convite cancelado', 'success'); carregar(); try { window.dispatchEvent(new Event('locacao:convites')); } catch (_) {} }).catch(function (e) { toast(e.message, 'error'); });
     };
     var TOM_CONV = { aberto: 'azul', usado: 'verde', expirado: 'cinza', cancelado: 'cinzaClaro' };
     var ROT_CONV = { aberto: 'Aberto', usado: 'Usado', expirado: 'Expirado', cancelado: 'Cancelado' };
@@ -687,6 +687,14 @@
     var _s = useState(props.selecionar || null), sel = _s[0], setSel = _s[1];
     var _o = useState('todas'), orig = _o[0], setOrig = _o[1]; // LOCACAO_V4: origem
     var _xp = useState(null), excluirPre = _xp[0], setExcluirPre = _xp[1]; // LOCACAO_PRECAD_EXCLUIR_V1
+    var _cv = useState([]), convites = _cv[0], setConvites = _cv[1]; /* LOCACAO_CONVITES_LISTA_V1: links enviados que ainda não viraram pré-cadastro */
+    var carregarConvites = useCallback(function () { api('/convites').then(function (r) { setConvites(r.convites || []); }).catch(function () {}); }, [api]);
+    useEffect(function () {
+      carregarConvites();
+      var f = function () { carregarConvites(); };
+      window.addEventListener('locacao:convites', f);
+      return function () { window.removeEventListener('locacao:convites', f); };
+    }, [carregarConvites]);
     var carregar = useCallback(function () {
       setErro(null);
       api('/precadastros').then(function (r) {
@@ -706,7 +714,34 @@
     var fin = { aprovado: 1, contrato_criado: 1, reprovado: 1 };
     var cnt = function (fn) { return lista.filter(fn).length; };
     var tipoDe = function (p) { return p.tipo_sugerido || (p.entregador_tutts ? 'tutts_confirmar' : 'externo'); };
+    var abertos = convites.filter(function (c) { return c.status === 'aberto'; }); /* LOCACAO_CONVITES_LISTA_V1 */
+    var cancelarConv = function (c) {
+      if (!window.confirm('Cancelar o link de ' + (c.nome_ref || 'convite sem nome') + '? Ele para de funcionar.')) return;
+      api('/convites/' + c.id + '/cancelar', { method: 'POST' }).then(function () { toast('Link cancelado', 'success'); carregarConvites(); }).catch(function (e) { toast(e.message, 'error'); });
+    };
+    var waConv = function (c) {
+      var d = soDig(c.whatsapp); if (d && d.length <= 11) d = '55' + d;
+      var msg = 'Olá' + (c.nome_ref ? ', ' + String(c.nome_ref).split(' ')[0] : '') + '! Para pedir a locação da moto Tutts, preencha seu cadastro neste link (uso único): ' + c.url;
+      window.open('https://wa.me/' + (d || '') + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+    };
+    var secaoLinks = abertos.length && (filtro === 'todos' || filtro === 'links') && orig !== 'tutts' ? h('div', { style: { borderBottom: filtro === 'links' ? 0 : '1px solid #f3f4f6' } },
+      h('div', { style: { padding: '10px 16px', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
+        h('span', { style: { color: '#1d4ed8', display: 'inline-flex' } }, ico('link', 15)),
+        h('b', { style: { fontSize: 13 } }, 'Link enviado · aguardando preencher'),
+        h('span', { style: { fontSize: 12, color: '#6b7280' } }, 'Aparecem como pré-cadastro quando a pessoa enviar o formulário')),
+      abertos.map(function (c) {
+        var dias = Math.ceil((new Date(c.expira_em) - new Date()) / 86400000);
+        return h('div', { key: 'cv' + c.id, style: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderTop: '1px solid #f3f4f6', flexWrap: 'wrap' } },
+          h('div', { style: { flex: '1 1 200px', minWidth: 0 } },
+            h('div', { style: { fontWeight: 600, fontSize: 13.5 } }, c.nome_ref || 'Sem nome'),
+            h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, [c.whatsapp ? fTel(c.whatsapp) : null, 'gerado ' + fDC(c.criado_em) + (c.criado_por_nome ? ' por ' + c.criado_por_nome : ''), 'expira ' + fDC(c.expira_em) + (dias <= 2 ? ' (' + (dias <= 0 ? 'hoje' : dias === 1 ? 'amanhã' : 'em 2 dias') + ')' : '')].filter(Boolean).join(' · '))),
+          Btn({ variant: 'link', small: true, onClick: function () { copiar(c.url, toast); }, children: 'Copiar' }),
+          Btn({ variant: 'link', small: true, onClick: function () { waConv(c); }, children: 'WhatsApp' }),
+          Btn({ variant: 'link', small: true, style: { color: '#991b1b' }, onClick: function () { cancelarConv(c); }, children: 'Cancelar' }),
+          Pill('Aguardando', 'azul', true));
+      })) : null;
     var filtrada = lista.filter(function (p) {
+      if (filtro === 'links') return false;
       if (orig === 'tutts' && tipoDe(p) !== 'tutts') return false;
       if (orig === 'externo' && tipoDe(p) === 'tutts') return false;
       if (filtro === 'novo') return p.status === 'novo';
@@ -724,12 +759,14 @@
             { id: 'em_analise', t: 'Em análise', n: cnt(function (p) { return p.status === 'em_analise'; }) },
             { id: 'docs', t: 'Docs pendentes', n: cnt(function (p) { return p.status === 'aguardando_documentos'; }) },
             { id: 'fin', t: 'Finalizados', n: cnt(function (p) { return !!fin[p.status]; }) }
-          ], filtro, setFiltro),
+          ].concat(abertos.length ? [{ id: 'links', t: 'Links aguardando', n: abertos.length }] : []), filtro, setFiltro), /* LOCACAO_CONVITES_LISTA_V1 */
           h('div', { style: { flex: 1 } }),
           Chips([{ id: 'todas', t: 'Todas as origens' }, { id: 'tutts', t: 'Motoboy Tutts', n: cnt(function (p) { return tipoDe(p) === 'tutts'; }) }, { id: 'externo', t: 'Externo', n: cnt(function (p) { return tipoDe(p) !== 'tutts'; }) }], orig, setOrig)), // LOCACAO_V4
-        lista.length === 0 ? Vazio('Nenhum pré-cadastro ainda', 'Motoboy que já está na Central: busque e aproveite o cadastro. Pessoa de fora: gere o link de convite.',
-          h('div', { style: { display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' } }, Btn({ icon: 'link', onClick: props.abrirConvite, children: 'Pessoa de fora · gerar link' }), props.abrirCentral ? Btn({ variant: 'pri', icon: 'users', onClick: props.abrirCentral, children: 'Motoboy da Central' }) : null)) :
-        filtrada.length === 0 ? Vazio('Nada neste filtro') :
+        secaoLinks,
+        filtro === 'links' ? null :
+        lista.length === 0 ? (abertos.length ? null : Vazio('Nenhum pré-cadastro ainda', 'Motoboy que já está na Central: busque e aproveite o cadastro. Pessoa de fora: gere o link de convite.',
+          h('div', { style: { display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' } }, Btn({ icon: 'link', onClick: props.abrirConvite, children: 'Pessoa de fora · gerar link' }), props.abrirCentral ? Btn({ variant: 'pri', icon: 'users', onClick: props.abrirCentral, children: 'Motoboy da Central' }) : null))) :
+        filtrada.length === 0 ? (secaoLinks ? null : Vazio('Nada neste filtro')) :
         Tabela([{ t: 'Pessoa' }, { t: 'Origem' }, { t: 'Enviado em' }, { t: 'Falta / alertas' }, { t: 'Status' }],
           filtrada.map(function (p) {
             var bloq = (p.alertas || []).filter(function (a) { return a.nivel === 'bloqueia'; }).length;
@@ -893,7 +930,18 @@
             Btn({ onClick: function () { setEditando(true); }, disabled: salvando, icon: 'pencil', children: 'Editar dados' }), // LOCACAO_V4
             central ? null : Btn({ onClick: function () { setModal('docs'); }, disabled: salvando, icon: 'upload', children: 'Pedir documentos' }),
             Btn({ variant: 'pri', icon: 'check', onClick: aprovar, disabled: !podeAprovar || salvando, title: bloqueia ? 'Resolva os alertas que bloqueiam a aprovação' : faltaCampo ? 'Defina tipo de cliente e dia de vencimento' : null, children: salvando ? 'Salvando...' : 'Aprovar cadastro' })),
-          bloqueia ? h('div', { style: { fontSize: 12, color: '#991b1b', textAlign: 'right' } }, 'A aprovação fica bloqueada enquanto houver alerta vermelho.') : null)
+          bloqueia ? h('div', { style: { fontSize: 12, color: '#991b1b', textAlign: 'right' } }, 'A aprovação fica bloqueada enquanto houver alerta vermelho.') : null,
+          /* LOCACAO_PRECAD_CONTRATO_V1: contrato já assinado fora da Central não espera os documentos */
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', border: '1px dashed #d8b4f0', background: '#faf7fd', borderRadius: 12, padding: '10px 12px' } },
+            h('div', { style: { flex: '1 1 240px', minWidth: 0, fontSize: 12.5, color: '#374151', lineHeight: 1.45 } }, h('b', { style: { color: ROXO_ESC } }, 'Já assinou o contrato fora da Central? '), 'Importe o PDF assinado agora: o cadastro vira locatário sem esperar os documentos, e o contrato entra Ativo.'),
+            Btn({ icon: 'upload', disabled: salvando, onClick: function () {
+              if (!window.confirm('Aprovar ' + p.nome + ' para importar o contrato já assinado?\n\nO cadastro vira locatário sem a conferência dos documentos (o contrato assinado vale como documento). Fica registrado no histórico.')) return;
+              setSalvando(true);
+              api('/precadastros/' + p.id + '/aprovar-para-importar', { method: 'POST', body: {} }).then(function (r) {
+                props.aoMudar && props.aoMudar();
+                props.nav({ tela: 'novoContrato', cliente_id: r.cliente_id, importar: true });
+              }).catch(function (e) { toast(e.message, 'error'); setSalvando(false); });
+            }, children: 'Importar contrato assinado' })))
           : p.status === 'aprovado' && d.cliente_excluido ? h('div', { style: { borderTop: '1px solid #f3f4f6', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 10 } }, Aviso('cinza', 'Locatário excluído', 'Esse cadastro não está mais na locação. O histórico de contratos, se tiver, continua guardado.'), h('div', null, btnExcluirPre())) /* LOCACAO_CRLV_V1 */
           : p.status === 'aprovado' ? h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid #f3f4f6', paddingTop: 14, flexWrap: 'wrap', alignItems: 'center' } },
             btnExcluirPre(), /* LOCACAO_PRECAD_EXCLUIR_V1: substitui o "Excluir locatário" */
@@ -2214,7 +2262,21 @@
           : !leitura.cliInfo || leitura.cliInfo.buscando ? caixaInfo('aviso', (leitura.res.id.nome && leitura.res.id.nome.valor) || 'Locatário', 'Procurando o CPF no cadastro...')
           : leitura.cliInfo.ok ? caixaInfo(cliDif ? 'aviso' : 'ok', leitura.cliInfo.nome, cliDif ? 'O locatário escolhido abaixo é outro. Confira.' : 'CPF ' + fCPFm(leitura.res.id.cpf.valor) + ' · achado no cadastro' + (leitura.cliInfo.cod ? ' (cód. ' + leitura.cliInfo.cod + ')' : ''))
           : leitura.cliInfo.emContrato ? caixaInfo('erro', leitura.cliInfo.nome, 'Já tem um contrato em andamento. Não dá para importar outro.')
-          : leitura.cliInfo.naoAchado ? caixaInfo('erro', (leitura.res.id.nome && leitura.res.id.nome.valor) || 'CPF ' + fCPFm(leitura.res.id.cpf.valor), leitura.cliInfo.pre ? 'Tem pré-cadastro (' + (leitura.cliInfo.pre.status || 'em análise') + '). Aprove antes de importar.' : 'Esse CPF não tem cadastro aprovado. Cadastre o locatário antes de importar.')
+          : leitura.cliInfo.naoAchado && leitura.cliInfo.pre && ['novo', 'em_analise', 'aguardando_documentos'].indexOf(leitura.cliInfo.pre.status) >= 0 ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } }, /* LOCACAO_PRECAD_CONTRATO_V1 */
+              caixaInfo('aviso', leitura.cliInfo.pre.nome, 'Tem pré-cadastro ainda não aprovado. Dá para usar ele: vira locatário sem esperar os documentos.'),
+              Btn({ small: true, variant: 'pri', icon: 'check', disabled: !!leitura.cliInfo.usando, onClick: function () {
+                var pre = leitura.cliInfo.pre;
+                setLeitura(function (l) { return Object.assign({}, l, { cliInfo: Object.assign({}, l.cliInfo, { usando: true }) }); });
+                api('/precadastros/' + pre.id + '/aprovar-para-importar', { method: 'POST', body: {} }).then(function (r) {
+                  return api('/clientes?sem_contrato=1').then(function (rc) {
+                    setClientes(rc.clientes || []); setCliId(String(r.cliente_id));
+                    var c2 = (rc.clientes || []).find(function (c) { return c.id === r.cliente_id; }) || {};
+                    setLeitura(function (l) { return Object.assign({}, l, { cliInfo: { id: r.cliente_id, nome: c2.nome || pre.nome, ok: true, cod: c2.cod_profissional } }); });
+                    toast('Pré-cadastro aprovado para importar', 'success');
+                  });
+                }).catch(function (e) { toast(e.message, 'error'); setLeitura(function (l) { return Object.assign({}, l, { cliInfo: Object.assign({}, l.cliInfo, { usando: false }) }); }); });
+              }, children: leitura.cliInfo.usando ? 'Aprovando...' : 'Usar este pré-cadastro' }))
+          : leitura.cliInfo.naoAchado ? caixaInfo('erro', (leitura.res.id.nome && leitura.res.id.nome.valor) || 'CPF ' + fCPFm(leitura.res.id.cpf.valor), leitura.cliInfo.pre ? 'Tem pré-cadastro (' + (leitura.cliInfo.pre.status || 'em análise') + '). Aprove antes de importar.' : 'Esse CPF não tem cadastro. Faça o pré-cadastro (Motoboy da Central ou link) e volte aqui.')
           : caixaInfo('aviso', 'Não deu para conferir o CPF', 'Escolha o locatário abaixo.')),
       h('div', Object.assign({ style: { display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 } }, hv('moto')),
         h('span', { style: { fontSize: 12, fontWeight: 600, color: '#374151' } }, 'Moto no contrato'),
