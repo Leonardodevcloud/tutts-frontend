@@ -373,24 +373,38 @@
                     className: 'flex-1 text-sm py-2.5 bg-white text-purple-700 border border-purple-200 rounded-xl hover:border-purple-400 disabled:opacity-60',
                   }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-camera" })), enviando ? "Enviando..." : "Enviar protocolo"))
                 ),
-                // [cf-fixes-v2] Cancelar SO na central (nao toca na Mapp). So aparece
-                // se a corrida ainda esta viva. Backend: POST .../cancelar-local.
+                // CF_CANCELAR_MAPP_V1: cancela na Mapp + central. Se a Mapp recusar,
+                // oferece cancelar só na central (so_local). Só aparece com corrida viva.
                 dados.sc && dados.sc.status && !['cancelado','finalizado'].includes(String(dados.sc.status).toLowerCase()) &&
                 h('button', {
                   type: 'button', disabled: enviando,
                   onClick: () => {
-                    if (!window.confirm('Cancelar esta corrida SOMENTE na nossa central?\n\nA OS na Mapp NAO sera tocada. Use para nivelar corridas antigas que ja foram resolvidas fora do sistema.\n\nStatus atual: ' + dados.sc.status)) return;
+                    const temOS = !!dados.sc.tutts_os_numero;
+                    if (!window.confirm(temOS
+                      ? 'Cancelar a OS ' + dados.sc.tutts_os_numero + ' NA MAPP e na central?\n\nA NF NAO gera corrida nova sozinha depois disso.'
+                      : 'Esta corrida nao tem OS na Mapp. Cancelar na central?')) return;
+                    const recarregar = () => fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId).then(r => r.json()).then(setDados);
+                    const cancelar = (soLocal) => fetchAuth(API_URL + '/confirmafacil/corrida/' + solicitacaoId + '/cancelar-local', {
+                      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ so_local: !!soLocal }),
+                    }).then(r => r.json());
                     setEnviando(true);
-                    fetchAuth(API_URL + '/confirmafacil/corrida/' + solicitacaoId + '/cancelar-local', {
-                      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
-                    }).then(r => r.json()).then(d => {
-                      if (d.ok) showToast('Corrida cancelada na central (Mapp intocada)', 'success');
-                      else showToast('' + (d.error || d.mensagem || 'Erro'), 'error');
-                      return fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId).then(r => r.json()).then(setDados);
-                    }).catch(() => showToast('Erro ao cancelar', 'error')).finally(() => setEnviando(false));
+                    cancelar(false).then(d => {
+                      if (d.ok) { showToast(d.mensagem || 'Corrida cancelada', 'success'); return recarregar(); }
+                      if (d.mapp_recusou) {
+                        const msg = (d.error || 'A Mapp recusou o cancelamento.') + '\n\nCancelar SO na central mesmo assim? (a OS na Mapp continua como esta)';
+                        if (!window.confirm(msg)) { showToast(d.error || 'A Mapp recusou o cancelamento', 'error'); return; }
+                        return cancelar(true).then(d2 => {
+                          if (d2.ok) showToast(d2.mensagem || 'Cancelada só na central', 'success');
+                          else showToast('' + (d2.error || d2.mensagem || 'Erro'), 'error');
+                          return recarregar();
+                        });
+                      }
+                      showToast('' + (d.error || d.mensagem || 'Erro'), 'error');
+                      return recarregar();
+                    }).catch(() => showToast('Não deu pra cancelar agora. Tente de novo.', 'error')).finally(() => setEnviando(false));
                   },
                   className: 'w-full text-xs py-1.5 text-gray-500 rounded-lg hover:text-red-600 hover:bg-red-50 disabled:opacity-60',
-                }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-archive" })), "Cancelar só na central (não mexe na Mapp)"))
+                }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-archive" })), dados.sc.tutts_os_numero ? "Cancelar corrida (Mapp + central)" : "Cancelar corrida"))
               )
             // CF_FINALIZACAO_MANUAL_V1: finalização pelo painel exige motivo + detalhe
             : h('section', { className: 'flex flex-col gap-2', 'aria-label': 'Finalização manual pelo painel' },
@@ -974,7 +988,16 @@
                                   className: 'text-xs font-mono text-purple-700 bg-purple-50 px-2 py-1 rounded-full hover:bg-purple-100 cursor-pointer font-semibold',
                                   title: 'Ver detalhes da corrida',
                                 }, '' + v.tutts_os_numero),
-                                slaChipEl(v)
+                                slaChipEl(v),
+                                // CF_NAO_RECRIA_CANCELADA_V1: corrida cancelada nao recria sozinha
+                                String(v.status_corrida || '').toLowerCase().includes('cancel') && h('div', { className: 'mt-1 flex flex-col items-start gap-1' },
+                                  h('span', { className: 'text-[11px] font-medium text-red-600' }, 'Corrida cancelada'),
+                                  h('button', {
+                                    type: 'button', onClick: () => setNfParaCriar(v),
+                                    className: 'text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full hover:bg-purple-100 cursor-pointer font-medium',
+                                    title: 'A NF não gera corrida nova sozinha depois de um cancelamento',
+                                  }, 'Recriar corrida')
+                                )
                               )
                             : h('button', {
                                 onClick: () => setNfParaCriar(v),
