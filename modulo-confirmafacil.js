@@ -165,6 +165,7 @@
     const [motivoFin, setMotivoFin] = useState('');
     const [detalheFin, setDetalheFin] = useState('');
     const podeFinalizar = !!motivoFin && detalheFin.trim().length >= 5;
+    const [modoFin, setModoFin] = useState(false); // CF_DRAWER_COMPACTO_V1
 
     useEffect(() => {
       if (!solicitacaoId) return;
@@ -334,118 +335,121 @@
                 )
               ),
 
-        // Footer
-        !loading && dados && h('div', { className: 'p-3 border-t border-gray-100 bg-gray-50 space-y-2 max-h-[65vh] overflow-y-auto' },
-          // Link para corrida no módulo Solicitações
-          dados.sc && h('div', { className: 'flex gap-2' },
-            dados.sc.tutts_url_rastreamento && h('a', {
-              href: dados.sc.tutts_url_rastreamento, target: '_blank', rel: 'noopener noreferrer',
-              className: 'flex-1 text-center text-xs py-2 border border-gray-200 rounded-xl hover:border-purple-300 text-gray-600',
-            }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })), "Rastrear no mapa")),
-            dados.sc.tutts_os_numero && h('a', {
-              href: 'https://tutts.com.br/expresso/expressoat/acompanhamento-servicos?os=' + dados.sc.tutts_os_numero,
-              target: '_blank', rel: 'noopener noreferrer',
-              className: 'flex-1 text-center text-xs py-2 border border-purple-200 rounded-xl hover:border-purple-400 text-purple-700 bg-purple-50',
-            }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-link" })), "Ver na Mapp"))
-          ),
-          h('div', { className: 'flex flex-col gap-2' },
-            // CF_FINALIZACAO_MANUAL_V1: finalização pelo painel exige motivo + detalhe
-            h('section', { className: 'border border-amber-200 bg-amber-50 rounded-xl p-3 flex flex-col gap-2.5' },
-              h('div', null,
-                h('p', { className: 'text-sm font-semibold text-amber-800' }, 'Finalização manual pelo painel'),
-                h('p', { className: 'text-xs text-amber-900/80' }, 'Fica registrada como intervenção manual, com o motivo e quem fez.')
-              ),
-              h('fieldset', { className: 'flex flex-col gap-1.5' },
-                h('legend', { className: 'text-xs font-semibold text-gray-700 mb-1.5' }, 'Motivo da intervenção *'),
-                h('div', { className: 'flex flex-wrap gap-1.5' },
-                  MOTIVOS_FINALIZACAO.map((m) => h('button', {
-                    key: m, type: 'button', 'aria-pressed': motivoFin === m,
-                    onClick: () => setMotivoFin(m),
-                    className: 'min-h-[34px] px-3 rounded-full text-xs border transition-colors ' + (motivoFin === m
-                      ? 'border-[#770fa8] bg-[#f3e8fb] text-[#5d0b85] font-semibold'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-purple-300'),
-                  }, m))
+        // Footer — CF_DRAWER_COMPACTO_V1: ações compactas; o formulário de finalização
+        // manual abre no lugar delas (sem rolagem dupla, cabe na tela).
+        !loading && dados && h('div', { className: 'px-3 py-2.5 border-t border-gray-100 bg-gray-50 flex flex-col gap-2' },
+          !modoFin
+            ? h(React.Fragment, null,
+                dados.sc && (dados.sc.tutts_url_rastreamento || dados.sc.tutts_os_numero) && h('div', { className: 'flex gap-2' },
+                  dados.sc.tutts_url_rastreamento && h('a', {
+                    href: dados.sc.tutts_url_rastreamento, target: '_blank', rel: 'noopener noreferrer',
+                    className: 'flex-1 text-center text-xs py-1.5 border border-gray-200 rounded-lg hover:border-purple-300 text-gray-600 bg-white',
+                  }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-map" })), "Rastrear no mapa")),
+                  dados.sc.tutts_os_numero && h('a', {
+                    href: 'https://tutts.com.br/expresso/expressoat/acompanhamento-servicos?os=' + dados.sc.tutts_os_numero,
+                    target: '_blank', rel: 'noopener noreferrer',
+                    className: 'flex-1 text-center text-xs py-1.5 border border-purple-200 rounded-lg hover:border-purple-400 text-purple-700 bg-purple-50',
+                  }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-link" })), "Ver na Mapp"))
                 ),
-                h('label', { className: 'flex flex-col gap-1 text-xs text-gray-700 mt-1' }, 'Detalhe (obrigatório)',
+                h('div', { className: 'flex gap-2' },
+                  h('button', {
+                    type: 'button', disabled: enviando, onClick: () => setModoFin(true),
+                    className: 'flex-1 text-sm font-semibold py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-60',
+                  }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Finalizar no CF")),
+                  h('button', {
+                    type: 'button', disabled: enviando,
+                    onClick: () => {
+                      if (!window.confirm('Enviar as FOTOS do protocolo ao ConfirmaFacil para esta NF?')) return;
+                      setEnviando(true);
+                      fetchAuth(API_URL + '/confirmafacil/enviar-protocolo', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ solicitacao_id: solicitacaoId, status: 'finalizado_ponto', data_finalizacao: horarioManual || undefined }),
+                      }).then(r => r.json()).then(d => {
+                        if (d.ok) showToast(d.mensagem || 'Protocolo enviado', 'success');
+                        else showToast('' + (d.mensagem || d.error || 'Erro'), 'error');
+                        return fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId).then(r => r.json()).then(setDados);
+                      }).finally(() => setEnviando(false));
+                    },
+                    className: 'flex-1 text-sm py-2.5 bg-white text-purple-700 border border-purple-200 rounded-xl hover:border-purple-400 disabled:opacity-60',
+                  }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-camera" })), enviando ? "Enviando..." : "Enviar protocolo"))
+                ),
+                // [cf-fixes-v2] Cancelar SO na central (nao toca na Mapp). So aparece
+                // se a corrida ainda esta viva. Backend: POST .../cancelar-local.
+                dados.sc && dados.sc.status && !['cancelado','finalizado'].includes(String(dados.sc.status).toLowerCase()) &&
+                h('button', {
+                  type: 'button', disabled: enviando,
+                  onClick: () => {
+                    if (!window.confirm('Cancelar esta corrida SOMENTE na nossa central?\n\nA OS na Mapp NAO sera tocada. Use para nivelar corridas antigas que ja foram resolvidas fora do sistema.\n\nStatus atual: ' + dados.sc.status)) return;
+                    setEnviando(true);
+                    fetchAuth(API_URL + '/confirmafacil/corrida/' + solicitacaoId + '/cancelar-local', {
+                      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+                    }).then(r => r.json()).then(d => {
+                      if (d.ok) showToast('Corrida cancelada na central (Mapp intocada)', 'success');
+                      else showToast('' + (d.error || d.mensagem || 'Erro'), 'error');
+                      return fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId).then(r => r.json()).then(setDados);
+                    }).catch(() => showToast('Erro ao cancelar', 'error')).finally(() => setEnviando(false));
+                  },
+                  className: 'w-full text-xs py-1.5 text-gray-500 rounded-lg hover:text-red-600 hover:bg-red-50 disabled:opacity-60',
+                }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-archive" })), "Cancelar só na central (não mexe na Mapp)"))
+              )
+            // CF_FINALIZACAO_MANUAL_V1: finalização pelo painel exige motivo + detalhe
+            : h('section', { className: 'flex flex-col gap-2', 'aria-label': 'Finalização manual pelo painel' },
+                h('div', { className: 'flex items-start justify-between gap-2' },
+                  h('div', null,
+                    h('p', { className: 'text-sm font-semibold text-gray-900' }, 'Finalização manual pelo painel'),
+                    h('p', { className: 'text-[11px] text-gray-500' }, 'Fica registrada com o motivo e quem fez.')
+                  ),
+                  h('button', { type: 'button', onClick: () => setModoFin(false), className: 'text-xs font-medium text-gray-500 hover:text-gray-800 px-2 py-1 rounded-lg hover:bg-gray-100' }, 'Voltar')
+                ),
+                h('fieldset', { className: 'flex flex-col gap-1' },
+                  h('legend', { className: 'text-xs font-semibold text-gray-700 mb-1' }, 'Motivo da intervenção *'),
+                  h('div', { className: 'flex flex-wrap gap-1.5' },
+                    MOTIVOS_FINALIZACAO.map((m) => h('button', {
+                      key: m, type: 'button', 'aria-pressed': motivoFin === m,
+                      onClick: () => setMotivoFin(m),
+                      className: 'min-h-[30px] px-2.5 rounded-full text-xs border transition-colors ' + (motivoFin === m
+                        ? 'border-[#770fa8] bg-[#f3e8fb] text-[#5d0b85] font-semibold'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-purple-300'),
+                    }, m))
+                  )
+                ),
+                h('label', { className: 'flex flex-col gap-1 text-xs font-semibold text-gray-700' }, 'Detalhe *',
                   h('textarea', {
-                    rows: 3, maxLength: 1000, value: detalheFin,
+                    rows: 2, maxLength: 1000, value: detalheFin,
                     onChange: (e) => setDetalheFin(e.target.value),
                     placeholder: 'Ex.: entregador confirmou por telefone que entregou às 11:40',
-                    className: 'w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:border-purple-400 focus:outline-none resize-y',
+                    className: 'w-full text-sm font-normal border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:border-purple-400 focus:outline-none resize-none',
                   })
-                )
-              ),
-              h('label', { className: 'flex flex-col gap-1 text-xs text-gray-700' }, 'Horário real da finalização (opcional)',
-                h('input', {
-                  type: 'datetime-local',
-                  value: horarioManual,
-                  onChange: (e) => setHorarioManual(e.target.value),
-                  className: 'w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:border-purple-400 focus:outline-none',
-                })
-              ),
-              h('p', { className: 'text-[11px] text-gray-500 -mt-1' }, 'Em branco = agora. Fuso de Salvador (BRT).'),
-
-              h('button', {
-                disabled: enviando || !podeFinalizar,
-                onClick: () => {
-                  if (!podeFinalizar) return;
-                  if (!window.confirm('Enviar CONCLUIDO / ENTREGUE ao ConfirmaFacil para esta NF?\n\nMotivo: ' + motivoFin + '\n\nIsso informa o CF que a entrega foi finalizada. E uma acao real, nao e teste.')) return;
-                  setEnviando(true);
-                  fetchAuth(API_URL + '/confirmafacil/testar-ocorrencia', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ solicitacao_id: solicitacaoId, status: 'finalizado_ponto', data_finalizacao: horarioManual || undefined, motivo: motivoFin, detalhe: detalheFin.trim() }),
-                  }).then(r => r.json()).then(d => {
-                    if (d.ok) { showToast('Finalizado enviado ao CF' + (horarioManual ? ' (horário corrigido)' : ''), 'success'); setMotivoFin(''); setDetalheFin(''); }
-                    else showToast('' + (d.mensagem || d.error || d.erro || 'Erro'), 'error');
-                    return fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId).then(r => r.json()).then(setDados);
-                  }).catch(() => showToast('Não deu pra finalizar agora. Tente de novo.', 'error'))
-                    .finally(() => setEnviando(false));
-                },
-                className: 'w-full text-sm font-semibold py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed',
-              }, enviando ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Enviando...") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Finalizar no CF")),
-              !podeFinalizar && h('p', { className: 'text-[11px] text-gray-500 text-center' }, 'O botão só libera com motivo e detalhe preenchidos.')
-            ),
-
-            h('button', {
-              disabled: enviando,
-              onClick: () => {
-                if (!window.confirm('Enviar as FOTOS do protocolo ao ConfirmaFacil para esta NF?')) return;
-                setEnviando(true);
-                fetchAuth(API_URL + '/confirmafacil/enviar-protocolo', {
-                  method: 'POST', headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ solicitacao_id: solicitacaoId, status: 'finalizado_ponto', data_finalizacao: horarioManual || undefined }),
-                }).then(r => r.json()).then(d => {
-                  if (d.ok) showToast(d.mensagem || 'Protocolo enviado', 'success');
-                  else showToast('' + (d.mensagem || 'Erro'), 'error');
-                  return fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId).then(r => r.json()).then(setDados);
-                }).finally(() => setEnviando(false));
-              },
-              className: 'w-full text-sm py-2.5 bg-white text-purple-700 border border-purple-200 rounded-xl hover:border-purple-400 disabled:opacity-60',
-            }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-camera" })), "Enviar protocolo (fotos)")),
-
-            h('p', { className: 'text-[11px] text-gray-400 text-center' }, 'Toda correção fica registrada na auditoria.'),
-
-            // [cf-fixes-v2] Cancelar SO na central (nao toca na Mapp). So aparece
-            // se a corrida ainda esta viva. Backend: POST .../cancelar-local.
-            dados.sc && dados.sc.status && !['cancelado','finalizado'].includes(String(dados.sc.status).toLowerCase()) &&
-            h('div', { className: 'pt-2 mt-1 border-t border-gray-100' },
-              h('button', {
-                disabled: enviando,
-                onClick: () => {
-                  if (!window.confirm('Cancelar esta corrida SOMENTE na nossa central?\n\nA OS na Mapp NAO sera tocada. Use para nivelar corridas antigas que ja foram resolvidas fora do sistema.\n\nStatus atual: ' + dados.sc.status)) return;
-                  setEnviando(true);
-                  fetchAuth(API_URL + '/confirmafacil/corrida/' + solicitacaoId + '/cancelar-local', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
-                  }).then(r => r.json()).then(d => {
-                    if (d.ok) showToast('Corrida cancelada na central (Mapp intocada)', 'success');
-                    else showToast('' + (d.error || d.mensagem || 'Erro'), 'error');
-                    return fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId).then(r => r.json()).then(setDados);
-                  }).catch(() => showToast('Erro ao cancelar', 'error')).finally(() => setEnviando(false));
-                },
-                className: 'w-full text-sm py-2 text-gray-600 border border-gray-200 rounded-xl hover:border-red-300 hover:text-red-600 disabled:opacity-60',
-              }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-archive" })), "Cancelar só na central (não mexe na Mapp)"))
-            )
-          )
+                ),
+                h('label', { className: 'flex items-center gap-2 text-xs text-gray-700' },
+                  h('span', { className: 'whitespace-nowrap' }, 'Horário real'),
+                  h('input', {
+                    type: 'datetime-local', value: horarioManual,
+                    onChange: (e) => setHorarioManual(e.target.value),
+                    className: 'flex-1 min-w-0 text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:border-purple-400 focus:outline-none',
+                  })
+                ),
+                h('p', { className: 'text-[11px] text-gray-500 -mt-1' }, 'Opcional. Em branco = agora (horário de Salvador).'),
+                h('button', {
+                  type: 'button', disabled: enviando || !podeFinalizar,
+                  onClick: () => {
+                    if (!podeFinalizar) return;
+                    if (!window.confirm('Enviar CONCLUIDO / ENTREGUE ao ConfirmaFacil para esta NF?\n\nMotivo: ' + motivoFin + '\n\nIsso informa o CF que a entrega foi finalizada. E uma acao real, nao e teste.')) return;
+                    setEnviando(true);
+                    fetchAuth(API_URL + '/confirmafacil/testar-ocorrencia', {
+                      method: 'POST', headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ solicitacao_id: solicitacaoId, status: 'finalizado_ponto', data_finalizacao: horarioManual || undefined, motivo: motivoFin, detalhe: detalheFin.trim() }),
+                    }).then(r => r.json()).then(d => {
+                      if (d.ok) { showToast('Finalizado enviado ao CF' + (horarioManual ? ' (horário corrigido)' : ''), 'success'); setMotivoFin(''); setDetalheFin(''); setModoFin(false); }
+                      else showToast('' + (d.mensagem || d.error || d.erro || 'Erro'), 'error');
+                      return fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId).then(r => r.json()).then(setDados);
+                    }).catch(() => showToast('Não deu pra finalizar agora. Tente de novo.', 'error'))
+                      .finally(() => setEnviando(false));
+                  },
+                  className: 'w-full text-sm font-semibold py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed',
+                }, enviando ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Enviando...")
+                  : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), podeFinalizar ? "Confirmar finalização" : "Escolha o motivo e descreva"))
+              )
         )
       ),
 
