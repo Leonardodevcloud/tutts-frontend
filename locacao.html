@@ -956,6 +956,52 @@
       h(Toast, { msg: toast }));
   }
 
+
+  /* LOCACAO_ACESSO_EXTERNO_V1: locatário de fora cria a senha da Central por link (CPF e código vêm no #) */
+  function CriarSenha() {
+    var hs = {};
+    String(location.hash || '').replace(/^#/, '').split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) hs[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); });
+    var _c = useState(mCPF(hs.cpf || '')), cpf = _c[0], setCpf = _c[1];
+    var _k = useState(dig(hs.c || '').slice(0, 6)), cod = _k[0], setCod = _k[1];
+    var _s = useState(''), senha = _s[0], setSenha = _s[1];
+    var _s2 = useState(''), senha2 = _s2[0], setSenha2 = _s2[1];
+    var _b = useState(false), b = _b[0], setB = _b[1];
+    var _er = useState(null), err = _er[0], setErr = _er[1];
+    var _ok = useState(false), ok = _ok[0], setOk = _ok[1];
+    var _env = useState(null), enviado = _env[0], setEnviado = _env[1];
+    var _ts = useToast(), toast = _ts[0], showToast = _ts[1];
+    var pedirCodigo = function () {
+      setB(true); setErr(null);
+      req('/locacao-publico/primeiro-acesso/solicitar', { method: 'POST', body: { cpf: dig(cpf) } })
+        .then(function (r) { setEnviado(r.whatsapp_final || 'o WhatsApp do cadastro'); showToast(r.mensagem || 'Código enviado'); })
+        .catch(function (e) { setErr(e.message); }).then(function () { setB(false); });
+    };
+    var criar = function () {
+      setB(true); setErr(null);
+      req('/locacao-publico/primeiro-acesso/confirmar', { method: 'POST', body: { cpf: dig(cpf), codigo: cod, senha: senha } })
+        .then(function () { setOk(true); }).catch(function (e) { setErr(e.message); }).then(function () { setB(false); });
+    };
+    if (ok) return h(Mensagem, { tom: 'verde', icone: 'ok', titulo: 'Senha criada',
+      texto: 'Agora entre na Central Tutts com o seu CPF (só números: ' + dig(cpf) + ') e a senha que você acabou de criar.',
+      acao: h('a', { className: 'btn pri', href: '/', style: { textDecoration: 'none', marginTop: 6 } }, 'Entrar na Central') });
+    var senhaOk = senha.length >= 8 && senha === senha2;
+    return h('div', { className: 'wrap' }, Topo(),
+      h('main', null,
+        h('h1', { className: 'h1' }, 'Crie sua senha'),
+        h('p', { className: 'sub' }, 'É com ela e o seu CPF que você entra na Central Tutts para ver sua moto, pagar as parcelas e marcar as vistorias.'),
+        h('section', { className: 'card' },
+          h(Campo, { label: 'CPF' }, h('input', { className: 'inp', inputMode: 'numeric', value: cpf, onChange: function (e) { setCpf(mCPF(e.target.value)); }, placeholder: '000.000.000-00' })),
+          h(Campo, { label: 'Código do WhatsApp', hint: cod.length === 6 ? null : enviado ? 'Enviado para ' + enviado + '.' : null },
+            h('input', { className: 'inp', inputMode: 'numeric', autoComplete: 'one-time-code', value: cod, maxLength: 6, onChange: function (e) { setCod(dig(e.target.value).slice(0, 6)); }, placeholder: '6 dígitos' })),
+          cod.length === 6 ? null : h('button', { type: 'button', className: 'lnk', style: { alignSelf: 'flex-start' }, disabled: b || !cpfOk(cpf), onClick: pedirCodigo }, enviado ? 'Enviar outro código' : 'Não tenho o código · receber no WhatsApp'),
+          h(Campo, { label: 'Nova senha', hint: 'Mínimo 8 caracteres.' }, h('input', { className: 'inp', type: 'password', autoComplete: 'new-password', value: senha, onChange: function (e) { setSenha(e.target.value); } })),
+          h(Campo, { label: 'Repita a senha', hint: senha2 && senha !== senha2 ? 'As senhas não são iguais.' : null }, h('input', { className: 'inp', type: 'password', autoComplete: 'new-password', value: senha2, onChange: function (e) { setSenha2(e.target.value); } }))),
+        err ? h('div', { role: 'alert', style: { color: '#991b1b', fontSize: 13, textAlign: 'center' } }, err) : null,
+        h('button', { type: 'button', className: 'btn pri', disabled: b || !cpfOk(cpf) || cod.length !== 6 || !senhaOk, onClick: criar }, b ? 'Salvando...' : 'Criar senha'),
+        h('p', { className: 'sub', style: { textAlign: 'center', fontSize: 12.5 } }, 'O código vale 48 horas. Se expirou, peça outro acima.')),
+      h(Toast, { msg: toast }));
+  }
+
   // ───── roteamento ─────
   function App() {
     var path = location.pathname.replace(/\/+$/, '');
@@ -965,6 +1011,7 @@
     if (m) return h(Documentos, { token: decodeURIComponent(m[1]) });
     m = /^\/moto\/k\/([^/]+)$/.exec(path); /* LOCACAO_V4: complemento do motoboy da Central */
     if (m) return h(Complemento, { token: decodeURIComponent(m[1]) });
+    if (path === '/moto/senha') return h(CriarSenha); /* LOCACAO_ACESSO_EXTERNO_V1 */
     // LOCACAO_V2: o portal separado saiu — o locatário entra pela Central (CPF + senha)
     return h(Mensagem, { tom: 'roxo', icone: 'ok', titulo: 'A área do locatário agora fica na Central',
       texto: 'Entre na Central Tutts com seu CPF e senha para ver sua moto, pagar parcelas e registrar vistorias.',

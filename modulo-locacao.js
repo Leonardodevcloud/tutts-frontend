@@ -486,6 +486,53 @@
       mensal ? h('span', { style: { fontSize: 12, color: dm ? '#374151' : '#6b7280' } }, dm ? h('b', null, 'Todo dia ' + p2(dm) + ' de cada mês. ') : 'Escolha o dia. ', 'Do 1 ao 28 (todo mês tem esses dias).') : null);
   }
 
+  /* LOCACAO_ACESSO_EXTERNO_V1: tipo do locatário (pode mudar) e como ele entra na Central */
+  function LocatarioAcessoBox(props) {
+    var api = props.api, toast = props.toast, ac = props.acesso || {};
+    var _m = useState(false), mudando = _m[0], setMudando = _m[1];
+    var _c = useState(props.codSugerido || ''), cod = _c[0], setCod = _c[1];
+    var _s = useState(false), s = _s[0], setS = _s[1];
+    var _r = useState(null), r = _r[0], setR = _r[1];
+    var tutts = props.tipo === 'tutts';
+    var mudar = function (tipo) {
+      if (tipo === 'externo' && !window.confirm('Mudar ' + props.nome + ' para Externo?\n\nO login dele vira o CPF (com senha própria) e o desconto no repasse (Anexo III), se houver, é desligado.')) return;
+      setS(true);
+      api('/clientes/' + props.clienteId + '/tipo', { method: 'PUT', body: { tipo: tipo, cod_profissional: tipo === 'tutts' ? String(cod).trim() : null } })
+        .then(function (x) { toast(x.sem_mudanca ? 'Nada mudou' : 'Agora é ' + (tipo === 'tutts' ? 'Motoboy Tutts · entra com o código ' + x.login : 'Externo · entra com o CPF') + (x.desconto_desligado ? ' · desconto no repasse desligado' : ''), 'success'); setMudando(false); props.aoMudar && props.aoMudar(); })
+        .catch(function (e) { toast(e.message, 'error'); }).then(function () { setS(false); });
+    };
+    var enviarAcesso = function () {
+      setS(true);
+      api('/clientes/' + props.clienteId + '/acesso-portal', { method: 'POST', body: {} })
+        .then(function (x) { setR(x); if (x.enviado) toast('Link de criar senha enviado no WhatsApp', 'success'); props.aoMudar && props.aoMudar(); })
+        .catch(function (e) { toast(e.message, 'error'); }).then(function () { setS(false); });
+    };
+    var msg = r && r.link_senha ? 'Olá, ' + String(props.nome || '').split(' ')[0] + '! Crie sua senha da Central Tutts neste link (vale 48h): ' + r.link_senha + ' · Depois entre em ' + (r.link || '') + ' com seu CPF (só números) e a senha.' : '';
+    var waDig = soDig(props.whatsapp); if (waDig && waDig.length <= 11) waDig = '55' + waDig;
+    return h('div', { style: { border: '1px solid #e5e7eb', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 } },
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
+        h('b', { style: { fontSize: 13.5 } }, 'Locatário'), TagTipo(props.tipo),
+        h('span', { style: { flex: 1 } }),
+        !mudando ? Btn({ small: true, variant: 'link', disabled: s, onClick: function () { if (tutts) mudar('externo'); else setMudando(true); }, children: tutts ? 'Mudar para Externo' : 'Mudar para Motoboy Tutts' }) : null),
+      h('div', { style: { fontSize: 12.5, color: '#374151', lineHeight: 1.5 } },
+        'Entra na Central com ', h('b', null, tutts ? 'o código ' + (ac.login || '—') + ' e a senha de sempre' : 'o CPF ' + (ac.login || '') + ' (só números) e senha própria'),
+        tutts ? '. A moto aparece no card “Minha moto”.' : h('span', { style: { color: ac.tem_senha ? '#166534' : '#92400e' } }, ac.tem_senha ? ' · senha já criada.' : ' · ainda não criou a senha.')),
+      mudando ? h('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', background: '#faf7fd', border: '1px solid #e9d5f9', borderRadius: 10, padding: 10 } },
+        h(Field, { label: 'Código do profissional na Central', req: true, style: { flex: '1 1 180px' } }, Input({ value: cod, inputMode: 'numeric', placeholder: 'Ex.: 4821', onChange: function (e) { setCod(e.target.value); } })),
+        Btn({ variant: 'pri', small: true, disabled: s || !String(cod).trim(), onClick: function () { mudar('tutts'); }, children: s ? 'Salvando...' : 'Salvar' }),
+        Btn({ small: true, onClick: function () { setMudando(false); }, children: 'Cancelar' }),
+        h('div', { style: { flexBasis: '100%', fontSize: 11.5, color: '#6b7280' } }, 'Ele passa a entrar com o código e a senha que já usa na Central. O login com CPF deixa de mostrar a moto.')) : null,
+      !tutts ? h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' } },
+        Btn({ small: true, icon: 'key', disabled: s, onClick: enviarAcesso, children: s ? 'Enviando...' : ac.tem_senha ? 'Enviar link de nova senha' : 'Enviar link para criar a senha' }),
+        h('span', { style: { fontSize: 11.5, color: '#6b7280' } }, 'Vai no WhatsApp com o CPF e um código já preenchidos (vale 48h).')) : null,
+      r && r.link_senha ? h('div', { style: { background: r.enviado ? '#f0fdf4' : '#fffbeb', border: '1px solid ' + (r.enviado ? '#bbf7d0' : '#fde68a'), borderRadius: 10, padding: 10, display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12.5 } },
+        h('span', { style: { color: r.enviado ? '#166534' : '#92400e', fontWeight: 600 } }, r.enviado ? 'Enviado no WhatsApp. Se ele não recebeu, mande por aqui:' : 'O WhatsApp não enviou. Mande por aqui:'),
+        h('div', { style: { display: 'flex', gap: 8, alignItems: 'center' } }, Input({ readOnly: true, value: r.link_senha, onFocus: function (e) { e.target.select(); }, style: { fontFamily: MONO, fontSize: 12 }, 'aria-label': 'Link para criar a senha' }), h('span', { style: { fontSize: 12, whiteSpace: 'nowrap' } }, 'código ', h('b', { style: TAB }, r.codigo || '—'))),
+        h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
+          Btn({ small: true, icon: 'copy', onClick: function () { copiar(msg, toast); }, children: 'Copiar mensagem' }),
+          Btn({ small: true, variant: 'verde', icon: 'message', onClick: function () { window.open('https://wa.me/' + (waDig || '') + '?text=' + encodeURIComponent(msg), '_blank', 'noopener'); }, children: 'Abrir no WhatsApp' }))) : null);
+  }
+
   /* Busca o motoboy que já está na Central e cria o pré-cadastro com o cadastro dele */
   function CentralModal(props) {
     var api = props.api, toast = props.toast;
@@ -916,6 +963,8 @@
           ico('shield', 15, { color: p.aceite_lgpd_em ? '#16a34a' : '#9ca3af', marginTop: 1 }),
           p.aceite_lgpd_em ? h('span', null, h('b', null, 'Termo LGPD aceito'), ' · versão ' + (p.termo_versao || '—') + ' · ' + fD(p.aceite_lgpd_em) + ' ' + new Date(p.aceite_lgpd_em).toLocaleTimeString('pt-BR') + (p.aceite_lgpd_ip ? ' · IP ' + p.aceite_lgpd_ip : ''))
             : h('span', null, central ? 'Aceite LGPD vem no link de complemento (ou na ciência dentro do app)' : 'Aceite LGPD não registrado')),
+        d.cliente_id && d.cliente_acesso ? h(LocatarioAcessoBox, { api: api, toast: toast, clienteId: d.cliente_id, tipo: d.cliente_tipo, acesso: d.cliente_acesso, nome: p.nome, whatsapp: p.whatsapp, codSugerido: p.cod_profissional, /* LOCACAO_ACESSO_EXTERNO_V1 */
+          aoMudar: function () { carregar(); props.aoMudar && props.aoMudar(); } }) : null,
         emRevisao ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 12, borderTop: '1px solid #f3f4f6', paddingTop: 14 } },
           h('div', { className: 'grid grid-cols-1 sm:grid-cols-2', style: { gap: 12 } },
             central ? h(Field, { label: 'Tipo de cliente', hint: 'Veio da Central: sempre Motoboy Tutts, no mesmo login' }, h('div', { style: { height: 38, display: 'flex', alignItems: 'center' } }, TagTipo('tutts'))) // LOCACAO_V4
@@ -2652,7 +2701,7 @@
     var enviar = function () {
       setS(true);
       props.api('/clientes/' + props.cliente.id + '/acesso-portal', { method: 'POST', body: {} })
-        .then(function (x) { if (x.enviado) props.toast('Código de 1º acesso enviado no WhatsApp', 'success'); else setR(x); })
+        .then(function (x) { if (x.enviado) props.toast('Link de criar senha enviado no WhatsApp', 'success'); else if (x.codigo || x.link_senha) setR(x); else props.toast('Motoboy Tutts entra com o código e a senha de sempre', 'success'); })
         .catch(function (e) { props.toast(e.message, 'error'); }).then(function () { setS(false); });
     };
     var url = (window.location.origin || '') + '/moto';
@@ -2662,8 +2711,9 @@
         h('div', { style: { display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13.5, color: '#374151' } },
           Aviso('ambar', 'O WhatsApp não enviou', 'Passe o código ao locatário por outro canal. Ele vale por pouco tempo.'),
           h('div', { style: { textAlign: 'center', fontFamily: SORA, fontSize: 30, fontWeight: 700, letterSpacing: '.3em', color: ROXO_ESC } }, r.codigo || '—'),
-          h('div', null, 'O locatário entra em ', h('b', null, url), ', informa o CPF e esse código, cria a senha e dá ciência do termo LGPD.'),
-          Btn({ icon: 'copy', onClick: function () { copiar('Acesse ' + url + ' com seu CPF e o código ' + r.codigo + ' para criar sua senha.', props.toast); }, children: 'Copiar mensagem' }))) : null);
+          h('div', null, 'O locatário abre o link abaixo, cria a senha e depois entra na Central com o CPF (só números) e essa senha.'), /* LOCACAO_ACESSO_EXTERNO_V1 */
+          r.link_senha ? Input({ readOnly: true, value: r.link_senha, onFocus: function (e) { e.target.select(); }, style: { fontFamily: MONO, fontSize: 12 }, 'aria-label': 'Link para criar a senha' }) : null,
+          Btn({ icon: 'copy', onClick: function () { copiar('Crie sua senha da Central Tutts neste link (vale 48h): ' + (r.link_senha || url) + ' · Depois entre com seu CPF (só números) e a senha.', props.toast); }, children: 'Copiar mensagem' }))) : null);
   }
 
   // ───────────────────────── Vistorias ─────────────────────────
