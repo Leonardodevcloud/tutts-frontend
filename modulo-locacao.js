@@ -184,7 +184,7 @@
       onRetry ? Btn({ small: true, onClick: onRetry, icon: 'refresh', children: 'Tentar de novo' }) : null);
   }
   function Field(props) {
-    return h('label', { style: Object.assign({ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 0 }, props.style || {}) },
+    return h('label', { onMouseEnter: props.onMouseEnter, onMouseLeave: props.onMouseLeave, style: Object.assign({ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 0 }, props.style || {}) },
       h('span', { style: { fontSize: 12, fontWeight: 600, color: '#374151' } }, props.label, props.req ? h('span', { style: { color: ROXO } }, ' *') : null, props.opt ? h('span', { style: { color: '#9ca3af', fontWeight: 500 } }, ' · opcional') : null),
       props.children,
       props.hint ? h('span', { style: { fontSize: 11.5, color: props.hintCor || '#6b7280' } }, props.hint) : null);
@@ -467,6 +467,25 @@
   }
   var EST_CIVIL = ['Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Viúvo(a)'];
 
+  /* LOCACAO_VENC_MENSAL_V1: vencimento semanal (dia da semana) ou mensal (dia 1..28).
+     props: per, dia (semana), diaMes, onPer, onDia, onDiaMes, grade (grade de dias no mensal), vazioSemana (texto da opção vazia) */
+  function VencPicker(props) {
+    var mensal = props.per === 'mensal';
+    var dm = parseInt(props.diaMes, 10);
+    var grade = props.grade ? h('div', { role: 'radiogroup', 'aria-label': 'Dia do mês', style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(40px, 1fr))', gap: 6 } },
+      Array.from({ length: 28 }, function (_, i) {
+        var n = i + 1, on = dm === n;
+        return h('button', { key: n, type: 'button', role: 'radio', 'aria-checked': on, 'aria-label': 'Dia ' + n, onClick: function () { props.onDiaMes(String(n)); },
+          style: Object.assign({ height: 36, borderRadius: 8, fontSize: 12.5, cursor: 'pointer', fontVariantNumeric: 'tabular-nums' }, on ? { border: '1.5px solid ' + ROXO, background: '#f3e8fb', color: ROXO_ESC, fontWeight: 700 } : { border: '1px solid #e5e7eb', background: '#ffffff', color: '#374151' }) }, p2(n));
+      })) : null;
+    return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 } },
+      Segmented([['semanal', 'Semanal'], ['mensal', 'Mensal']], mensal ? 'mensal' : 'semanal', props.onPer, 'Periodicidade do vencimento'),
+      mensal
+        ? (grade || Select({ value: props.diaMes || '', 'aria-label': 'Dia do mês', onChange: function (e) { props.onDiaMes(e.target.value); } }, [h('option', { key: '', value: '' }, 'Escolha o dia do mês')].concat(Array.from({ length: 28 }, function (_, i) { return h('option', { key: i + 1, value: String(i + 1) }, 'Todo dia ' + p2(i + 1)); }))))
+        : Select({ value: props.dia || '', 'aria-label': 'Dia da semana', onChange: function (e) { props.onDia(e.target.value); } }, (props.vazioSemana ? [h('option', { key: '', value: '' }, props.vazioSemana)] : []).concat(DIA_VENC.map(function (o) { return h('option', { key: o[0], value: String(o[0]) }, o[1]); }))),
+      mensal ? h('span', { style: { fontSize: 12, color: dm ? '#374151' : '#6b7280' } }, dm ? h('b', null, 'Todo dia ' + p2(dm) + ' de cada mês. ') : 'Escolha o dia. ', 'Do 1 ao 28 (todo mês tem esses dias).') : null);
+  }
+
   /* Busca o motoboy que já está na Central e cria o pré-cadastro com o cadastro dele */
   function CentralModal(props) {
     var api = props.api, toast = props.toast;
@@ -479,6 +498,8 @@
     var _c = useState(''), cpf = _c[0], setCpf = _c[1];
     var _w = useState(''), wpp = _w[0], setWpp = _w[1];
     var _v = useState('1'), dia = _v[0], setDia = _v[1];
+    var _vp = useState('semanal'), perV = _vp[0], setPerV = _vp[1]; /* LOCACAO_VENC_MENSAL_V1 */
+    var _vm = useState(''), diaMes = _vm[0], setDiaMes = _vm[1];
     var _sv = useState(false), salvando = _sv[0], setSalvando = _sv[1];
     var _ok = useState(null), feito = _ok[0], setFeito = _ok[1];
     var qd = useDebounce(q.trim(), 300);
@@ -496,8 +517,9 @@
     }, [sel]);
     var criar = function (modo) {
       if (det && !det.tem_cpf && soDig(cpf).length !== 11) { toast('Informe o CPF do motoboy (11 dígitos)', 'error'); return; }
+      if (perV === 'mensal' && !diaMes) { toast('Escolha o dia do mês do vencimento', 'error'); return; } /* LOCACAO_VENC_MENSAL_V1 */
       setSalvando(true);
-      api('/central/motoboys/' + encodeURIComponent(det.cod_profissional) + '/precadastro', { method: 'POST', body: { modo: modo, dia_vencimento: Number(dia) || null, cpf: det.tem_cpf ? undefined : soDig(cpf), whatsapp: soDig(wpp) || undefined } })
+      api('/central/motoboys/' + encodeURIComponent(det.cod_profissional) + '/precadastro', { method: 'POST', body: { modo: modo, periodicidade: perV, dia_mes: perV === 'mensal' ? Number(diaMes) : null, dia_vencimento: perV === 'mensal' ? null : (Number(dia) || null), cpf: det.tem_cpf ? undefined : soDig(cpf), whatsapp: soDig(wpp) || undefined } })
         .then(function (r) {
           if (modo === 'manual') { toast('Pré-cadastro criado. Complete os dados.', 'success'); props.onCriado(r.precadastro_id, 'manual'); return; }
           if (r.whatsapp && r.whatsapp.enviado) { toast('Link de complemento enviado no WhatsApp', 'success'); props.onCriado(r.precadastro_id, 'link'); return; }
@@ -553,8 +575,10 @@
         !bloqueado ? h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 12 } },
           !det.tem_cpf ? h(Field, { label: 'CPF', req: true, hint: 'Não há CPF nos dados financeiros', style: { flex: '1 1 180px' } }, Input({ value: cpf, inputMode: 'numeric', placeholder: '000.000.000-00', onChange: function (e) { setCpf(e.target.value); } })) : null,
           !det.whatsapp ? h(Field, { label: 'WhatsApp', req: true, hint: 'Sem WhatsApp na Central', style: { flex: '1 1 180px' } }, Input({ value: wpp, inputMode: 'tel', placeholder: '(71) 98123-4567', onChange: function (e) { setWpp(e.target.value); } })) : null,
-          h(Field, { label: 'Dia de vencimento das parcelas semanais', hint: 'Desconto no repasse fica opcional (Anexo III), definido no contrato.', style: { flex: '1 1 240px' } },
-            Select({ value: dia, onChange: function (e) { setDia(e.target.value); } }, DIA_VENC.map(function (o) { return h('option', { key: o[0], value: o[0] }, o[1]); })))) : null,
+          h('div', { role: 'group', 'aria-label': 'Vencimento das parcelas', style: { flex: '1 1 100%', border: '1px solid #e5e7eb', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 } }, /* LOCACAO_VENC_MENSAL_V1 */
+            h('span', { style: { fontSize: 12, fontWeight: 600, color: '#374151' } }, 'Vencimento das parcelas'),
+            h(VencPicker, { per: perV, dia: dia, diaMes: diaMes, grade: true, onPer: setPerV, onDia: setDia, onDiaMes: setDiaMes }),
+            h('span', { style: { fontSize: 11.5, color: '#6b7280' } }, 'Desconto no repasse fica opcional (Anexo III), definido no contrato. No contrato dá para trocar.'))) : null,
         det.repasse_medio && det.repasse_medio.valor > 0 ? h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'Repasse médio das últimas 4 semanas: ', h('b', { style: { color: '#111827' } }, fR(det.repasse_medio.valor)), ' por semana') : null,
         h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', borderTop: '1px solid #f3f4f6', paddingTop: 12 } },
           det.situacao === 'em_cadastro' && det.precadastro_id ? Btn({ variant: 'pri', onClick: function () { props.onCriado(det.precadastro_id, 'abrir'); }, children: 'Abrir pré-cadastro' }) : null,
@@ -587,6 +611,8 @@
     ini.data_nascimento = p.data_nascimento ? String(p.data_nascimento).slice(0, 10) : '';
     ini.cnh_ear = typeof p.cnh_ear === 'boolean' ? p.cnh_ear : null;
     ini.dia_vencimento = p.dia_vencimento ? String(p.dia_vencimento) : '';
+    ini.venc_periodicidade = p.venc_periodicidade === 'mensal' ? 'mensal' : 'semanal'; /* LOCACAO_VENC_MENSAL_V1 */
+    ini.venc_dia_mes = p.venc_dia_mes ? String(p.venc_dia_mes) : '';
     if (!ini.nacionalidade) ini.nacionalidade = 'Brasileira';
     var _f = useState(ini), f = _f[0], setF = _f[1];
     var _d = useState({}), novos = _d[0], setNovos = _d[1];
@@ -605,7 +631,8 @@
     var pegar = function (tipo, file) { lerArquivo(file, 1600, 0.82).then(function (u) { setNovos(function (x) { var n = Object.assign({}, x); n[tipo] = u; return n; }); }).catch(function (e) { toast(e.message, 'error'); }); };
     var salvar = function () {
       setSalvando(true);
-      var dados = Object.assign({}, f, { cep: soDig(f.cep) || null, uf: String(f.uf || '').toUpperCase(), cnh_validade: f.cnh_validade || null, data_nascimento: f.data_nascimento || null, dia_vencimento: f.dia_vencimento ? Number(f.dia_vencimento) : null, whatsapp: soDig(f.whatsapp) || null });
+      var dados = Object.assign({}, f, { cep: soDig(f.cep) || null, uf: String(f.uf || '').toUpperCase(), cnh_validade: f.cnh_validade || null, data_nascimento: f.data_nascimento || null, dia_vencimento: f.venc_periodicidade !== 'mensal' && f.dia_vencimento ? Number(f.dia_vencimento) : null, whatsapp: soDig(f.whatsapp) || null,
+        venc_periodicidade: f.venc_periodicidade, venc_dia_mes: f.venc_periodicidade === 'mensal' && f.venc_dia_mes ? Number(f.venc_dia_mes) : null }); /* LOCACAO_VENC_MENSAL_V1 */
       if (origCentral) delete dados.nome;
       Object.keys(dados).forEach(function (k) { if (dados[k] === '') dados[k] = null; });
       if (dados.cnh_ear == null) delete dados.cnh_ear;
@@ -631,7 +658,8 @@
         linha(cel('RG', 'rg'), cel('Órgão', 'rg_orgao', { opt: true, flex: '0 1 120px', attrs: { placeholder: 'SSP/BA' } }),
           h(Field, { key: 'ec', label: 'Estado civil', style: { flex: '1 1 160px' } }, Select({ value: f.estado_civil, onChange: function (e) { set('estado_civil', e.target.value); } }, [h('option', { key: '', value: '' }, 'Escolha')].concat(EST_CIVIL.map(function (o) { return h('option', { key: o, value: o }, o); }))))),
         linha(cel('Nacionalidade', 'nacionalidade'), cel('Profissão', 'profissao'),
-          h(Field, { key: 'dv', label: 'Dia de vencimento', opt: true, style: { flex: '1 1 160px' } }, Select({ value: f.dia_vencimento, onChange: function (e) { set('dia_vencimento', e.target.value); } }, [h('option', { key: '', value: '' }, 'Definir na aprovação')].concat(DIA_VENC.map(function (o) { return h('option', { key: o[0], value: o[0] }, o[1]); }))))),
+          h(Field, { key: 'dv', label: 'Vencimento', opt: true, style: { flex: '1 1 220px' } }, h(VencPicker, { per: f.venc_periodicidade, dia: f.dia_vencimento, diaMes: f.venc_dia_mes, vazioSemana: 'Definir na aprovação', /* LOCACAO_VENC_MENSAL_V1 */
+            onPer: function (v) { set('venc_periodicidade', v); }, onDia: function (v) { set('dia_vencimento', v); }, onDiaMes: function (v) { set('venc_dia_mes', v); } }))),
         sec('Habilitação'),
         linha(cel('Nº da CNH', 'cnh_numero', { attrs: { inputMode: 'numeric' }, mask: function (v) { return soDig(v).slice(0, 11); } }),
           h(Field, { key: 'cat', label: 'Categoria', style: { flex: '0 1 120px' } }, Select({ value: f.cnh_categoria, onChange: function (e) { set('cnh_categoria', e.target.value); } }, ['', 'A', 'AB', 'AC', 'AD', 'AE'].map(function (o) { return h('option', { key: o, value: o }, o || 'Escolha'); }))),
@@ -740,6 +768,8 @@
     var _e = useState(null), erro = _e[0], setErro = _e[1];
     var _t = useState(null), tipo = _t[0], setTipo = _t[1];
     var _v = useState(''), dia = _v[0], setDia = _v[1];
+    var _pa2 = useState('semanal'), perA = _pa2[0], setPerA = _pa2[1]; /* LOCACAO_VENC_MENSAL_V1 */
+    var _dma = useState(''), diaMesA = _dma[0], setDiaMesA = _dma[1];
     var _c = useState(''), cod = _c[0], setCod = _c[1];
     var _b = useState(false), salvando = _b[0], setSalvando = _b[1];
     var _m = useState(null), modal = _m[0], setModal = _m[1];
@@ -754,6 +784,7 @@
         if (p.entregador_tutts) { setTipo(function (t) { return t || 'tutts'; }); setCod(function (c) { return c || p.cod_profissional || ''; }); }
         if (p.origem === 'central') { setTipo('tutts'); setCod(p.cod_profissional || ''); } // LOCACAO_V4: veio da Central = sempre Motoboy Tutts
         if (p.dia_vencimento) setDia(function (dv) { return dv || String(p.dia_vencimento); });
+        if (p.venc_periodicidade === 'mensal') { setPerA('mensal'); if (p.venc_dia_mes) setDiaMesA(function (x) { return x || String(p.venc_dia_mes); }); } /* LOCACAO_VENC_MENSAL_V1 */
       }).catch(function (e) { setErro(e.message); });
     }, [api, props.id]);
     useEffect(carregar, [carregar]);
@@ -762,7 +793,7 @@
     var p = d.precadastro || {}, alertas = (d.alertas || []).filter(function (a) { return !(p.origem === 'central' && /Documentos incompletos|Nenhum documento/.test(a.texto || '')); }), docs = d.documentos || []; // LOCACAO_V4: selfie com CNH é opcional para quem veio da Central
     var bloqueia = alertas.some(function (a) { return a.nivel === 'bloqueia'; });
     var emRevisao = { novo: 1, em_analise: 1, aguardando_documentos: 1 }[p.status];
-    var faltaCampo = !tipo || !dia || (tipo === 'tutts' && !String(cod).trim());
+    var faltaCampo = !tipo || (perA === 'mensal' ? !diaMesA : !dia) || (tipo === 'tutts' && !String(cod).trim());
     var podeAprovar = emRevisao && d.pode_aprovar !== false && !bloqueia && !faltaCampo;
     var btnExcluirPre = function () { /* LOCACAO_PRECAD_EXCLUIR_V1 */
       return Btn({ key: 'xpre', variant: 'link', icon: 'trash', onClick: function () { setModal('excluir'); }, disabled: salvando, style: { color: '#b91c1c', marginRight: 'auto', padding: '0 4px' }, children: 'Excluir pré-cadastro' });
@@ -775,7 +806,7 @@
         .then(function (r) { setSalvando(false); return r; }, function () { setSalvando(false); });
     };
     var aprovar = function () {
-      acao('/precadastros/' + p.id + '/aprovar', { tipo: tipo, dia_vencimento: Number(dia), cod_profissional: tipo === 'tutts' ? String(cod).trim() : null }, 'Cadastro aprovado. Já dá para criar o contrato.');
+      acao('/precadastros/' + p.id + '/aprovar', { tipo: tipo, periodicidade: perA, dia_vencimento: perA === 'mensal' ? null : Number(dia), dia_mes: perA === 'mensal' ? Number(diaMesA) : null, cod_profissional: tipo === 'tutts' ? String(cod).trim() : null }, 'Cadastro aprovado. Já dá para criar o contrato.');
     };
     var abrirDoc = function (doc) {
       setFoto({ titulo: DOCS[doc.tipo] || doc.tipo, src: null });
@@ -853,8 +884,8 @@
             central ? h(Field, { label: 'Tipo de cliente', hint: 'Veio da Central: sempre Motoboy Tutts, no mesmo login' }, h('div', { style: { height: 38, display: 'flex', alignItems: 'center' } }, TagTipo('tutts'))) // LOCACAO_V4
               : h(Field, { label: 'Tipo de cliente', req: true, hint: tipo === 'tutts' ? 'Usa o login da Central · desconto no repasse só com Anexo III' : tipo === 'externo' ? 'Login com CPF · paga Pix, boleto ou cartão' : null },
               Segmented([['tutts', 'Motoboy Tutts'], ['externo', 'Externo']], tipo, setTipo, 'Tipo de cliente')),
-            h(Field, { label: 'Dia de vencimento', req: true },
-              Select({ value: dia, onChange: function (e) { setDia(e.target.value); } }, [h('option', { key: '', value: '' }, 'Escolha o dia')].concat(DIA_VENC.map(function (o) { return h('option', { key: o[0], value: o[0] }, o[1]); }))))),
+            h(Field, { label: 'Vencimento', req: true },
+              h(VencPicker, { per: perA, dia: dia, diaMes: diaMesA, vazioSemana: 'Escolha o dia', onPer: setPerA, onDia: setDia, onDiaMes: setDiaMesA }))), /* LOCACAO_VENC_MENSAL_V1 */
           tipo === 'tutts' ? h(Field, { label: 'Código do profissional na Central', req: true, hint: central ? 'Login dele na Central' : 'Vincula ao login dele na Central' }, Input({ value: cod, readOnly: central, onChange: function (e) { setCod(e.target.value); }, inputMode: 'numeric', placeholder: 'Ex.: 4821', style: Object.assign({ maxWidth: 200 }, central ? { background: '#f9fafb' } : {}) })) : null,
           h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center' } },
             btnExcluirPre(), /* LOCACAO_PRECAD_EXCLUIR_V1 */
@@ -1140,17 +1171,20 @@
     }
 
     /* PDF → itens com posição (pt, origem no topo) + o documento aberto do pdf.js */
-    function lerArquivo(file) {
+    function lerArquivo(file, opts) {
+      opts = opts || {}; /* LOCACAO_IMPORTAR_LEITURA_V1: maxPaginas (desenho) e maxTexto (leitura) */
+      var maxPag = opts.maxPaginas || 4, maxTxt = opts.maxTexto || maxPag;
       return Promise.all([carregarPdfJs(), file.arrayBuffer()]).then(function (r) {
         var lib = r[0];
         return lib.getDocument({ data: new Uint8Array(r[1]) }).promise.then(function (pdf) {
           var paginas = [], itens = [];
           var seq = Promise.resolve();
-          for (var p = 1; p <= Math.min(pdf.numPages, 4); p++) (function (pn) {
+          for (var p = 1; p <= Math.min(pdf.numPages, maxPag); p++) (function (pn) {
             seq = seq.then(function () {
               return pdf.getPage(pn).then(function (page) {
                 var vp = page.getViewport({ scale: 1 });
                 paginas.push({ w: vp.width, h: vp.height });
+                if (pn > maxTxt) return;
                 return page.getTextContent().then(function (tc) {
                   tc.items.forEach(function (it) {
                     if (!it.str) return;
@@ -1169,6 +1203,174 @@
     return { parse: parse, blocos: blocos, lerArquivo: lerArquivo, carregarPdfJs: carregarPdfJs, renavamOk: renavamOk, norm: norm, titulo: titulo };
   })();
   window.LocacaoCRLV = CRLV;
+
+  // ───────────────────────── LOCACAO_IMPORTAR_LEITURA_V1: ler o contrato assinado (PDF) ─────────────────────────
+  /* Lê o Demonstrativo (Quadro-Resumo) do contrato gerado pela Central: tabela de 2 colunas (rótulo | valor),
+     checkboxes ☒/☐. window.LocacaoContratoLeitor.parse(itens) é puro: itens = [{ str, x, y, w, h, page }]. */
+  var LEITOR = (function () {
+    function norm(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim(); }
+    var SECOES = ['LOCADORA', 'LOCATARIO', 'PLANO E PRAZO', 'MOTOCICLETA', 'VALORES'];
+    var ROT = {
+      base: 'BASE DE RETIRADA E DEVOLUCAO', nome: 'NOME COMPLETO', cpf_rg: 'CPF / RG', plano: 'PLANO CONTRATADO', prazo: 'PRAZO DA LOCACAO',
+      manutencao: 'MANUTENCAO', area: 'AREA DE CIRCULACAO PERMITIDA', marca: 'MARCA / MODELO / ANO / COR', placa: 'PLACA / CHASSI / RENAVAM',
+      km: 'QUILOMETRAGEM NA ENTREGA', valor: 'VALOR DA PARCELA DA LOCACAO', venc: 'VENCIMENTO', caucao: 'CAUCAO', formas: 'FORMA DE PAGAMENTO',
+      opcao: 'VALOR DE EXERCICIO DA OPCAO DE'
+    };
+    var DIAS = { SEGUNDA: 1, TERCA: 2, QUARTA: 3, QUINTA: 4, SEXTA: 5, SABADO: 6 };
+    function uniao(a, b) {
+      if (!a) return b || null; if (!b) return a; if (a.page !== b.page) return a;
+      var x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
+      return { page: a.page, x: x, y: y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y };
+    }
+    function rectDe(its) { return its.reduce(function (r, i) { return uniao(r, { page: i.page, x: i.x - 2, y: i.y - 3, w: i.w + 4, h: i.h + 6 }); }, null); }
+    /* itens → linhas (mesma página e mesma altura), em ordem de leitura */
+    function linhas(itens) {
+      var ls = [];
+      itens.filter(function (i) { return i.str && i.str.trim(); }).slice().sort(function (a, b) { return a.page - b.page || a.y - b.y || a.x - b.x; }).forEach(function (i) {
+        var l = ls.length ? ls[ls.length - 1] : null;
+        if (l && l.page === i.page && Math.abs(l.y - i.y) <= 2.5) l.its.push(i); else ls.push({ page: i.page, y: i.y, its: [i] });
+      });
+      ls.forEach(function (l) { l.its.sort(function (a, b) { return a.x - b.x; }); });
+      return ls;
+    }
+    /* acha as colunas da tabela (x do rótulo e x do valor) pela linha "Prazo da locação" / "Nome completo" */
+    function colunas(ls) {
+      var cands = ls.filter(function (l) { var t = norm(l.its[0].str); return t.indexOf('PRAZO DA LOCACAO') === 0 || t.indexOf('NOME COMPLETO') === 0 || t.indexOf('PLACA / CHASSI') === 0; });
+      for (var i = 0; i < cands.length; i++) {
+        var l = cands[i], x0 = l.its[0].x, fim = x0 + l.its[0].w;
+        var v = l.its.find(function (it) { return it.x > fim + 4; });
+        if (v) return { xr: x0, xv: v.x };
+      }
+      return null;
+    }
+    function texto(its) { return its.map(function (i) { return i.str; }).join(' ').replace(/\s+/g, ' ').trim(); }
+    /* monta as linhas da tabela: { rotulo, valor, rect } */
+    function tabela(ls, col) {
+      var rows = [], atual = null;
+      ls.forEach(function (l) {
+        var rot = l.its.filter(function (i) { return i.x < col.xv - 3 && i.x >= col.xr - 6; });
+        var val = l.its.filter(function (i) { return i.x >= col.xv - 3; });
+        var fora = l.its.filter(function (i) { return i.x < col.xr - 6; });
+        if (fora.length) { atual = null; return; }
+        if (rot.length && !val.length && SECOES.indexOf(norm(texto(rot))) >= 0) { atual = null; return; }
+        if (rot.length && val.length) { atual = { rotulo: texto(rot), valor: texto(val), rect: rectDe(l.its), its: l.its.slice() }; rows.push(atual); return; }
+        if (atual && (rot.length || val.length) && l.page === atual.rect.page && l.y - (atual.rect.y + atual.rect.h) < 10) {
+          if (rot.length) atual.rotulo += ' ' + texto(rot);
+          if (val.length) atual.valor += ' ' + texto(val);
+          atual.rect = uniao(atual.rect, rectDe(l.its)); atual.its = atual.its.concat(l.its);
+          return;
+        }
+        atual = null;
+      });
+      return rows;
+    }
+    var MARC = '☒', DESM = '☐';
+    /* qual opção está marcada: retorna o índice da opção (na ordem dada) com ☒ antes dela, ou -1 se nenhuma / -2 sem caixas */
+    function marcada(valor, opcoes) {
+      var v = String(valor || '');
+      if (v.indexOf(MARC) < 0 && v.indexOf(DESM) < 0) return -2;
+      var nv = norm(v), achou = -1;
+      opcoes.forEach(function (o, i) {
+        var m = new RegExp('([' + MARC + DESM + '])\\s*' + norm(o)).exec(nv);
+        if (m && m[1] === MARC && achou === -1) achou = i;
+      });
+      return achou;
+    }
+    function moeda(s) { var m = /R\$\s*([\d.]+,\d{2})/.exec(String(s || '')); return m ? m[1] : null; }
+    function isoDe(br) { var m = /(\d{2})\/(\d{2})\/(\d{4})/.exec(String(br || '')); return m ? m[3] + '-' + m[2] + '-' + m[1] : null; }
+
+    function parse(itens) {
+      itens = itens || [];
+      var textoTotal = itens.map(function (i) { return i.str; }).join(' ');
+      var semTexto = textoTotal.replace(/\s/g, '').length < 60;
+      var out = { campos: {}, id: {}, semTexto: semTexto, pareceContrato: /QUADRO-RESUMO|DEMONSTRATIVO DE CONTRATO/.test(norm(textoTotal)), total: 0, conferir: 0, numero: null };
+      var mN = /Contrato n[ºo°]\s*([A-Z0-9][A-Z0-9\-\/.]*)/i.exec(textoTotal); if (mN) out.numero = mN[1];
+      if (semTexto) return out;
+      var ls = linhas(itens), col = colunas(ls);
+      if (!col) return out;
+      var rows = tabela(ls, col);
+      var acha = function (rot) { return rows.find(function (r) { return norm(r.rotulo).indexOf(rot) === 0; }) || null; };
+      var C = out.campos;
+      var put = function (k, valor, r, extra) { if (valor == null || valor === '') return; C[k] = Object.assign({ valor: valor, rect: r ? r.rect : null, conferir: false, hint: null, origem: r ? r.valor : null }, extra || {}); };
+      var r;
+      // identificação
+      if ((r = acha(ROT.nome))) out.id.nome = { valor: r.valor, rect: r.rect };
+      if ((r = acha(ROT.cpf_rg))) { var mc = /(\d{3}\.?\d{3}\.?\d{3}-?\d{2})/.exec(r.valor); if (mc) out.id.cpf = { valor: mc[1].replace(/\D/g, ''), rect: r.rect }; }
+      if ((r = acha(ROT.placa))) {
+        var pp = r.valor.split('/').map(function (x) { return x.trim(); });
+        out.id.placa = { valor: String(pp[0] || '').toUpperCase().replace(/[^A-Z0-9]/g, ''), rect: r.rect };
+        if (pp[1] && !/_{3,}/.test(pp[1])) out.id.chassi = { valor: pp[1].toUpperCase().replace(/[^A-Z0-9]/g, ''), rect: r.rect };
+      }
+      if ((r = acha(ROT.marca))) out.id.modelo = { valor: r.valor, rect: r.rect };
+      // plano
+      if ((r = acha(ROT.plano))) {
+        var ip = marcada(r.valor, ['TUTTS ALUGUEL', 'PLANO CONQUISTA']);
+        if (ip >= 0) put('plano', ip === 0 ? 'aluguel' : 'conquista', r);
+        else put('plano', /CONQUISTA/.test(norm(r.valor)) && !/ALUGUEL/.test(norm(r.valor)) ? 'conquista' : 'conquista', r, { conferir: true, hint: 'Não deu para ver qual plano está marcado. Confira no PDF.' });
+      }
+      // prazo + periodicidade + início
+      var perPrazo = null;
+      if ((r = acha(ROT.prazo))) {
+        var mq = /^\s*(\d{1,3})/.exec(r.valor);
+        var ipp = marcada(r.valor, ['MESES', 'SEMANAS']);
+        if (ipp >= 0) perPrazo = ipp === 0 ? 'mensal' : 'semanal';
+        if (mq) put('prazo', mq[1], r);
+        var ini = /IN[IÍ]CIO\s*:?\s*(\d{2}\/\d{2}\/\d{4})/i.exec(r.valor);
+        if (ini) put('inicio', isoDe(ini[1]), r);
+      }
+      // valor + periodicidade da parcela
+      var perValor = null;
+      if ((r = acha(ROT.valor))) {
+        var vv = moeda(r.valor); if (vv) put('valor', vv, r);
+        var ipv = marcada(r.valor, ['SEMANA', 'MES']);
+        if (ipv >= 0) perValor = ipv === 0 ? 'semanal' : 'mensal';
+      }
+      // vencimento
+      var perVenc = null;
+      if ((r = acha(ROT.venc))) {
+        var nv = norm(r.valor), md = /TODO DIA (\d{1,2})/.exec(nv), ms = /AS (SEGUNDA|TERCA|QUARTA|QUINTA|SEXTA|SABADO)/.exec(nv);
+        if (md && +md[1] >= 1 && +md[1] <= 28) { perVenc = 'mensal'; put('dia_mes', String(+md[1]), r); }
+        else if (ms) { perVenc = 'semanal'; put('dia_semana', String(DIAS[ms[1]]), r); }
+      }
+      var pers = [perPrazo, perValor, perVenc].filter(Boolean);
+      if (pers.length) {
+        var per = pers[0], todosIguais = pers.every(function (p) { return p === per; });
+        var rp = acha(ROT.valor) || acha(ROT.prazo);
+        put('periodicidade', per, rp, todosIguais ? null : { conferir: true, hint: 'Prazo, parcela e vencimento não batem na periodicidade. Confira.' });
+      }
+      // caução
+      if ((r = acha(ROT.caucao))) {
+        if (/ISENTO/.test(norm(r.valor))) put('caucao_isento', true, r);
+        else { var cv = moeda(r.valor); if (cv) { put('caucao_isento', false, r); put('caucao', cv, r); } }
+      }
+      // base, área, manutenção, km
+      if ((r = acha(ROT.base)) && r.valor && !/^_+$/.test(r.valor)) put('base', r.valor, r);
+      if ((r = acha(ROT.area))) {
+        var ma = /RAIO DE\s*(\d{1,4})\s*KM DO MUNICIPIO DE\s*(.+)$/i.exec(norm(r.valor));
+        if (ma) { put('area_km', ma[1], r); var mun = /munic[ií]pio de\s*(.+)$/i.exec(r.valor); put('area_mun', mun ? mun[1].trim() : ma[2], r); }
+      }
+      if ((r = acha(ROT.manutencao))) {
+        var im = marcada(r.valor, ['PREVENTIVA INCLUSA', 'INTEGRALMENTE']);
+        if (im >= 0) put('manutencao', im === 0 ? 'inclusa' : 'locatario', r);
+      }
+      if ((r = acha(ROT.km))) { var mk = /([\d.]+)\s*KM/i.exec(r.valor); if (mk && /\d/.test(mk[1])) put('km', mk[1].replace(/\D/g, ''), r); }
+      // pagamento
+      if ((r = acha(ROT.formas))) {
+        var fv = r.valor;
+        if (marcada(fv, ['PIX']) !== -2) {
+          put('pix', marcada(fv, ['PIX']) === 0, r); put('boleto', marcada(fv, ['BOLETO']) === 0, r);
+          put('cartao', marcada(fv, ['CARTAO RECORRENTE', 'CARTÃO RECORRENTE']) >= 0, r); put('desconto', marcada(fv, ['DESCONTO EM REPASSES']) === 0, r);
+        }
+      }
+      // opção de compra
+      if ((r = acha(ROT.opcao))) { var ov = moeda(r.valor); if (ov) put('opcao', ov, r); }
+      out.total = Object.keys(C).length;
+      out.conferir = Object.keys(C).filter(function (k) { return C[k].conferir; }).length;
+      return out;
+    }
+    return { parse: parse, norm: norm, marcada: marcada };
+  })();
+  window.LocacaoContratoLeitor = LEITOR;
 
   /* visualizador do PDF: páginas em canvas + retângulos dos campos lidos */
   function VisorPdf(props) {
@@ -1217,7 +1419,7 @@
         h('span', { style: Object.assign({ fontSize: 12, color: '#374151', width: 42, textAlign: 'center' }, TAB) }, Math.round(zoom * 100) + '%'),
         h('button', { type: 'button', 'aria-label': 'Aumentar zoom', onClick: function () { setZoom(function (z) { return Math.min(3, Math.round((z + 0.25) * 100) / 100); }); }, style: bz }, ico('plus', 14)),
         h('button', { type: 'button', 'aria-label': 'Abrir o PDF em nova aba', title: 'Abrir em nova aba', onClick: abrir, style: bz }, ico('link', 14))),
-      h('div', { ref: caixa, style: { background: '#eef0f3', padding: 16, maxHeight: '78vh', overflow: 'auto' } },
+      h('div', { ref: caixa, style: { background: '#eef0f3', padding: 16, maxHeight: props.altura || '78vh', overflow: 'auto' } },
         !pdf ? h('div', { style: { padding: 30 } }, Spinner('Abrindo o PDF...')) :
         paginas.map(function (pg, i) {
           var esc = escalaDe(pg);
@@ -1233,7 +1435,7 @@
         })),
       h('div', { style: { padding: '10px 12px', borderTop: '1px solid #f3f4f6', fontSize: 12, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 8 } },
         h('span', { style: { width: 12, height: 12, border: '2px solid ' + ROXO, borderRadius: 3, flex: 'none' } }),
-        props.semTexto ? 'Esse PDF não tem texto: preencha olhando o documento.' : 'De onde veio cada campo. Passe o mouse num campo do cadastro para ver o trecho no documento.'));
+        props.semTexto ? 'Esse PDF não tem texto: preencha olhando o documento.' : props.rodape || 'De onde veio cada campo. Passe o mouse num campo do cadastro para ver o trecho no documento.'));
   }
 
   /* confirmação de exclusão (moto ou locatário) com o motivo do bloqueio quando há contrato */
@@ -1806,6 +2008,15 @@
     var _imp = useState(!!props.importar), importar = _imp[0], setImportar = _imp[1];
     var _pdf = useState(null), pdf = _pdf[0], setPdf = _pdf[1];
     var _pa = useState(''), pagasAte = _pa[0], setPagasAte = _pa[1];
+    /* LOCACAO_IMPORTAR_LEITURA_V1: leitura do PDF assinado + prévia grande */
+    var _lt = useState(null), leitura = _lt[0], setLeitura = _lt[1];
+    var _ln = useState(false), lendo = _ln[0], setLendo = _ln[1];
+    var _fc = useState(null), foco = _fc[0], setFoco = _fc[1];
+    var _ab = useState('contrato'), abaPrev = _ab[0], setAbaPrev = _ab[1];
+    var _tm = useState([]), todasMotos = _tm[0], setTodasMotos = _tm[1];
+    var _arr = useState(false), arrastando = _arr[0], setArrastando = _arr[1];
+    var kmPdf = useRef(null);
+    var arqContrato = useRef(null);
     var _sim = useState(null), sim = _sim[0], setSim = _sim[1];
     var _rm = useState(null), repMedio = _rm[0], setRepMedio = _rm[1]; // LOCACAO_V4
     var _s = useState(false), salvando = _s[0], setSalvando = _s[1];
@@ -1813,7 +2024,7 @@
     var carregar = useCallback(function () {
       setErro(null);
       Promise.all([api('/clientes?sem_contrato=1'), api('/motos'), api('/config').catch(function () { return {}; })]).then(function (r) {
-        setClientes(r[0].clientes || []); setMotos((r[1].motos || []).filter(function (m) { return m.status === 'disponivel'; })); setCfg(r[2] || {});
+        setClientes(r[0].clientes || []); setMotos((r[1].motos || []).filter(function (m) { return m.status === 'disponivel'; })); setTodasMotos(r[1].motos || []); setCfg(r[2] || {});
         var loc = (r[2] && r[2].locadora) || {}, bases = (r[2] && r[2].bases) || [];
         var bp = bases.find(function (b) { return b.padrao; }) || bases[0];
         setF(function (x) { return Object.assign({}, x, { base: x.base || (bp ? String(bp.id != null ? bp.id : 0) : ''), area_km: x.area_km || String(loc.area_raio_km || 100), area_mun: x.area_mun || loc.area_municipio || 'Salvador/BA' }); });
@@ -1822,8 +2033,13 @@
     useEffect(carregar, [carregar]);
     var cli = (clientes || []).find(function (c) { return String(c.id) === cliId; });
     var moto = (motos || []).find(function (m) { return String(m.id) === motoId; });
-    useEffect(function () { if (cli && !f.dia_semana && cli.dia_vencimento) set('dia_semana', String(cli.dia_vencimento)); if (cli && cli.tipo !== 'tutts' && f.desconto) set('desconto', false); }, [cliId, clientes]);
-    useEffect(function () { if (moto) set('km', moto.hodometro != null ? String(moto.hodometro) : ''); }, [motoId]);
+    useEffect(function () {
+      if (cli && !leitura) { /* LOCACAO_VENC_MENSAL_V1: o vencimento escolhido no cadastro vira o padrão do contrato */
+        if (cli.venc_periodicidade === 'mensal') { set('periodicidade', 'mensal'); if (cli.venc_dia_mes) set('dia_mes', String(cli.venc_dia_mes)); }
+        else if (cli.venc_periodicidade === 'semanal' && cli.dia_vencimento) { set('periodicidade', 'semanal'); set('dia_semana', String(cli.dia_vencimento)); setF(function (x) { return x.prazo === '24' ? Object.assign({}, x, { prazo: '104' }) : x; }); }
+      }
+      if (cli && !f.dia_semana && cli.dia_vencimento) set('dia_semana', String(cli.dia_vencimento)); if (cli && cli.tipo !== 'tutts' && f.desconto) set('desconto', false); }, [cliId, clientes]);
+    useEffect(function () { if (moto && kmPdf.current == null) set('km', moto.hodometro != null ? String(moto.hodometro) : ''); }, [motoId]); /* LOCACAO_IMPORTAR_LEITURA_V1: km do contrato manda */
     useEffect(function () { setRepMedio(null); if (cli && cli.tipo === 'tutts') api('/clientes/' + cli.id + '/repasse-medio').then(setRepMedio).catch(function () { setRepMedio(null); }); }, [cliId, clientes]); // LOCACAO_V4
     useEffect(function () { var d = parseData(f.inicio); if (d && !f.dia_mes) set('dia_mes', String(Math.min(28, d.getDate()))); }, [f.inicio]);
     var bases = (cfg && cfg.bases) || [];
@@ -1880,78 +2096,155 @@
       [cli.cnh_numero ? 'CNH ' + cli.cnh_numero : null, cli.cnh_categoria ? 'cat. ' + cli.cnh_categoria : null, cli.cnh_validade ? 'válida até ' + fD(cli.cnh_validade) : null, cli.cnh_ear === false ? 'sem EAR' : cli.cnh_ear ? 'com EAR' : null, cli.whatsapp ? fTel(cli.whatsapp) : null, cli.email].filter(Boolean).join(' · ')
     ].filter(Boolean) : [];
     var prazoHint = ini && term ? 'início ' + fDC(ini) + ' · término ' + fD(term) : (mensal ? 'meses' : 'semanas');
-    return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
-      voltar(function () { nav({ tela: 'lista', tab: 'contratos' }); }, 'Contratos'),
-      h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end', justifyContent: 'space-between' } },
-        h('div', null,
-          h('h2', { style: { margin: 0, fontFamily: SORA, fontSize: 22, fontWeight: 700 } }, importar ? 'Importar contrato já assinado' : 'Novo contrato'),
-          h('p', { style: { margin: '4px 0 0', color: '#6b7280', fontSize: 13.5 } }, importar ? 'Para contratos assinados fora da Central: anexe o PDF e as parcelas já pagas entram como pagas.' : 'Montado a partir do Demonstrativo de Contrato (Quadro-Resumo) · Tutts Aluguel ou Plano Conquista')),
-        Segmented([[false, 'Novo contrato'], [true, 'Importar já assinado']], importar, setImportar, 'Modo')),
-      h('div', { className: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px] items-start' },
-        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
-          h(Card, { pad: false }, CardHead('Locatário e moto'),
-            h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
-              h('div', { className: 'grid grid-cols-1 md:grid-cols-2', style: { gap: 12 } },
-                h(Field, { label: 'Locatário aprovado', req: true, hint: clientes.length ? null : 'Nenhum cliente aprovado sem contrato' },
-                  Select({ value: cliId, onChange: function (e) { setCliId(e.target.value); } }, [h('option', { key: '', value: '' }, clientes.length ? 'Escolha o locatário' : 'Sem clientes disponíveis')].concat(clientes.map(function (c) { return h('option', { key: c.id, value: String(c.id) }, c.nome + ' · ' + (c.tipo === 'tutts' ? 'Tutts' : 'Externo')); })))),
-                h(Field, { label: 'Moto disponível', req: true, hint: motos.length ? null : 'Nenhuma moto disponível' },
-                  Select({ value: motoId, onChange: function (e) { setMotoId(e.target.value); } }, [h('option', { key: '', value: '' }, motos.length ? 'Escolha a moto' : 'Sem motos disponíveis')].concat(motos.map(function (m) { return h('option', { key: m.id, value: String(m.id) }, m.placa + ' · ' + m.modelo); }))))),
-              cli ? h('div', { style: { display: 'flex', gap: 12, alignItems: 'flex-start', border: '1px solid #e5e7eb', borderRadius: 12, padding: 12 } },
-                h('div', { style: { width: 38, height: 38, borderRadius: 99, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 13, flex: 'none' } }, iniciais(cli.nome)),
-                h('div', { style: { minWidth: 0, flex: 1 } }, h('div', { style: { fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } }, cli.nome, TagTipo(cli.tipo), cli.tipo === 'tutts' && cli.cod_profissional ? h('span', { style: { fontWeight: 400, color: '#6b7280' } }, 'cód. ' + cli.cod_profissional) : null), // LOCACAO_V4
-                  cliInfo.map(function (l, i) { return h('div', { key: i, style: { fontSize: 12.5, color: '#6b7280', marginTop: 2 } }, l); }),
-                  cli.alertas && cli.alertas.length ? h('div', { style: { marginTop: 6 } }, cli.alertas.map(function (a, i) { return h('div', { key: i, style: { fontSize: 12, color: '#92400e' } }, typeof a === 'string' ? a : a.texto || a.mensagem); })) : null)) : null,
-              moto ? h('div', { style: { display: 'flex', gap: 12, alignItems: 'center', border: '1px solid #e9d5f9', background: '#faf7fd', borderRadius: 12, padding: 10, flexWrap: 'wrap' } },
-                h(MotoImg, { src: moto.capa_thumb, tipo: moto.tipo, modelo: moto.modelo, cor: moto.cor, w: 120, h: 76 }),
-                h('div', { style: { flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', gap: 3 } },
-                  h('div', { style: { fontWeight: 600 } }, [moto.modelo, moto.ano, moto.cor].filter(Boolean).join(' · ')),
-                  h('div', { style: { fontSize: 12, color: '#6b7280', fontFamily: MONO } }, ['Placa ' + moto.placa, moto.chassi ? 'Chassi ' + moto.chassi : null, moto.renavam ? 'RENAVAM ' + moto.renavam : null, moto.numero_motor ? 'Motor ' + moto.numero_motor : null].filter(Boolean).join(' · ')),
-                  h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Condição: ', h('b', { style: { color: '#374151' } }, (CONDICAO.find(function (x) { return x[0] === moto.condicao; }) || [0, 'não informada'])[1]), moto.condicao ? '' : ' · informe no cadastro da moto', moto.numero_motor ? '' : ' · sem nº do motor no cadastro')),
-                h(Field, { label: 'Km na entrega', hint: 'conforme a vistoria', style: { width: 150 } }, Input({ value: f.km, inputMode: 'numeric', onChange: function (e) { set('km', soDig(e.target.value)); } }))) : null)),
-          h(Card, { pad: false }, CardHead('Plano'),
-            h('div', { className: 'grid grid-cols-1 md:grid-cols-2', role: 'radiogroup', 'aria-label': 'Plano', style: { padding: 16, gap: 10 } },
-              Radio(f.plano === 'aluguel', 'Tutts Aluguel', 'Locação pura, sem opção de compra. Renova sozinha por igual período (Cl. 13).', function () { set('plano', 'aluguel'); }),
-              Radio(f.plano === 'conquista', 'Plano Conquista', 'Locação com opção de compra ao fim do prazo, cumprido integralmente e tudo pago. Manutenção por conta do locatário.', function () { set('plano', 'conquista'); }, null, h('span', { style: { fontSize: 11, fontWeight: 600, color: ROXO_ESC, background: '#f3e8fb', borderRadius: 6, padding: '0 6px' } }, 'Anexo II')))),
-          h(Card, { pad: false }, CardHead('Prazo e valores'),
-            h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
-              h('div', { className: 'grid grid-cols-1 md:grid-cols-3', style: { gap: 12 } },
-                h(Field, { label: 'Periodicidade', req: true }, Segmented([['semanal', 'Semanal'], ['mensal', 'Mensal']], f.periodicidade, function (v) { set('periodicidade', v); if (v === 'semanal' && f.prazo === '24') set('prazo', '104'); if (v === 'mensal' && f.prazo === '104') set('prazo', '24'); }, 'Periodicidade')),
-                h(Field, { label: 'Prazo', req: true, hint: prazoHint }, h('div', { style: { position: 'relative' } }, Input({ value: f.prazo, inputMode: 'numeric', onChange: function (e) { set('prazo', soDig(e.target.value)); }, style: { paddingRight: 74 } }), h('span', { style: { position: 'absolute', right: 12, top: 11, fontSize: 13, color: '#6b7280' } }, mensal ? 'meses' : 'semanas'))),
-                h(Field, { label: 'Vencimento', req: true, hint: mensal ? 'Dia do mês (1 a 28)' : 'Dia da semana' + (cli && cli.dia_vencimento ? ' · cadastro: ' + (DIA_VENC.find(function (x) { return x[0] === Number(cli.dia_vencimento); }) || [0, ''])[1] : '') },
-                  mensal ? Select({ value: f.dia_mes, onChange: function (e) { set('dia_mes', e.target.value); } }, [h('option', { key: '', value: '' }, 'Escolha o dia')].concat(Array.from({ length: 28 }, function (_, i) { return h('option', { key: i + 1, value: String(i + 1) }, 'Todo dia ' + p2(i + 1)); })))
-                    : Select({ value: f.dia_semana, onChange: function (e) { set('dia_semana', e.target.value); } }, [h('option', { key: '', value: '' }, 'Escolha o dia')].concat(DIA_VENC.map(function (d) { return h('option', { key: d[0], value: String(d[0]) }, d[1]); })))),
-                h(Field, { label: 'Valor da parcela', req: true, hint: vNum > 0 ? fR(vNum) + ' / ' + (mensal ? 'mês' : 'semana') : 'Digitado pelo time' }, Input({ value: f.valor, inputMode: 'decimal', placeholder: 'R$ 0,00', onChange: function (e) { set('valor', e.target.value); } })),
-                h(Field, { label: 'Data de início (retirada)', req: true, hint: ini ? DIAS_LONGO[ini.getDay()] : null }, Input({ type: 'date', value: f.inicio, onChange: function (e) { set('inicio', e.target.value); } })),
-                h(Field, { label: 'Caução', hint: f.caucao_isento ? 'Débitos do encerramento seriam abatidos da caução (Cl. 15.2)' : null },
-                  h('div', { style: { display: 'flex', gap: 8, alignItems: 'center' } }, Segmented([[true, 'Isento'], [false, 'Valor']], f.caucao_isento, function (v) { set('caucao_isento', v); }, 'Caução'),
-                    f.caucao_isento ? null : Input({ value: f.caucao, inputMode: 'decimal', placeholder: 'R$ 0,00', 'aria-label': 'Valor da caução', onChange: function (e) { set('caucao', e.target.value); }, style: { flex: 1 } })))),
-              h('div', { className: 'grid grid-cols-1 md:grid-cols-3', style: { gap: 12 } },
-                h(Field, { label: 'Base de retirada', hint: bases.length ? null : 'Cadastre em Configurações › Locadora e bases' }, Select({ value: f.base, onChange: function (e) { set('base', e.target.value); } }, [h('option', { key: '', value: '' }, bases.length ? 'Escolha a base' : 'Sem bases')].concat(bases.map(function (b, i) { return h('option', { key: i, value: String(b.id != null ? b.id : i) }, b.nome || b.endereco); })))),
-                h(Field, { label: 'Área de circulação', hint: 'raio a partir do município' }, h('div', { style: { display: 'flex', gap: 6 } }, Input({ value: f.area_km, inputMode: 'numeric', 'aria-label': 'Raio em km', onChange: function (e) { set('area_km', soDig(e.target.value)); }, style: { width: 80 } }), h('span', { style: { alignSelf: 'center', fontSize: 13, color: '#6b7280' } }, 'km de'), Input({ value: f.area_mun, 'aria-label': 'Município', onChange: function (e) { set('area_mun', e.target.value); } }))),
-                h(Field, { label: 'Manutenção', hint: f.plano === 'conquista' ? 'Obrigatório no Conquista' : null }, Segmented([['inclusa', 'Inclusa (Base)'], ['locatario', 'Locatário']], f.plano === 'conquista' ? 'locatario' : f.manutencao, function (v) { if (f.plano !== 'conquista') set('manutencao', v); }, 'Manutenção'))),
-              f.plano === 'conquista' ? h(Field, { label: 'Valor de exercício da opção de compra', req: true, hint: 'Corrigido pelo IPCA da assinatura até o pagamento (Anexo II, Cl. 3)' }, h('div', { style: { display: 'flex', gap: 8, alignItems: 'center' } }, Input({ value: f.opcao, inputMode: 'decimal', onChange: function (e) { set('opcao', e.target.value); }, style: { maxWidth: 160 } }), h('span', { style: { fontSize: 13, color: '#6b7280' } }, '+ IPCA'))) : null)),
-          h(Card, { pad: false }, CardHead('Pagamento'),
-            h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
-              h('div', { style: { display: 'flex', gap: 18, flexWrap: 'wrap' } }, Check(f.pix, function (v) { set('pix', v); }, 'Pix'), Check(f.boleto, function (v) { set('boleto', v); }, 'Boleto'), Check(f.cartao, function (v) { set('cartao', v); }, 'Cartão recorrente')),
-              formas.length ? null : h('div', { style: { fontSize: 12, color: '#991b1b' } }, 'Marque ao menos uma forma de pagamento.'),
-              cli && cli.tipo !== 'tutts' ? h('div', { style: { border: '1px solid #e5e7eb', background: '#f9fafb', borderRadius: 12, padding: 12, fontSize: 13, color: '#6b7280', lineHeight: 1.45, display: 'flex', gap: 10, alignItems: 'flex-start' } }, // LOCACAO_V4: externo
-                h('div', { style: { flex: 1 } }, h('b', { style: { color: '#374151' } }, 'Sem desconto no repasse. '), 'Ele não faz entregas pela Tutts, então paga só por Pix, boleto ou cartão. Para liberar o desconto, primeiro ele precisa virar motoboy da Central.'), TagTipo('externo'))
-              : h('div', { style: { border: '1px solid ' + (f.desconto ? ROXO : '#e5e7eb'), background: f.desconto ? '#faf7fd' : '#fff', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 6, opacity: cli ? 1 : 0.6 } },
-                h('div', { style: { display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' } }, Toggle(f.desconto, function (v) { if (cli && cli.tipo === 'tutts') set('desconto', v); }, 'Descontar as parcelas do repasse'), h('b', { style: { fontSize: 13.5 } }, 'Descontar as parcelas do repasse'), h('span', { style: { fontSize: 11, fontWeight: 600, color: '#374151', background: '#f3f4f6', borderRadius: 6, padding: '0 6px' } }, 'Anexo III · facultativo'), h('div', { style: { flex: 1 } }), cli ? TagTipo('tutts', 'Motoboy Tutts' + (cli.cod_profissional ? ' · cód. ' + cli.cod_profissional : '')) : null),
-                h('div', { style: { fontSize: 12.5, color: '#6b7280', lineHeight: 1.45 } }, 'As parcelas vencidas saem do repasse de quarta-feira. Se o repasse não cobrir, o resto vai por Pix no vencimento. Ele pode revogar a qualquer momento pelo app, sem efeito na locação (Cl. 5.11).'),
-                cli ? h('div', { style: { fontSize: 12, color: '#6b7280' } }, repMedio && repMedio.valor > 0 ? h('span', null, 'Repasse médio das últimas 4 semanas: ', h('b', { style: { color: '#111827' } }, fR(repMedio.valor)), vNum > 0 ? ' · parcela ' + fR(vNum) + (mensal ? ' por mês' : '') : '') : 'Sem repasses nas últimas 4 semanas.')
-                  : h('div', { style: { fontSize: 12, color: '#374151' } }, 'Disponível só para motoboy Tutts.')))),
-          importar ? h(Card, { pad: false }, CardHead('Contrato já assinado'),
-            h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
-              h('div', { className: 'grid grid-cols-1 md:grid-cols-2', style: { gap: 12 } },
-                h(Field, { label: 'PDF do contrato assinado', req: true, hint: pdf ? pdf.nome : 'O PDF assinado fica disponível para a equipe e para o locatário no app.' },
-                  h('label', { style: { display: 'inline-flex', alignItems: 'center', gap: 8, height: 40, padding: '0 12px', borderRadius: 10, border: pdf ? '1px solid #bbf7d0' : '1px dashed #d8b4f0', color: pdf ? '#166534' : ROXO_ESC, fontWeight: 600, fontSize: 13, cursor: 'pointer', background: pdf ? '#f0fdf4' : '#faf7fd' } },
-                    h('input', { type: 'file', accept: 'application/pdf', className: 'sr-only', onChange: function (e) { var fl = e.target.files && e.target.files[0]; e.target.value = ''; if (!fl) return; if (!/pdf/i.test(fl.type) && !/\.pdf$/i.test(fl.name)) { toast('Envie o contrato em PDF', 'error'); return; } lerArquivo(fl).then(function (u) { setPdf({ nome: fl.name, conteudo: u }); }).catch(function (er) { toast(er.message, 'error'); }); } }),
-                    ico(pdf ? 'check' : 'upload', 15), pdf ? 'Trocar PDF' : 'Anexar PDF assinado')),
-                h(Field, { label: 'Parcelas pagas até', opt: true, hint: 'As parcelas com vencimento até esta data entram como pagas (baixa “importado”).' }, Input({ type: 'date', value: pagasAte, max: hojeISO(), onChange: function (e) { setPagasAte(e.target.value); } }))),
-              Aviso('azul', null, 'O contrato entra direto como Ativo, sem passar pelo Autentique. Registre depois a vistoria de entrega (Anexo IV) na moto, se ela ainda não estiver no sistema.'))) : null),
-        h('div', { style: { position: 'sticky', top: 84, display: 'flex', flexDirection: 'column', gap: 14 } },
-          h(Card, { pad: false }, CardHead('Resumo do Demonstrativo'),
+    // ───── LOCACAO_IMPORTAR_LEITURA_V1: lê o contrato assinado e preenche o formulário ─────
+    var fCPFm = function (d) { d = String(d || ''); return d.length === 11 ? d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6, 9) + '-' + d.slice(9) : d; };
+    var nmz = function (x) { return String(x || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); };
+    var STATUS_MOTO = { disponivel: 'disponível', reservada: 'reservada', alugada: 'alugada', manutencao: 'em manutenção', em_retomada: 'em retomada' };
+    var aplicarLeitura = function (res, doc) {
+      var C = res.campos, patch = {}, extra = {};
+      ['plano', 'periodicidade', 'prazo', 'inicio', 'valor', 'dia_mes', 'dia_semana', 'caucao', 'area_km', 'area_mun', 'manutencao', 'km', 'opcao'].forEach(function (k) { if (C[k]) patch[k] = String(C[k].valor); });
+      ['caucao_isento', 'pix', 'boleto', 'cartao', 'desconto'].forEach(function (k) { if (C[k]) patch[k] = !!C[k].valor; });
+      if (patch.plano === 'conquista') patch.manutencao = 'locatario';
+      // base: casa pelo nome cadastrado
+      var baseAntes = f.base;
+      if (C.base) {
+        var bv = LEITOR.norm(C.base.valor);
+        var bx = bases.map(function (b, i) { return { id: String(b.id != null ? b.id : i), nome: LEITOR.norm(b.nome || ''), full: LEITOR.norm([b.nome, b.endereco].filter(Boolean).join(' · ')) }; });
+        var exata = bx.find(function (b) { return b.full === bv || (b.nome && b.nome === bv); });
+        var parecida = exata || bx.find(function (b) { return b.nome && (bv.indexOf(b.nome) === 0 || b.nome.indexOf(bv.split(' · ')[0]) === 0); });
+        if (parecida) { patch.base = parecida.id; if (!exata) extra.base = { hint: 'No PDF: “' + C.base.valor + '”. Escolhemos a base mais parecida.' }; }
+        else extra.base = { hint: 'A base do PDF (“' + C.base.valor + '”) não está cadastrada. Escolha uma.', semPar: true };
+      }
+      kmPdf.current = patch.km != null ? patch.km : null;
+      // moto: placa ou chassi do contrato
+      var placa = res.id.placa && res.id.placa.valor, chassi = res.id.chassi && res.id.chassi.valor, motoInfo = null;
+      var mAll = (placa || chassi) ? (todasMotos || []).find(function (m) { return (placa && nmz(m.placa) === placa) || (chassi && m.chassi && nmz(m.chassi) === chassi); }) : null;
+      if (mAll) {
+        var disp = (motos || []).find(function (m) { return m.id === mAll.id; });
+        motoInfo = { id: mAll.id, ok: !!disp, rotulo: [mAll.modelo, mAll.placa].filter(Boolean).join(' · '), status: STATUS_MOTO[mAll.status] || mAll.status };
+        if (disp) setMotoId(String(mAll.id));
+        if (patch.km && mAll.hodometro != null && Number(patch.km) !== Number(mAll.hodometro)) extra.km = { hint: 'A moto está com ' + fN(mAll.hodometro) + ' km no cadastro.' };
+      } else if (placa) motoInfo = { ok: false, naoAchada: true, rotulo: 'Placa ' + placa + (res.id.modelo ? ' · ' + res.id.modelo.valor : '') };
+      setLeitura(Object.assign({}, doc, { res: res, aplicados: patch, extra: extra, baseAntes: baseAntes, motoInfo: motoInfo, cliInfo: res.id.cpf ? { buscando: true } : null }));
+      setF(function (x) { return Object.assign({}, x, patch); });
+      setAbaPrev('contrato');
+      // locatário: CPF do contrato
+      var cpfL = res.id.cpf && res.id.cpf.valor;
+      if (cpfL) api('/contratos/importar/identificar', { method: 'POST', body: { cpf: cpfL } }).then(function (r) {
+        var info;
+        if (r.cliente) {
+          var naLista = (clientes || []).find(function (c) { return c.id === r.cliente.id; });
+          info = { id: r.cliente.id, nome: r.cliente.nome, ok: !!naLista && !r.cliente.em_contrato, emContrato: !!r.cliente.em_contrato, cod: r.cliente.cod_profissional };
+          if (info.ok) setCliId(String(r.cliente.id));
+        } else info = { ok: false, naoAchado: true, pre: r.precadastro || null };
+        setLeitura(function (l) { return l ? Object.assign({}, l, { cliInfo: info }) : l; });
+      }).catch(function () { setLeitura(function (l) { return l ? Object.assign({}, l, { cliInfo: { ok: false, erro: true } }) : l; }); });
+      var nLidos = Object.keys(C).length;
+      if (res.semTexto) toast('O PDF não tem texto (parece escaneado). Preencha olhando a prévia.', 'error');
+      else if (!nLidos) toast('Não achamos o Quadro-Resumo nesse PDF. Preencha olhando a prévia.', 'error');
+      else toast('Lemos o contrato · ' + nLidos + ' campos preenchidos', 'success');
+    };
+    var lerContrato = function (fl) {
+      if (!fl) return;
+      if (!/pdf/i.test(fl.type || '') && !/\.pdf$/i.test(fl.name || '')) { toast('Envie o contrato em PDF', 'error'); return; }
+      if (fl.size > 15 * 1024 * 1024) { toast('PDF acima de 15 MB', 'error'); return; }
+      setLendo(true); setFoco(null);
+      var dataUrl = lerArquivo(fl).then(function (u) { return String(u).replace(/^data:[^;,]*;base64,/, 'data:application/pdf;base64,'); });
+      Promise.all([CRLV.lerArquivo(fl, { maxPaginas: 40, maxTexto: 4 }), dataUrl]).then(function (r) {
+        var lido = r[0];
+        setPdf({ nome: fl.name, conteudo: r[1] });
+        aplicarLeitura(LEITOR.parse(lido.itens), { pdf: lido.pdf, paginas: lido.paginas, numPages: lido.numPages, nome: fl.name, tamanho: fl.size, arquivo: fl });
+      }).catch(function (e) { toast((e && e.message) || 'Não deu para ler o PDF', 'error'); }).then(function () { setLendo(false); });
+    };
+    var inputContrato = h('input', { key: 'arqc', ref: arqContrato, type: 'file', accept: 'application/pdf,.pdf', 'aria-label': 'Escolher o contrato assinado em PDF', style: { display: 'none' },
+      onChange: function (e) { var fl = e.target.files && e.target.files[0]; e.target.value = ''; lerContrato(fl); } });
+    var escolherContrato = function () { if (arqContrato.current) arqContrato.current.click(); };
+    var LC = leitura ? leitura.res.campos : {};
+    var UI_CAMPO = { venc: LC.dia_mes ? 'dia_mes' : 'dia_semana', formas: 'pix' };
+    /* estado de um campo vindo do PDF: null | 'lido' | 'conferir' */
+    var estado = function (k) {
+      if (!leitura) return null;
+      var ck = UI_CAMPO[k] || k, ex = leitura.extra[k], ap = leitura.aplicados;
+      if (k === 'base' && ex) return f.base === (ap.base != null ? ap.base : leitura.baseAntes) ? 'conferir' : null;
+      if (k === 'venc') { var dk = f.periodicidade === 'mensal' ? 'dia_mes' : 'dia_semana'; if (ap[dk] == null || String(f[dk]) !== String(ap[dk]) || f.periodicidade !== ap.periodicidade) return null; return LC.periodicidade && LC.periodicidade.conferir ? 'conferir' : 'lido'; }
+      if (k === 'formas') return ['pix', 'boleto', 'cartao', 'desconto'].every(function (x) { return ap[x] == null || f[x] === ap[x]; }) && ap.pix != null ? 'lido' : null;
+      if (k === 'caucao_isento') { if (ap.caucao_isento == null || f.caucao_isento !== ap.caucao_isento) return null; return 'lido'; }
+      if (ap[ck] == null || String(f[ck]) !== String(ap[ck])) return null;
+      return (LC[ck] && LC[ck].conferir) || ex ? 'conferir' : 'lido';
+    };
+    var tagMiniC = function (txt, ambar) { return h('span', { style: { fontSize: 10, fontWeight: 700, borderRadius: 99, padding: '1px 7px', color: ambar ? '#92400e' : ROXO_ESC, background: ambar ? '#fffbeb' : '#f3e8fb', border: '1px solid ' + (ambar ? '#fde68a' : '#f3e8fb') } }, txt); };
+    var tg = function (k, label) { var e = estado(k); return e ? h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' } }, label, tagMiniC(e === 'conferir' ? 'Conferir' : 'do contrato', e === 'conferir')) : label; };
+    var hn = function (k, padrao) {
+      var e = estado(k); if (e !== 'conferir') return padrao;
+      var ck = UI_CAMPO[k] || k, ex = leitura.extra[k];
+      return (ex && ex.hint) || (LC[ck] && LC[ck].hint) || (LC.periodicidade && LC.periodicidade.hint) || padrao;
+    };
+    var hc = function (k, padrao) { return estado(k) === 'conferir' ? '#92400e' : padrao; };
+    var st = function (k, base) { var e = estado(k); return Object.assign({}, base || {}, e === 'conferir' ? { borderColor: '#f59e0b', background: '#fffbeb' } : e === 'lido' ? { borderColor: '#c4a5e0', background: '#fcfaff' } : {}); };
+    var hv = function (k) { return leitura ? { onMouseEnter: function () { setFoco(k); }, onMouseLeave: function () { setFoco(function (x) { return x === k ? null : x; }); } } : {}; };
+    /* marcas na prévia: uma por linha do Quadro-Resumo */
+    var chaveRect = function (r) { return r ? r.page + '_' + Math.round(r.y) : null; };
+    var marcasC = [], vistos = {};
+    if (leitura) {
+      var addM = function (k, r, conf, titulo) { var ch = chaveRect(r); if (!ch) return; if (vistos[ch]) { if (conf) vistos[ch].conferir = true; return; } vistos[ch] = { k: ch, rect: r, conferir: !!conf, titulo: titulo }; marcasC.push(vistos[ch]); };
+      Object.keys(LC).forEach(function (k) { addM(k, LC[k].rect, LC[k].conferir || !!leitura.extra[k], LC[k].origem || ''); });
+      ['cpf', 'nome', 'placa'].forEach(function (k) { var x = leitura.res.id[k]; if (x) addM(k, x.rect, false, x.valor); });
+      if (leitura.extra.base && LC.base) vistos[chaveRect(LC.base.rect)].conferir = true;
+      if (leitura.extra.km && LC.km) vistos[chaveRect(LC.km.rect)].conferir = true;
+    }
+    var rectDoFoco = function () {
+      if (!leitura || !foco) return null;
+      if (foco === 'cliente') return leitura.res.id.cpf ? chaveRect(leitura.res.id.cpf.rect) : null;
+      if (foco === 'moto') return leitura.res.id.placa ? chaveRect(leitura.res.id.placa.rect) : null;
+      var ck = UI_CAMPO[foco] || foco; return LC[ck] ? chaveRect(LC[ck].rect) : null;
+    };
+    var nLidosC = leitura ? Object.keys(LC).length : 0;
+    var nConfC = leitura ? ['plano', 'periodicidade', 'prazo', 'inicio', 'valor', 'venc', 'caucao_isento', 'base', 'area_km', 'manutencao', 'km', 'opcao'].filter(function (k) { return estado(k) === 'conferir'; }).length : 0;
+    var cliDif = leitura && leitura.cliInfo && leitura.cliInfo.id && cli && cli.id !== leitura.cliInfo.id;
+    var motoDif = leitura && leitura.motoInfo && leitura.motoInfo.id && moto && moto.id !== leitura.motoInfo.id;
+    var caixaInfo = function (tom, titulo, texto) {
+      var cores = tom === 'ok' ? ['#bbf7d0', '#f0fdf4', '#166534'] : tom === 'erro' ? ['#fecaca', '#fef2f2', '#991b1b'] : ['#fde68a', '#fffbeb', '#92400e'];
+      return h('div', { style: { border: '1px solid ' + cores[0], background: cores[1], borderRadius: 10, padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 2, fontSize: 12.5 } },
+        h('b', { style: { color: '#111827', fontSize: 13 } }, titulo), h('span', { style: { color: cores[2] } }, texto));
+    };
+    var conferenciaCliMoto = leitura ? h('div', { className: 'grid grid-cols-1 md:grid-cols-2', style: { gap: 12 } },
+      h('div', Object.assign({ style: { display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 } }, hv('cliente')),
+        h('span', { style: { fontSize: 12, fontWeight: 600, color: '#374151' } }, 'Locatário no contrato'),
+        !leitura.res.id.cpf ? caixaInfo('aviso', 'CPF não encontrado no PDF', 'Escolha o locatário abaixo olhando a prévia.')
+          : !leitura.cliInfo || leitura.cliInfo.buscando ? caixaInfo('aviso', (leitura.res.id.nome && leitura.res.id.nome.valor) || 'Locatário', 'Procurando o CPF no cadastro...')
+          : leitura.cliInfo.ok ? caixaInfo(cliDif ? 'aviso' : 'ok', leitura.cliInfo.nome, cliDif ? 'O locatário escolhido abaixo é outro. Confira.' : 'CPF ' + fCPFm(leitura.res.id.cpf.valor) + ' · achado no cadastro' + (leitura.cliInfo.cod ? ' (cód. ' + leitura.cliInfo.cod + ')' : ''))
+          : leitura.cliInfo.emContrato ? caixaInfo('erro', leitura.cliInfo.nome, 'Já tem um contrato em andamento. Não dá para importar outro.')
+          : leitura.cliInfo.naoAchado ? caixaInfo('erro', (leitura.res.id.nome && leitura.res.id.nome.valor) || 'CPF ' + fCPFm(leitura.res.id.cpf.valor), leitura.cliInfo.pre ? 'Tem pré-cadastro (' + (leitura.cliInfo.pre.status || 'em análise') + '). Aprove antes de importar.' : 'Esse CPF não tem cadastro aprovado. Cadastre o locatário antes de importar.')
+          : caixaInfo('aviso', 'Não deu para conferir o CPF', 'Escolha o locatário abaixo.')),
+      h('div', Object.assign({ style: { display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 } }, hv('moto')),
+        h('span', { style: { fontSize: 12, fontWeight: 600, color: '#374151' } }, 'Moto no contrato'),
+        !leitura.motoInfo ? caixaInfo('aviso', 'Placa não encontrada no PDF', 'Escolha a moto abaixo olhando a prévia.')
+          : leitura.motoInfo.ok ? caixaInfo(motoDif ? 'aviso' : 'ok', leitura.motoInfo.rotulo, motoDif ? 'A moto escolhida abaixo é outra. Confira.' : 'Placa e chassi batem com a frota · disponível')
+          : leitura.motoInfo.naoAchada ? caixaInfo('erro', leitura.motoInfo.rotulo, 'Essa placa não está na frota. Cadastre a moto antes de importar.')
+          : caixaInfo('erro', leitura.motoInfo.rotulo, 'A moto está ' + leitura.motoInfo.status + '. Só dá para importar com a moto disponível.'))) : null;
+    var faixaLeitura = leitura ? h('div', { style: { background: '#ffffff', border: '1px solid #e9d5f9', borderRadius: 14, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' } },
+      h('span', { style: { width: 36, height: 36, borderRadius: 10, background: nLidosC ? '#f3e8fb' : '#fffbeb', color: nLidosC ? ROXO : '#b45309', display: 'grid', placeItems: 'center', flex: 'none' } }, ico(nLidosC ? 'check' : 'alert', 18)),
+      h('div', { style: { flex: '1 1 240px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 } },
+        h('b', { style: { color: '#3a1556' } }, nLidosC ? 'Lemos o contrato' + (leitura.res.numero ? ' ' + leitura.res.numero : '') : leitura.res.semTexto ? 'Esse PDF não tem texto' : 'Não achamos o Quadro-Resumo nesse PDF'),
+        h('span', { style: { fontSize: 12.5, color: '#4b5563' } }, nLidosC ? h(React.Fragment, null, nLidosC + ' campos preenchidos a partir do PDF', nConfC ? h(React.Fragment, null, ' · ', h('b', { style: { color: '#b45309' } }, nConfC + ' para conferir'), ' (em laranja aqui e na página)') : ' · passe o mouse num campo para ver de onde ele veio')
+          : leitura.res.semTexto ? 'Parece uma foto do documento. Preencha os campos olhando a prévia ao lado.' : 'Ele pode ser de outro modelo. Preencha os campos olhando a prévia ao lado.')),
+      Btn({ icon: 'upload', onClick: escolherContrato, disabled: lendo, children: lendo ? 'Lendo...' : 'Trocar PDF' })) : null;
+    var dropzone = h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+      h('button', { type: 'button', onClick: escolherContrato, disabled: lendo,
+        onDragOver: function (e) { e.preventDefault(); if (!arrastando) setArrastando(true); }, onDragLeave: function () { setArrastando(false); },
+        onDrop: function (e) { e.preventDefault(); setArrastando(false); var fl = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; lerContrato(fl); },
+        style: { border: '2px dashed ' + (arrastando ? ROXO : '#d8b4f0'), background: arrastando ? '#faf7fd' : '#ffffff', borderRadius: 18, padding: '52px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, cursor: lendo ? 'wait' : 'pointer', textAlign: 'center', fontFamily: 'inherit' } },
+        lendo ? Spinner('Lendo o contrato...') : h(React.Fragment, null,
+          h('span', { style: { width: 56, height: 56, borderRadius: 16, background: '#f3e8fb', color: ROXO, display: 'grid', placeItems: 'center' } }, ico('upload', 26)),
+          h('b', { style: { fontFamily: SORA, fontSize: 18, color: '#3a1556' } }, 'Solte aqui o contrato assinado em PDF'),
+          h('span', { style: { fontSize: 13.5, color: '#4b5563', maxWidth: 620, lineHeight: 1.5 } }, 'A gente lê o Quadro-Resumo e já preenche: locatário, moto, plano, prazo, valor e vencimento da parcela, caução, base, área de circulação, manutenção, pagamento e opção de compra. Você confere tudo ao lado do documento antes de importar.'),
+          h('span', { style: { height: 42, padding: '0 18px', borderRadius: 10, background: ROXO, color: '#ffffff', fontWeight: 600, display: 'inline-flex', alignItems: 'center' } }, 'Escolher PDF'))),
+      h('div', { className: 'grid grid-cols-1 md:grid-cols-3', style: { gap: 12 } },
+        [['1 · Lê o PDF', 'No seu navegador, como o CRLV-e da moto. O arquivo só sobe quando você importar.'], ['2 · Confere lado a lado', 'Prévia grande do contrato, com o lugar de cada campo marcado na página.'], ['3 · Importa', 'O contrato entra Ativo, com o PDF salvo para a equipe e para o locatário.']].map(function (x) {
+          return h('div', { key: x[0], style: { background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 4 } }, h('b', { style: { fontSize: 13 } }, x[0]), h('span', { style: { fontSize: 12.5, color: '#6b7280' } }, x[1]));
+        })),
+      h('span', { style: { fontSize: 12, color: '#6b7280', textAlign: 'center' } }, 'PDF escaneado (foto, sem texto) também entra: aí os campos ficam em branco para você preencher olhando a prévia.'));
+    var resumoCard = h(Card, { pad: false }, CardHead('Resumo do Demonstrativo'),
             h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
               h('div', null,
                 h('div', { style: Object.assign({ fontFamily: SORA, fontSize: 26, fontWeight: 700 }, TAB) }, vNum > 0 ? fR(vNum) : '—', h('span', { style: { fontSize: 14, fontWeight: 500, color: '#6b7280' } }, ' / ' + (mensal ? 'mês' : 'semana'))),
@@ -1970,9 +2263,88 @@
             h('div', { style: { padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 } },
               h('div', { style: { fontSize: 12, fontWeight: 700, color: '#6b7280', letterSpacing: '.04em', textTransform: 'uppercase' } }, importar ? 'Documentos' : 'Documentos para assinatura'),
               docs.map(function (dc) { return h('div', { key: dc.id, style: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 12.5, color: dc.incluso ? '#111827' : '#9ca3af' } }, h('span', { style: { color: dc.incluso ? '#16a34a' : '#d1d5db' } }, ico(dc.incluso ? 'check' : 'circle', 14)), h('span', { style: { flex: 1 } }, dc.titulo), dc.sub ? h('span', { style: { fontSize: 11.5 } }, dc.sub) : null); }),
-              Btn({ variant: 'pri', icon: importar ? 'upload' : 'filetext', onClick: gerar, disabled: !completo || salvando, style: { width: '100%', height: 44 }, children: salvando ? (importar ? 'Importando...' : 'Gerando contrato...') : importar ? 'Importar contrato assinado' : 'Gerar contrato e enviar ao Autentique' }),
+              importar ? null : Btn({ variant: 'pri', icon: importar ? 'upload' : 'filetext', onClick: gerar, disabled: !completo || salvando, style: { width: '100%', height: 44 }, children: salvando ? (importar ? 'Importando...' : 'Gerando contrato...') : importar ? 'Importar contrato assinado' : 'Gerar contrato e enviar ao Autentique' }),
               importar ? null : Btn({ icon: 'eye', disabled: !basico || !moto, onClick: function () { abrirPdfPost(api, '/contratos/previa-pdf', body(), toast); }, style: { width: '100%' }, children: 'Pré-visualizar PDF' }),
-              h('div', { style: { fontSize: 12, color: '#6b7280', lineHeight: 1.5 } }, importar ? 'O contrato fica Ativo na hora e a moto, Alugada.' : h(React.Fragment, null, 'A moto fica ', h('b', null, 'Reservada'), ' até a assinatura. As parcelas só nascem quando o Autentique devolver o contrato assinado.')))))));
+              h('div', { style: { fontSize: 12, color: '#6b7280', lineHeight: 1.5 } }, importar ? 'O contrato fica Ativo na hora e a moto, Alugada.' : h(React.Fragment, null, 'A moto fica ', h('b', null, 'Reservada'), ' até a assinatura. As parcelas só nascem quando o Autentique devolver o contrato assinado.'))));
+    var colPrevia = h('div', { style: { position: 'sticky', top: 84, display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 } },
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } }, Segmented([['contrato', 'Contrato'], ['resumo', 'Resumo']], abaPrev, setAbaPrev, 'Prévia')),
+      abaPrev === 'resumo' || !leitura ? resumoCard
+        : h(VisorPdf, { key: 'visorc', pdf: leitura.pdf, paginas: leitura.paginas, numPages: leitura.numPages, nome: leitura.nome, tamanho: leitura.tamanho, arquivo: leitura.arquivo, marcas: marcasC, ativo: rectDoFoco(), semTexto: leitura.res.semTexto || !nLidosC, altura: '80vh',
+            rodape: leitura.res.semTexto || !nLidosC ? null : 'Roxo: lido do contrato · laranja: conferir. Passe o mouse num campo para ver o trecho.' }));
+    return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+      voltar(function () { nav({ tela: 'lista', tab: 'contratos' }); }, 'Contratos'),
+      h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end', justifyContent: 'space-between' } },
+        h('div', null,
+          h('h2', { style: { margin: 0, fontFamily: SORA, fontSize: 22, fontWeight: 700 } }, importar ? 'Importar contrato já assinado' : 'Novo contrato'),
+          h('p', { style: { margin: '4px 0 0', color: '#6b7280', fontSize: 13.5 } }, importar ? 'Para contratos assinados fora da Central: comece pelo PDF, a gente preenche o resto e as parcelas já pagas entram como pagas.' : 'Montado a partir do Demonstrativo de Contrato (Quadro-Resumo) · Tutts Aluguel ou Plano Conquista')),
+        Segmented([[false, 'Novo contrato'], [true, 'Importar já assinado']], importar, function (v) { setImportar(v); if (!v) { setLeitura(null); setPdf(null); kmPdf.current = null; setFoco(null); } }, 'Modo')),
+      importar ? inputContrato : null, /* LOCACAO_IMPORTAR_LEITURA_V1 */
+      importar && !leitura ? dropzone :
+      h('div', { className: 'grid gap-4 items-start ' + (importar ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,560px)]' : 'lg:grid-cols-[minmax(0,1fr)_380px]') },
+        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 } },
+          importar ? faixaLeitura : null,
+          h(Card, { pad: false }, CardHead('Locatário e moto'),
+            h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
+              importar ? conferenciaCliMoto : null,
+              h('div', { className: 'grid grid-cols-1 md:grid-cols-2', style: { gap: 12 } },
+                h(Field, { label: 'Locatário aprovado', req: true, hint: clientes.length ? null : 'Nenhum cliente aprovado sem contrato' },
+                  Select({ value: cliId, onChange: function (e) { setCliId(e.target.value); } }, [h('option', { key: '', value: '' }, clientes.length ? 'Escolha o locatário' : 'Sem clientes disponíveis')].concat(clientes.map(function (c) { return h('option', { key: c.id, value: String(c.id) }, c.nome + ' · ' + (c.tipo === 'tutts' ? 'Tutts' : 'Externo')); })))),
+                h(Field, { label: 'Moto disponível', req: true, hint: motos.length ? null : 'Nenhuma moto disponível' },
+                  Select({ value: motoId, onChange: function (e) { setMotoId(e.target.value); } }, [h('option', { key: '', value: '' }, motos.length ? 'Escolha a moto' : 'Sem motos disponíveis')].concat(motos.map(function (m) { return h('option', { key: m.id, value: String(m.id) }, m.placa + ' · ' + m.modelo); }))))),
+              cli ? h('div', { style: { display: 'flex', gap: 12, alignItems: 'flex-start', border: '1px solid #e5e7eb', borderRadius: 12, padding: 12 } },
+                h('div', { style: { width: 38, height: 38, borderRadius: 99, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 13, flex: 'none' } }, iniciais(cli.nome)),
+                h('div', { style: { minWidth: 0, flex: 1 } }, h('div', { style: { fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } }, cli.nome, TagTipo(cli.tipo), cli.tipo === 'tutts' && cli.cod_profissional ? h('span', { style: { fontWeight: 400, color: '#6b7280' } }, 'cód. ' + cli.cod_profissional) : null), // LOCACAO_V4
+                  cliInfo.map(function (l, i) { return h('div', { key: i, style: { fontSize: 12.5, color: '#6b7280', marginTop: 2 } }, l); }),
+                  cli.alertas && cli.alertas.length ? h('div', { style: { marginTop: 6 } }, cli.alertas.map(function (a, i) { return h('div', { key: i, style: { fontSize: 12, color: '#92400e' } }, typeof a === 'string' ? a : a.texto || a.mensagem); })) : null)) : null,
+              moto ? h('div', { style: { display: 'flex', gap: 12, alignItems: 'center', border: '1px solid #e9d5f9', background: '#faf7fd', borderRadius: 12, padding: 10, flexWrap: 'wrap' } },
+                h(MotoImg, { src: moto.capa_thumb, tipo: moto.tipo, modelo: moto.modelo, cor: moto.cor, w: 120, h: 76 }),
+                h('div', { style: { flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', gap: 3 } },
+                  h('div', { style: { fontWeight: 600 } }, [moto.modelo, moto.ano, moto.cor].filter(Boolean).join(' · ')),
+                  h('div', { style: { fontSize: 12, color: '#6b7280', fontFamily: MONO } }, ['Placa ' + moto.placa, moto.chassi ? 'Chassi ' + moto.chassi : null, moto.renavam ? 'RENAVAM ' + moto.renavam : null, moto.numero_motor ? 'Motor ' + moto.numero_motor : null].filter(Boolean).join(' · ')),
+                  h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Condição: ', h('b', { style: { color: '#374151' } }, (CONDICAO.find(function (x) { return x[0] === moto.condicao; }) || [0, 'não informada'])[1]), moto.condicao ? '' : ' · informe no cadastro da moto', moto.numero_motor ? '' : ' · sem nº do motor no cadastro')),
+                h(Field, Object.assign({ label: tg('km', 'Km na entrega'), hint: hn('km', 'conforme a vistoria'), hintCor: hc('km'), style: { width: estado('km') === 'conferir' ? 220 : 150 } }, hv('km')), Input({ value: f.km, inputMode: 'numeric', onChange: function (e) { set('km', soDig(e.target.value)); }, style: st('km') }))) : null)),
+          h(Card, { pad: false }, CardHead(tg('plano', 'Plano')),
+            h('div', { className: 'grid grid-cols-1 md:grid-cols-2', role: 'radiogroup', 'aria-label': 'Plano', style: { padding: 16, gap: 10 } },
+              Radio(f.plano === 'aluguel', 'Tutts Aluguel', 'Locação pura, sem opção de compra. Renova sozinha por igual período (Cl. 13).', function () { set('plano', 'aluguel'); }),
+              Radio(f.plano === 'conquista', 'Plano Conquista', 'Locação com opção de compra ao fim do prazo, cumprido integralmente e tudo pago. Manutenção por conta do locatário.', function () { set('plano', 'conquista'); }, null, h('span', { style: { fontSize: 11, fontWeight: 600, color: ROXO_ESC, background: '#f3e8fb', borderRadius: 6, padding: '0 6px' } }, 'Anexo II')))),
+          h(Card, { pad: false }, CardHead('Prazo e valores'),
+            h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
+              h('div', { className: 'grid grid-cols-1 md:grid-cols-3', style: { gap: 12 } },
+                h(Field, Object.assign({ label: tg('periodicidade', 'Periodicidade'), req: true, hint: hn('periodicidade', null), hintCor: hc('periodicidade') }, hv('periodicidade')), Segmented([['semanal', 'Semanal'], ['mensal', 'Mensal']], f.periodicidade, function (v) { set('periodicidade', v); if (v === 'semanal' && f.prazo === '24') set('prazo', '104'); if (v === 'mensal' && f.prazo === '104') set('prazo', '24'); }, 'Periodicidade')),
+                h(Field, Object.assign({ label: tg('prazo', 'Prazo'), req: true, hint: hn('prazo', prazoHint), hintCor: hc('prazo') }, hv('prazo')), h('div', { style: { position: 'relative' } }, Input({ value: f.prazo, inputMode: 'numeric', onChange: function (e) { set('prazo', soDig(e.target.value)); }, style: st('prazo', { paddingRight: 74 }) }), h('span', { style: { position: 'absolute', right: 12, top: 11, fontSize: 13, color: '#6b7280' } }, mensal ? 'meses' : 'semanas'))),
+                h(Field, Object.assign({ label: tg('venc', 'Vencimento'), req: true, hint: hn('venc', mensal ? 'Dia do mês (1 a 28)' + (cli && cli.venc_periodicidade === 'mensal' && cli.venc_dia_mes ? ' · cadastro: dia ' + p2(cli.venc_dia_mes) : '') : 'Dia da semana' + (cli && cli.dia_vencimento ? ' · cadastro: ' + (DIA_VENC.find(function (x) { return x[0] === Number(cli.dia_vencimento); }) || [0, ''])[1] : '')), hintCor: hc('venc') }, hv('venc')),
+                  mensal ? Select({ value: f.dia_mes, style: st('venc'), onChange: function (e) { set('dia_mes', e.target.value); } }, [h('option', { key: '', value: '' }, 'Escolha o dia')].concat(Array.from({ length: 28 }, function (_, i) { return h('option', { key: i + 1, value: String(i + 1) }, 'Todo dia ' + p2(i + 1)); })))
+                    : Select({ value: f.dia_semana, style: st('venc'), onChange: function (e) { set('dia_semana', e.target.value); } }, [h('option', { key: '', value: '' }, 'Escolha o dia')].concat(DIA_VENC.map(function (d) { return h('option', { key: d[0], value: String(d[0]) }, d[1]); })))),
+                h(Field, Object.assign({ label: tg('valor', 'Valor da parcela'), req: true, hint: hn('valor', vNum > 0 ? fR(vNum) + ' / ' + (mensal ? 'mês' : 'semana') : 'Digitado pelo time'), hintCor: hc('valor') }, hv('valor')), Input({ value: f.valor, inputMode: 'decimal', placeholder: 'R$ 0,00', onChange: function (e) { set('valor', e.target.value); }, style: st('valor') })),
+                h(Field, Object.assign({ label: tg('inicio', 'Data de início (retirada)'), req: true, hint: hn('inicio', ini ? DIAS_LONGO[ini.getDay()] : null), hintCor: hc('inicio') }, hv('inicio')), Input({ type: 'date', value: f.inicio, onChange: function (e) { set('inicio', e.target.value); }, style: st('inicio') })),
+                h(Field, Object.assign({ label: tg('caucao_isento', 'Caução'), hint: f.caucao_isento ? 'Débitos do encerramento seriam abatidos da caução (Cl. 15.2)' : null }, hv('caucao_isento')),
+                  h('div', { style: { display: 'flex', gap: 8, alignItems: 'center' } }, Segmented([[true, 'Isento'], [false, 'Valor']], f.caucao_isento, function (v) { set('caucao_isento', v); }, 'Caução'),
+                    f.caucao_isento ? null : Input({ value: f.caucao, inputMode: 'decimal', placeholder: 'R$ 0,00', 'aria-label': 'Valor da caução', onChange: function (e) { set('caucao', e.target.value); }, style: { flex: 1 } })))),
+              h('div', { className: 'grid grid-cols-1 md:grid-cols-3', style: { gap: 12 } },
+                h(Field, Object.assign({ label: tg('base', 'Base de retirada'), hint: hn('base', bases.length ? null : 'Cadastre em Configurações › Locadora e bases'), hintCor: hc('base') }, hv('base')), Select({ value: f.base, style: st('base'), onChange: function (e) { set('base', e.target.value); } }, [h('option', { key: '', value: '' }, bases.length ? 'Escolha a base' : 'Sem bases')].concat(bases.map(function (b, i) { return h('option', { key: i, value: String(b.id != null ? b.id : i) }, b.nome || b.endereco); })))),
+                h(Field, Object.assign({ label: tg('area_km', 'Área de circulação'), hint: 'raio a partir do município' }, hv('area_km')), h('div', { style: { display: 'flex', gap: 6 } }, Input({ value: f.area_km, inputMode: 'numeric', 'aria-label': 'Raio em km', onChange: function (e) { set('area_km', soDig(e.target.value)); }, style: st('area_km', { width: 80 }) }), h('span', { style: { alignSelf: 'center', fontSize: 13, color: '#6b7280' } }, 'km de'), Input({ value: f.area_mun, 'aria-label': 'Município', onChange: function (e) { set('area_mun', e.target.value); }, style: st('area_mun') }))),
+                h(Field, Object.assign({ label: tg('manutencao', 'Manutenção'), hint: f.plano === 'conquista' ? 'Obrigatório no Conquista' : null }, hv('manutencao')), Segmented([['inclusa', 'Inclusa (Base)'], ['locatario', 'Locatário']], f.plano === 'conquista' ? 'locatario' : f.manutencao, function (v) { if (f.plano !== 'conquista') set('manutencao', v); }, 'Manutenção'))),
+              f.plano === 'conquista' ? h(Field, Object.assign({ label: tg('opcao', 'Valor de exercício da opção de compra'), req: true, hint: 'Corrigido pelo IPCA da assinatura até o pagamento (Anexo II, Cl. 3)' }, hv('opcao')), h('div', { style: { display: 'flex', gap: 8, alignItems: 'center' } }, Input({ value: f.opcao, inputMode: 'decimal', onChange: function (e) { set('opcao', e.target.value); }, style: st('opcao', { maxWidth: 160 }) }), h('span', { style: { fontSize: 13, color: '#6b7280' } }, '+ IPCA'))) : null)),
+          h(Card, { pad: false }, CardHead(tg('formas', 'Pagamento')),
+            h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
+              h('div', { style: { display: 'flex', gap: 18, flexWrap: 'wrap' } }, Check(f.pix, function (v) { set('pix', v); }, 'Pix'), Check(f.boleto, function (v) { set('boleto', v); }, 'Boleto'), Check(f.cartao, function (v) { set('cartao', v); }, 'Cartão recorrente')),
+              formas.length ? null : h('div', { style: { fontSize: 12, color: '#991b1b' } }, 'Marque ao menos uma forma de pagamento.'),
+              cli && cli.tipo !== 'tutts' ? h('div', { style: { border: '1px solid #e5e7eb', background: '#f9fafb', borderRadius: 12, padding: 12, fontSize: 13, color: '#6b7280', lineHeight: 1.45, display: 'flex', gap: 10, alignItems: 'flex-start' } }, // LOCACAO_V4: externo
+                h('div', { style: { flex: 1 } }, h('b', { style: { color: '#374151' } }, 'Sem desconto no repasse. '), 'Ele não faz entregas pela Tutts, então paga só por Pix, boleto ou cartão. Para liberar o desconto, primeiro ele precisa virar motoboy da Central.'), TagTipo('externo'))
+              : h('div', { style: { border: '1px solid ' + (f.desconto ? ROXO : '#e5e7eb'), background: f.desconto ? '#faf7fd' : '#fff', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 6, opacity: cli ? 1 : 0.6 } },
+                h('div', { style: { display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' } }, Toggle(f.desconto, function (v) { if (cli && cli.tipo === 'tutts') set('desconto', v); }, 'Descontar as parcelas do repasse'), h('b', { style: { fontSize: 13.5 } }, 'Descontar as parcelas do repasse'), h('span', { style: { fontSize: 11, fontWeight: 600, color: '#374151', background: '#f3f4f6', borderRadius: 6, padding: '0 6px' } }, 'Anexo III · facultativo'), h('div', { style: { flex: 1 } }), cli ? TagTipo('tutts', 'Motoboy Tutts' + (cli.cod_profissional ? ' · cód. ' + cli.cod_profissional : '')) : null),
+                h('div', { style: { fontSize: 12.5, color: '#6b7280', lineHeight: 1.45 } }, 'As parcelas vencidas saem do repasse de quarta-feira. Se o repasse não cobrir, o resto vai por Pix no vencimento. Ele pode revogar a qualquer momento pelo app, sem efeito na locação (Cl. 5.11).'),
+                cli ? h('div', { style: { fontSize: 12, color: '#6b7280' } }, repMedio && repMedio.valor > 0 ? h('span', null, 'Repasse médio das últimas 4 semanas: ', h('b', { style: { color: '#111827' } }, fR(repMedio.valor)), vNum > 0 ? ' · parcela ' + fR(vNum) + (mensal ? ' por mês' : '') : '') : 'Sem repasses nas últimas 4 semanas.')
+                  : h('div', { style: { fontSize: 12, color: '#374151' } }, 'Disponível só para motoboy Tutts.')))),
+          importar ? h(Card, { pad: false }, CardHead('Contrato já assinado'), /* LOCACAO_IMPORTAR_LEITURA_V1: o PDF entra lá em cima */
+            h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
+              h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' } },
+                h(Field, { label: 'Parcelas pagas até', opt: true, hint: 'As parcelas com vencimento até esta data entram como pagas (baixa “importado”).', style: { flex: '1 1 240px' } }, Input({ type: 'date', value: pagasAte, max: hojeISO(), onChange: function (e) { setPagasAte(e.target.value); } })),
+                h('div', { style: { flex: '1 1 260px', display: 'flex', flexDirection: 'column', gap: 6 } },
+                  Btn({ variant: 'pri', icon: 'upload', onClick: gerar, disabled: !completo || salvando || (leitura && leitura.cliInfo && (leitura.cliInfo.emContrato)), style: { width: '100%', height: 46 }, children: salvando ? 'Importando...' : 'Importar contrato assinado' }),
+                  !completo ? h('span', { style: { fontSize: 11.5, color: '#6b7280' } }, 'Faltam campos obrigatórios (locatário, moto, valor, prazo, início, vencimento, pagamento).') : null)),
+              Aviso('azul', null, 'O contrato entra direto como Ativo, sem passar pelo Autentique. O PDF fica salvo para a equipe e para o locatário. Registre depois a vistoria de entrega (Anexo IV) na moto, se ela ainda não estiver no sistema.'))) : null),
+        importar ? colPrevia : h('div', { style: { position: 'sticky', top: 84, display: 'flex', flexDirection: 'column', gap: 14 } }, resumoCard)));
   }
 
   function abrirPdf(api, url, toast) {
