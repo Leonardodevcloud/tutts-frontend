@@ -152,12 +152,19 @@
   }
 
   // ─── Drawer de detalhes da OS ────────────────────────────────
+  // CF_FINALIZACAO_MANUAL_V1
+  const MOTIVOS_FINALIZACAO = ['Motoboy não finalizou no app', 'App sem internet', 'Horário errado', 'Pedido do cliente', 'Outro'];
+
   function DrawerOS({ solicitacaoId, onFechar, fetchAuth, API_URL, showToast }) {
     const [dados, setDados] = useState(null);
     const [loading, setLoading] = useState(true);
     const [fotoAtiva, setFotoAtiva] = useState(null);
     const [horarioManual, setHorarioManual] = useState('');
     const [enviando, setEnviando] = useState(false);
+    // CF_FINALIZACAO_MANUAL_V1: motivo + detalhe obrigatórios pra finalizar pelo painel
+    const [motivoFin, setMotivoFin] = useState('');
+    const [detalheFin, setDetalheFin] = useState('');
+    const podeFinalizar = !!motivoFin && detalheFin.trim().length >= 5;
 
     useEffect(() => {
       if (!solicitacaoId) return;
@@ -310,6 +317,16 @@
                   )
                 ),
 
+                // CF_FINALIZACAO_MANUAL_V1: histórico de finalizações pelo painel desta OS
+                dados.finalizacoes_manuais?.length > 0 && h('section', { className: 'border border-gray-100 rounded-xl p-3 flex flex-col gap-2' },
+                  h('p', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide' }, 'Finalizações pelo painel'),
+                  dados.finalizacoes_manuais.map((f) => h('div', { key: f.id, className: 'text-xs flex flex-col gap-0.5' },
+                    h('p', { className: 'text-gray-800' }, fmtBRT(f.criado_em) + ' · ' + (f.sucesso ? 'Finalizado manualmente' : 'Tentativa sem sucesso') + (f.finalizado_por ? ' por ' + f.finalizado_por : '')),
+                    h('p', { className: 'text-gray-600' }, 'Motivo: ' + f.motivo + (f.detalhe ? ' — ' + f.detalhe : '')),
+                    f.horario_informado && h('p', { className: 'text-gray-400' }, 'Horário informado: ' + f.horario_informado)
+                  ))
+                ),
+
                 // Sem eventos
                 dados.trilha?.length === 0 && h('div', { className: 'text-center py-6 text-gray-400' },
                   h('p', { className: 'text-sm' }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-mail" })), "Nenhum status enviado ao CF ainda")),
@@ -318,7 +335,7 @@
               ),
 
         // Footer
-        !loading && dados && h('div', { className: 'p-3 border-t border-gray-100 bg-gray-50 space-y-2' },
+        !loading && dados && h('div', { className: 'p-3 border-t border-gray-100 bg-gray-50 space-y-2 max-h-[65vh] overflow-y-auto' },
           // Link para corrida no módulo Solicitações
           dados.sc && h('div', { className: 'flex gap-2' },
             dados.sc.tutts_url_rastreamento && h('a', {
@@ -332,34 +349,62 @@
             }, h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-link" })), "Ver na Mapp"))
           ),
           h('div', { className: 'flex flex-col gap-2' },
-            h('div', { className: 'flex items-center gap-1.5 text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-1.5 rounded-lg' },
-              'Correção manual de horário (opcional)'
-            ),
-            h('label', { className: 'text-xs text-gray-500' }, 'Horário real da finalização'),
-            h('input', {
-              type: 'datetime-local',
-              value: horarioManual,
-              onChange: (e) => setHorarioManual(e.target.value),
-              className: 'w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:border-purple-400 focus:outline-none',
-            }),
-            h('p', { className: 'text-[11px] text-gray-400 -mt-1' }, 'Deixe em branco para usar o horário atual. Fuso de Salvador (BRT).'),
+            // CF_FINALIZACAO_MANUAL_V1: finalização pelo painel exige motivo + detalhe
+            h('section', { className: 'border border-amber-200 bg-amber-50 rounded-xl p-3 flex flex-col gap-2.5' },
+              h('div', null,
+                h('p', { className: 'text-sm font-semibold text-amber-800' }, 'Finalização manual pelo painel'),
+                h('p', { className: 'text-xs text-amber-900/80' }, 'Fica registrada como intervenção manual, com o motivo e quem fez.')
+              ),
+              h('fieldset', { className: 'flex flex-col gap-1.5' },
+                h('legend', { className: 'text-xs font-semibold text-gray-700 mb-1.5' }, 'Motivo da intervenção *'),
+                h('div', { className: 'flex flex-wrap gap-1.5' },
+                  MOTIVOS_FINALIZACAO.map((m) => h('button', {
+                    key: m, type: 'button', 'aria-pressed': motivoFin === m,
+                    onClick: () => setMotivoFin(m),
+                    className: 'min-h-[34px] px-3 rounded-full text-xs border transition-colors ' + (motivoFin === m
+                      ? 'border-[#770fa8] bg-[#f3e8fb] text-[#5d0b85] font-semibold'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-purple-300'),
+                  }, m))
+                ),
+                h('label', { className: 'flex flex-col gap-1 text-xs text-gray-700 mt-1' }, 'Detalhe (obrigatório)',
+                  h('textarea', {
+                    rows: 3, maxLength: 1000, value: detalheFin,
+                    onChange: (e) => setDetalheFin(e.target.value),
+                    placeholder: 'Ex.: entregador confirmou por telefone que entregou às 11:40',
+                    className: 'w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:border-purple-400 focus:outline-none resize-y',
+                  })
+                )
+              ),
+              h('label', { className: 'flex flex-col gap-1 text-xs text-gray-700' }, 'Horário real da finalização (opcional)',
+                h('input', {
+                  type: 'datetime-local',
+                  value: horarioManual,
+                  onChange: (e) => setHorarioManual(e.target.value),
+                  className: 'w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:border-purple-400 focus:outline-none',
+                })
+              ),
+              h('p', { className: 'text-[11px] text-gray-500 -mt-1' }, 'Em branco = agora. Fuso de Salvador (BRT).'),
 
-            h('button', {
-              disabled: enviando,
-              onClick: () => {
-                if (!window.confirm('Enviar CONCLUIDO / ENTREGUE ao ConfirmaFacil para esta NF?\n\nIsso informa o CF que a entrega foi finalizada. E uma acao real, nao e teste.')) return;
-                setEnviando(true);
-                fetchAuth(API_URL + '/confirmafacil/testar-ocorrencia', {
-                  method: 'POST', headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ solicitacao_id: solicitacaoId, status: 'finalizado_ponto', data_finalizacao: horarioManual || undefined }),
-                }).then(r => r.json()).then(d => {
-                  if (d.ok) showToast('Finalizado enviado ao CF' + (horarioManual ? ' (horário corrigido)' : ''), 'success');
-                  else showToast('' + (d.mensagem || 'Erro'), 'error');
-                  return fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId).then(r => r.json()).then(setDados);
-                }).finally(() => setEnviando(false));
-              },
-              className: 'w-full text-sm py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-60',
-            }, enviando ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Enviando...") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16, color: "#16a34a" }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Finalizar no CF")),
+              h('button', {
+                disabled: enviando || !podeFinalizar,
+                onClick: () => {
+                  if (!podeFinalizar) return;
+                  if (!window.confirm('Enviar CONCLUIDO / ENTREGUE ao ConfirmaFacil para esta NF?\n\nMotivo: ' + motivoFin + '\n\nIsso informa o CF que a entrega foi finalizada. E uma acao real, nao e teste.')) return;
+                  setEnviando(true);
+                  fetchAuth(API_URL + '/confirmafacil/testar-ocorrencia', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ solicitacao_id: solicitacaoId, status: 'finalizado_ponto', data_finalizacao: horarioManual || undefined, motivo: motivoFin, detalhe: detalheFin.trim() }),
+                  }).then(r => r.json()).then(d => {
+                    if (d.ok) { showToast('Finalizado enviado ao CF' + (horarioManual ? ' (horário corrigido)' : ''), 'success'); setMotivoFin(''); setDetalheFin(''); }
+                    else showToast('' + (d.mensagem || d.error || d.erro || 'Erro'), 'error');
+                    return fetchAuth(API_URL + '/confirmafacil/os-detalhes/' + solicitacaoId).then(r => r.json()).then(setDados);
+                  }).catch(() => showToast('Não deu pra finalizar agora. Tente de novo.', 'error'))
+                    .finally(() => setEnviando(false));
+                },
+                className: 'w-full text-sm font-semibold py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed',
+              }, enviando ? h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-clock" })), "Enviando...") : h("span", { className: "inline-flex items-center gap-1.5" }, h("svg", { className: "ico", style: { width: 16, height: 16 }, "aria-hidden": "true" }, h("use", { href: "#i-check" })), "Finalizar no CF")),
+              !podeFinalizar && h('p', { className: 'text-[11px] text-gray-500 text-center' }, 'O botão só libera com motivo e detalhe preenchidos.')
+            ),
 
             h('button', {
               disabled: enviando,
@@ -1368,6 +1413,9 @@
     const [hist, setHist]       = useState(null);
     const [loading, setLoading] = useState(true);
     const chartRefs = React.useRef({});
+    // CF_FINALIZACAO_MANUAL_V1
+    const [listaManuais, setListaManuais] = useState(null); // { titulo, cnpj }
+    const [osAberta, setOsAberta] = useState(null);
 
     const rangeDoMes = (ym) => {
       const [y, m] = ym.split('-').map(Number);
@@ -1475,6 +1523,13 @@
     };
 
     const filiais = (hist && hist.filiais) || [];
+    // CF_FINALIZACAO_MANUAL_V1
+    const resumoMan = (hist && hist.manuais) || null;
+    const fmtNum = (n) => Number(n || 0).toLocaleString('pt-BR');
+    const fmtPct = (a, b) => { if (!b) return '—'; const v = (a / b) * 100; if (v > 0 && v < 0.1) return '<0,1%'; return (Math.round(v * 10) / 10).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%'; };
+    const fmtCnpjCF = (c) => { const d = String(c || '').replace(/\D/g, ''); return d.length === 14 ? d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : (c || ''); };
+    const fmtQuando = (d) => { try { return new Date(d).toLocaleString('pt-BR', { timeZone: SLA_TZ, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', ''); } catch (_) { return ''; } };
+    const motivoTop = resumoMan && resumoMan.por_motivo && resumoMan.por_motivo[0];
 
     return h('div', { className: 'space-y-3' },
       // controles
@@ -1492,6 +1547,28 @@
           )
         )
       ),
+      // CF_FINALIZACAO_MANUAL_V1: resumo do mês das finalizações pelo painel
+      resumoMan && filiais.length > 0 && h('section', { className: 'bg-white border border-gray-200 rounded-2xl px-4 py-3 flex flex-wrap gap-4 items-center justify-between' },
+        h('div', { className: 'flex gap-3 items-center min-w-0' },
+          h('span', { className: 'w-9 h-9 rounded-xl bg-orange-50 text-orange-700 flex items-center justify-center flex-shrink-0' },
+            h('svg', { className: 'ico', style: { width: 18, height: 18 }, 'aria-hidden': 'true' }, h('use', { href: '#i-user' }))),
+          h('div', { className: 'min-w-0' },
+            h('div', { className: 'text-sm font-semibold text-gray-900' }, 'Finalizações manuais no mês'),
+            h('div', { className: 'text-xs text-gray-500' }, 'Feitas pelo painel do CF ("Finalizar no CF"), com o motivo informado'))
+        ),
+        h('div', { className: 'flex gap-5 items-center flex-wrap' },
+          h('div', null,
+            h('div', { className: 'text-2xl font-bold text-orange-700 leading-tight' }, fmtNum(resumoMan.total)),
+            h('div', { className: 'text-[11px] text-gray-500' }, 'de ' + fmtNum(resumoMan.finalizadas) + ' finalizadas · ' + fmtPct(resumoMan.total, resumoMan.finalizadas))),
+          motivoTop && h('div', null,
+            h('div', { className: 'text-sm font-semibold text-gray-800' }, motivoTop.motivo),
+            h('div', { className: 'text-[11px] text-gray-500' }, 'motivo mais comum · ' + motivoTop.n)),
+          resumoMan.total > 0 && h('button', {
+            type: 'button', onClick: () => setListaManuais({ titulo: 'Finalizações manuais · ' + mesLabel, cnpj: null }),
+            className: 'h-9 px-3.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:border-purple-300',
+          }, 'Ver todas as ' + fmtNum(resumoMan.total))
+        )
+      ),
       loading && !hist ? h('div', { className: 'text-center text-gray-400 py-12' }, 'Carregando histórico…')
         : filiais.length === 0 ? h('div', { className: 'text-center text-gray-400 py-12 bg-white border border-gray-200 rounded-xl' }, 'Sem entregas finalizadas neste período.')
         : filiais.map((f) => {
@@ -1500,8 +1577,11 @@
           return h('div', { key: f.cnpj, className: 'bg-white border border-gray-200 rounded-2xl p-4' },
             h('div', { className: 'flex items-start justify-between mb-3' },
               h('div', null,
-                h('div', { className: 'font-bold text-gray-900' }, f.nome),
-                h('div', { className: 'text-[11px] text-gray-400' }, f.total + ' entregas finalizadas · ' + mesLabel)
+                h('div', { className: 'font-bold text-gray-900', title: f.nome_cf && f.nome_cf !== f.nome ? 'No CF: ' + f.nome_cf : undefined }, f.nome),
+                // CF_FINALIZACAO_MANUAL_V1: centro de custo + CNPJ
+                h('div', { className: 'flex items-center gap-1.5 flex-wrap mt-0.5' },
+                  f.centro_custo && h('span', { className: 'text-[11px] font-mono bg-[#f3e8fb] text-[#5d0b85] rounded-md px-1.5 py-0.5' }, f.centro_custo),
+                  h('span', { className: 'text-[11px] text-gray-400' }, fmtCnpjCF(f.cnpj) + ' · ' + f.total + ' entregas finalizadas · ' + mesLabel))
               ),
               h('div', { className: 'text-right' },
                 h('div', { className: 'text-2xl font-bold ' + cor }, f.pct != null ? f.pct.toFixed(1) + '%' : '—'),
@@ -1516,12 +1596,102 @@
               h('div', { className: 'text-center py-2 bg-gray-50 rounded-lg' },
                 h('div', { className: 'text-lg font-bold text-gray-700' }, f.total), h('div', { className: 'text-[11px] text-gray-500' }, 'Total'))
             ),
-            h('div', { className: 'text-[11px] text-gray-400 mb-1' }, 'SLA por ' + (modo === 'semanal' ? 'semana' : 'dia')),
-            h('div', { style: { position: 'relative', width: '100%', height: '150px' } },
-              h('canvas', { ref: (el) => { if (el) chartRefs.current[f.cnpj] = el; } })
+            h('div', { className: 'flex flex-wrap gap-3' },
+              h('div', { style: { flex: '999 1 520px', minWidth: 0 } },
+                h('div', { className: 'text-[11px] text-gray-400 mb-1' }, 'SLA por ' + (modo === 'semanal' ? 'semana' : 'dia')),
+                h('div', { style: { position: 'relative', width: '100%', height: '150px' } },
+                  h('canvas', { ref: (el) => { if (el) chartRefs.current[f.cnpj] = el; } })
+                )
+              ),
+              // CF_FINALIZACAO_MANUAL_V1: lateral com as finalizações pelo painel
+              h('aside', { className: 'border border-orange-200 bg-orange-50/40 rounded-xl p-3 flex flex-col gap-2', style: { flex: '1 1 280px', maxWidth: 380 } },
+                h('div', { className: 'flex justify-between items-baseline gap-2' },
+                  h('span', { className: 'text-sm font-semibold text-orange-800' }, 'Finalizadas pelo painel'),
+                  h('span', null,
+                    h('b', { className: 'text-base text-orange-700' }, fmtNum(f.manuais)), ' ',
+                    h('span', { className: 'text-[11px] text-gray-500' }, fmtPct(f.manuais || 0, f.total)))
+                ),
+                !(f.manuais_ultimas && f.manuais_ultimas.length)
+                  ? h('p', { className: 'text-xs text-gray-500 py-2' }, 'Nenhuma finalização manual neste mês.')
+                  : f.manuais_ultimas.map((m) => h('button', {
+                      key: m.id, type: 'button', onClick: () => setOsAberta(m.solicitacao_id),
+                      className: 'text-left bg-white border border-gray-100 rounded-lg px-2.5 py-2 flex flex-col gap-0.5 hover:border-purple-300',
+                    },
+                      h('span', { className: 'flex justify-between gap-2' },
+                        h('b', { className: 'text-xs text-gray-900' }, 'OS ' + (m.os_numero || '—') + (m.numero_nf ? ' · NF ' + m.numero_nf : '')),
+                        h('span', { className: 'text-[11px] text-gray-500 whitespace-nowrap' }, fmtQuando(m.criado_em))),
+                      h('span', { className: 'text-xs text-gray-700' }, m.motivo),
+                      m.finalizado_por && h('span', { className: 'text-[11px] text-gray-500' }, 'por ' + m.finalizado_por)
+                    )),
+                f.manuais > 0 && h('button', {
+                  type: 'button', onClick: () => setListaManuais({ titulo: f.nome + ' · ' + mesLabel, cnpj: f.cnpj }),
+                  className: 'h-8 text-sm font-semibold text-[#770fa8] hover:underline',
+                }, 'Ver todas desta filial')
+              )
             )
           );
-        })
+        }),
+      listaManuais && h(ModalFinalizacoesManuais, {
+        titulo: listaManuais.titulo, cnpj: listaManuais.cnpj, range: rangeDoMes(mesRef),
+        fetchAuth, API_URL, fmtQuando, fmtCnpjCF,
+        onAbrirOS: (id) => setOsAberta(id),
+        onFechar: () => setListaManuais(null),
+      }),
+      osAberta && h(DrawerOS, { solicitacaoId: osAberta, onFechar: () => { setOsAberta(null); carregar(); }, fetchAuth, API_URL, showToast })
+    );
+  }
+
+  // CF_FINALIZACAO_MANUAL_V1: lista completa das finalizações pelo painel no período
+  function ModalFinalizacoesManuais({ titulo, cnpj, range, fetchAuth, API_URL, fmtQuando, fmtCnpjCF, onAbrirOS, onFechar }) {
+    const [dados, setDados] = useState(null);
+    const [erro, setErro] = useState(false);
+    const [filtroMotivo, setFiltroMotivo] = useState('');
+    const carregar = () => {
+      setErro(false);
+      const q = 'de=' + range.de + '&ate=' + range.ate + (cnpj ? '&cnpj=' + encodeURIComponent(cnpj) : '');
+      fetchAuth(API_URL + '/confirmafacil/finalizacoes-manuais?' + q)
+        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+        .then(setDados).catch(() => setErro(true));
+    };
+    useEffect(carregar, [cnpj, range.de, range.ate]);
+    useEffect(() => {
+      const esc = (e) => { if (e.key === 'Escape') onFechar(); };
+      window.addEventListener('keydown', esc); return () => window.removeEventListener('keydown', esc);
+    }, []);
+    const itens = ((dados && dados.itens) || []).filter(i => !filtroMotivo || i.motivo === filtroMotivo);
+    return h('div', { className: 'fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/30', onClick: (e) => e.target === e.currentTarget && onFechar() },
+      h('div', { role: 'dialog', 'aria-modal': 'true', 'aria-label': titulo, className: 'bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden' },
+        h('div', { className: 'flex items-start justify-between gap-3 px-5 py-4 border-b border-gray-100' },
+          h('div', { className: 'min-w-0' },
+            h('div', { className: 'text-base font-semibold text-gray-900' }, 'Finalizadas pelo painel'),
+            h('div', { className: 'text-xs text-gray-500 truncate' }, titulo)),
+          h('button', { type: 'button', onClick: onFechar, 'aria-label': 'Fechar', className: 'w-9 h-9 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-50 text-2xl leading-none' }, '×')
+        ),
+        dados && dados.por_motivo && dados.por_motivo.length > 1 && h('div', { className: 'flex flex-wrap gap-1.5 px-5 pt-3' },
+          [{ motivo: '', n: dados.itens.length }].concat(dados.por_motivo).map((m) => h('button', {
+            key: m.motivo || '_todos', type: 'button', onClick: () => setFiltroMotivo(m.motivo), 'aria-pressed': filtroMotivo === m.motivo,
+            className: 'min-h-[30px] px-3 rounded-full text-xs border ' + (filtroMotivo === m.motivo ? 'border-[#770fa8] bg-[#f3e8fb] text-[#5d0b85] font-semibold' : 'border-gray-200 text-gray-600 hover:border-purple-300'),
+          }, (m.motivo || 'Todos') + ' · ' + m.n))
+        ),
+        h('div', { className: 'flex-1 overflow-y-auto px-5 py-3' },
+          erro ? h('div', { className: 'text-center py-10 text-sm text-gray-500' }, 'Não deu pra carregar a lista. ',
+                  h('button', { type: 'button', onClick: carregar, className: 'text-[#770fa8] font-semibold hover:underline' }, 'Tentar de novo'))
+          : !dados ? h('div', { className: 'text-center py-10 text-sm text-gray-400' }, 'Carregando…')
+          : itens.length === 0 ? h('div', { className: 'text-center py-10 text-sm text-gray-500' }, 'Nenhuma finalização manual neste período.')
+          : h('div', { className: 'flex flex-col divide-y divide-gray-100' },
+              itens.map((m) => h('button', {
+                key: m.id, type: 'button', onClick: () => onAbrirOS(m.solicitacao_id),
+                className: 'text-left py-2.5 px-1 hover:bg-gray-50 rounded-lg flex flex-col gap-0.5',
+              },
+                h('span', { className: 'flex justify-between gap-3 flex-wrap' },
+                  h('b', { className: 'text-sm text-gray-900' }, 'OS ' + (m.os_numero || '—') + (m.numero_nf ? ' · NF ' + m.numero_nf : '')),
+                  h('span', { className: 'text-xs text-gray-500' }, fmtQuando(m.criado_em) + (m.finalizado_por ? ' · por ' + m.finalizado_por : ''))),
+                h('span', { className: 'text-xs text-gray-700' }, m.motivo + (m.detalhe ? ' — ' + m.detalhe : '')),
+                !cnpj && h('span', { className: 'text-[11px] text-gray-400' }, (m.embarcador || fmtCnpjCF(m.cnpj_embarcador) || '—') + (m.horario_informado ? ' · horário informado ' + m.horario_informado : ''))
+              ))
+            )
+        )
+      )
     );
   }
 
