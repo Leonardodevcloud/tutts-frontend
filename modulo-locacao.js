@@ -2739,6 +2739,9 @@
       body.encargos = { multa_pct: moedaParse(enc.multa_pct), juros_mes_pct: moedaParse(enc.juros_mes_pct), dias_rescisao: parseInt(enc.dias_rescisao, 10), correcao_ipca: enc.correcao_ipca !== false };
       if (body.encargos.dias_rescisao > 0) body.dias_retomada = body.encargos.dias_rescisao;
       if (cfg.dias_desbloqueio != null && cfg.dias_desbloqueio !== '') body.dias_desbloqueio = parseInt(cfg.dias_desbloqueio, 10);
+      /* LOCACAO_REGRAS_BLOQUEIO_V1 */
+      if (cfg.dias_bloqueio != null && cfg.dias_bloqueio !== '') body.encargos.dias_bloqueio = parseInt(cfg.dias_bloqueio, 10);
+      if (cfg.vistoria_regras) { body.encargos.vistoria_aviso_horas = parseInt(cfg.vistoria_regras.aviso_horas, 10); body.encargos.vistoria_faltas_bloqueio = parseInt(cfg.vistoria_regras.faltas_bloqueio, 10); }
       if (cfg.locadora) body.locadora = Object.assign({}, cfg.locadora, { area_raio_km: parseInt(cfg.locadora.area_raio_km, 10) || null });
       if (cfg.bases) body.bases = cfg.bases.filter(function (b) { return String(b.nome || b.endereco || '').trim(); });
       if (cfg.assinatura) body.assinatura = { modo: cfg.assinatura.modo === 'email' ? 'email' : 'app', tutts_auto: cfg.assinatura.tutts_auto !== false, vistoria_antes: cfg.assinatura.vistoria_antes !== false }; // LOCACAO_ASSINATURA_V2 · LOCACAO_FLUXO_V1
@@ -2775,7 +2778,7 @@
     return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } }, chipsSec,
      h('div', { className: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] items-start' },
       h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
-        h('div', { style: vis('juros') }, h(EncargosCard, { cfg: cfg, set: set })), // LOCACAO_V3: multa 2% + juros 1% a.m. + IPCA (substitui juros ao dia)
+        h('div', { style: vis('juros') }, h(EncargosCard, { cfg: cfg, set: set, api: api, toast: toast })), // LOCACAO_V3: multa 2% + juros 1% a.m. + IPCA (substitui juros ao dia)
         h('div', { style: vis('modelo') }, h(Card, { pad: false }, CardHead('Modelo de contrato · Tutts Aluguel / Plano Conquista'),
           h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 10 } },
             h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'Clique numa variável para inserir no ponto do cursor. O sistema troca pelos dados do cliente, da moto e das parcelas ao gerar o PDF.'),
@@ -3388,12 +3391,35 @@
             h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, height: 40 } }, Toggle(enc.correcao_ipca !== false, function (v) { setE('correcao_ipca', v); }, 'Corrigir pelo IPCA'), h('span', { style: { fontSize: 13 } }, enc.correcao_ipca !== false ? 'Aplicar' : 'Não aplicar')))),
         h('div', { style: { background: '#faf7fd', border: '1px solid #e9d5f9', borderRadius: 12, padding: '10px 12px', fontSize: 12.5, color: '#374151', lineHeight: 1.5 } },
           h('b', { style: { color: ROXO_ESC } }, 'Exemplo · '), 'parcela de R$ 1.300,00 paga com 10 dias de atraso: multa ' + fR(exM) + ' + juros ' + fR(exJ) + (exI ? ' + IPCA ' + fR(exI) : '') + ' = ', h('b', null, fR(1300 + exM + exJ + exI))),
+        /* LOCACAO_REGRAS_BLOQUEIO_V1: bloqueio (14.4 a) antes da rescisão (14.2 a) */
         h('div', { className: 'grid grid-cols-2 md:grid-cols-4', style: { gap: 12 } },
+          h(Field, { label: 'Bloqueio no rastreador após', req: true, hint: 'dias de atraso · Cl. 14.4 a · 0 = não bloqueia' }, Input({ value: cfg.dias_bloqueio != null ? String(cfg.dias_bloqueio) : '3', inputMode: 'numeric', onChange: function (e) { set('dias_bloqueio', soDig(e.target.value)); } })),
           h(Field, { label: 'Rescisão e recolhimento após', req: true, hint: 'dias de atraso · Cl. 14.2 a' }, Input({ value: enc.dias_rescisao != null ? String(enc.dias_rescisao) : '', inputMode: 'numeric', onChange: function (e) { setE('dias_rescisao', soDig(e.target.value)); } })),
           h(Field, { label: 'Desbloqueio após pagamento', hint: 'dias úteis · Cl. 14.6' }, Input({ value: cfg.dias_desbloqueio != null ? String(cfg.dias_desbloqueio) : '2', inputMode: 'numeric', onChange: function (e) { set('dias_desbloqueio', soDig(e.target.value)); } })),
-          h(Field, { label: 'Validade do convite (dias)', req: true }, Input({ value: cfg.validade_convite_dias != null ? String(cfg.validade_convite_dias) : '', inputMode: 'numeric', onChange: function (e) { set('validade_convite_dias', soDig(e.target.value)); } })),
-          h(Field, { label: 'Vistoria mensal na Base (dias)', req: true, hint: 'Cl. 9.4.1' }, Input({ value: cfg.vistoria_periodica_dias != null ? String(cfg.vistoria_periodica_dias) : '', inputMode: 'numeric', onChange: function (e) { set('vistoria_periodica_dias', soDig(e.target.value)); } }))),
-        Aviso('cinza', null, 'O bloqueio remoto só é efetivado com a moto parada ou desligada (Cl. 14.5). Os contratos já gerados mantêm os encargos de quando foram assinados; contratos antigos (2% ao dia) continuam no modelo legado.', 'lock')));
+          h(Field, { label: 'Validade do convite (dias)', req: true }, Input({ value: cfg.validade_convite_dias != null ? String(cfg.validade_convite_dias) : '', inputMode: 'numeric', onChange: function (e) { set('validade_convite_dias', soDig(e.target.value)); } }))),
+        (function () {
+          var nb = parseInt(cfg.dias_bloqueio != null ? cfg.dias_bloqueio : 3, 10), nr = parseInt(enc.dias_rescisao, 10);
+          var txt = nb === 0 ? 'Sem bloqueio automático por atraso: a moto só é recolhida na rescisão, com mais de ' + (nr || '—') + ' dias.'
+            : 'Linha do tempo do atraso: dia 1 cobra multa e juros · dia ' + nb + ' bloqueio sinalizado no rastreador · mais de ' + (nr || '—') + ' dias, rescisão e recolhimento.';
+          return h('div', { style: { fontSize: 12.5, color: nb > nr ? '#991b1b' : '#374151', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: '8px 12px' } }, nb > nr ? 'O bloqueio precisa vir antes da rescisão.' : txt);
+        })(),
+        h('div', { style: { borderTop: '1px solid #f3f4f6', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 10 } },
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } }, h('b', { style: { fontSize: 13.5 } }, 'Vistoria mensal na Base'), TagCl('9.4.1')),
+          h('div', { className: 'grid grid-cols-2 md:grid-cols-4', style: { gap: 12 } },
+            h(Field, { label: 'Intervalo (dias)', req: true, hint: 'entre uma vistoria e outra' }, Input({ value: cfg.vistoria_periodica_dias != null ? String(cfg.vistoria_periodica_dias) : '', inputMode: 'numeric', onChange: function (e) { set('vistoria_periodica_dias', soDig(e.target.value)); } })),
+            h(Field, { label: 'Agendar com antecedência', req: true, hint: 'horas de aviso ao locatário' }, h('div', { style: { position: 'relative' } }, Input({ value: cfg.vistoria_regras && cfg.vistoria_regras.aviso_horas != null ? String(cfg.vistoria_regras.aviso_horas) : '48', inputMode: 'numeric', onChange: function (e) { set('vistoria_regras', Object.assign({}, cfg.vistoria_regras || {}, { aviso_horas: soDig(e.target.value) })); }, style: { paddingRight: 40 } }), h('span', { style: { position: 'absolute', right: 12, top: 11, fontSize: 13, color: '#6b7280' } }, 'h'))),
+            h(Field, { label: 'Bloqueio após faltas seguidas', req: true, hint: '0 = não bloqueia' }, Input({ value: cfg.vistoria_regras && cfg.vistoria_regras.faltas_bloqueio != null ? String(cfg.vistoria_regras.faltas_bloqueio) : '2', inputMode: 'numeric', onChange: function (e) { set('vistoria_regras', Object.assign({}, cfg.vistoria_regras || {}, { faltas_bloqueio: soDig(e.target.value) })); } })),
+            h(Field, { label: 'Multa por falta', hint: 'valor do Tarifário (Anexo I)' }, h('div', { style: { height: 40, display: 'flex', alignItems: 'center', fontSize: 13.5, fontWeight: 600 } }, cfg.vistoria_regras && cfg.vistoria_regras.multa != null ? fR(cfg.vistoria_regras.multa) : 'R$ 100,00')))),
+        Aviso('cinza', null, 'O bloqueio remoto só é efetivado com a moto parada ou desligada (Cl. 14.5). Mudanças aqui valem para os próximos contratos e para a rotina diária; os contratos já assinados mantêm os encargos de quando foram assinados.', 'lock'),
+        cfg.legado && cfg.legado.qtd > 0 ? h('div', { role: 'alert', style: { border: '1px solid #fecaca', background: '#fef2f2', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 } },
+          h('b', { style: { color: '#991b1b', fontSize: 13.5 } }, cfg.legado.qtd + (cfg.legado.qtd === 1 ? ' contrato em andamento ainda cobra' : ' contratos em andamento ainda cobram') + ' juros ao dia (modelo antigo)'),
+          h('span', { style: { fontSize: 12.5, color: '#374151', lineHeight: 1.45 } }, 'Juros de ' + pctTxt(Math.max.apply(null, cfg.legado.contratos.map(function (k) { return k.juros_dia_pct || 0; })), 2) + '% ao dia chegam a dezenas de % ao mês. Para pessoa física a multa por atraso é limitada a 2% (CDC, art. 52, §1º) e esse encargo tende a ser derrubado. Passe esses contratos para multa ' + pctTxt(m, 2) + '% + juros ' + pctTxt(j, 2) + '% a.m.' + (enc.correcao_ipca !== false ? ' + IPCA' : '') + ': vale para o que está em aberto, parcelas pagas não mudam.'),
+          h('span', { style: { fontSize: 12, color: '#6b7280' } }, cfg.legado.contratos.slice(0, 8).map(function (k) { return (k.numero || '#' + k.id) + ' · ' + k.nome + ' (' + pctTxt(k.juros_dia_pct, 2) + '%/dia)'; }).join(' · ') + (cfg.legado.qtd > 8 ? ' · e mais ' + (cfg.legado.qtd - 8) : '')),
+          h('div', null, Btn({ variant: 'pri', small: true, onClick: function () {
+            if (!window.confirm('Trocar os encargos de ' + cfg.legado.qtd + ' contrato(s) do modelo antigo (juros ao dia) para multa + juros ao mês?\n\nVale para as parcelas em aberto. Fica registrado no histórico de cada contrato.')) return;
+            props.api('/contratos/migrar-legado', { method: 'POST', body: {} }).then(function (r) { props.toast((r.migrados || 0) + ' contrato(s) passaram para multa + juros ao mês', 'success'); set('legado', { qtd: 0, contratos: [] }); })
+              .catch(function (e) { props.toast(e.message, 'error'); });
+          }, children: 'Passar para multa + juros ao mês' }))) : null));
   }
 
   // ───────── Configurações · Locadora e bases ─────────
