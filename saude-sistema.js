@@ -259,7 +259,16 @@
         [/^cf-|^similar$/, 'ConfirmaFácil'],
         [/^hub-/, 'Hub (Uber/99)'],
         [/^geocode-google:filas/, 'Filas'],
-        [/^geocode-google|^geocode-reverse/, 'Telas (solicitação, coleta, roteirizador)'],
+        // GEOCODE_AUTOCOMPLETE_V1: origem separada por tela
+        [/^geocode-google:solicitacao-digitando/, 'Solicitação · enquanto digita'],
+        [/^geocode-google:solicitacao-selecao/, 'Solicitação · ao escolher endereço'],
+        [/^geocode-google:solicitacao-buscar/, 'Solicitação · botão buscar'],
+        [/^geocode-google:solicitacao-mapa/, 'Solicitação · pino no mapa'],
+        [/^geocode-google:solicitacao-numero/, 'Solicitação · busca com número'],
+        [/^geocode-google:roteirizador/, 'Roteirizador (tela de rotas)'],
+        [/^geocode-google:coleta/, 'Consultar endereços'],
+        [/^autocomplete/, 'Autocomplete Geoapify (grátis)'],
+        [/^geocode-google|^geocode-reverse/, 'Telas sem origem (versão antiga em cache no navegador)'],
         [/^roteirizador-tutts/, 'Roteirizador Tutts'],
         [/^agent-|^playwright-agent/, 'Agente RPA'],
         [/^coleta-/, 'Consultar endereços'],
@@ -271,6 +280,7 @@
         'reverse': ['Coordenada → endereço', 'pago'], 'cep': ['CEP por coordenada (Hub)', 'pago'],
         'hit-fwd': ['Cache por texto', 'cache'], 'hit-sim': ['Cache por rua + número', 'cache'], 'hit-cep': ['Cache de CEP', 'cache'],
         'hit-rev': ['Cache de coordenada', 'cache'], 'hit-neg': ['Já sabia que não existe', 'cache'],
+        'ext-auto': ['Autocomplete Geoapify (franquia grátis)', 'cache'], 'hit-auto': ['Autocomplete do cache', 'cache'], // GEOCODE_AUTOCOMPLETE_V1
     };
     const brl = (v) => 'R$ ' + (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const num = (v) => (Number(v) || 0).toLocaleString('pt-BR');

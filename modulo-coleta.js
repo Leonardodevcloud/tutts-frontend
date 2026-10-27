@@ -1517,7 +1517,7 @@
         const buscarEnderecoGoogle = async (texto) => {
             if (!texto || texto.length < 5) return;
             try {
-                const data = await fetchApi('/geocode/google?endereco=' + encodeURIComponent(texto));
+                const data = await fetchApi('/geocode/google?origem=coleta&endereco=' + encodeURIComponent(texto)) /* GEOCODE_AUTOCOMPLETE_V1: origem */;
                 if (data.results && data.results.length > 0) {
                     const r = data.results[0];
                     const comp = r.componentes || [];
@@ -1552,7 +1552,7 @@
         // Reverse geocode from map coordinates
         const reverseGeocode = async (lat, lng) => {
             try {
-                const data = await fetchApi('/geocode/google?endereco=' + encodeURIComponent(lat + ',' + lng));
+                const data = await fetchApi('/geocode/google?origem=coleta-mapa&endereco=' + encodeURIComponent(lat + ',' + lng));
                 if (data.results && data.results.length > 0) {
                     const r = data.results[0];
                     const comp = r.componentes || [];

@@ -194,7 +194,23 @@
         function __placesDisponivel(){ return !!(window.google && google.maps && google.maps.places && google.maps.places.AutocompleteService); }
         function __novaSessaoPlaces(){ try { __placesToken = new google.maps.places.AutocompleteSessionToken(); } catch(_) { __placesToken = null; } }
         function __resetSessaoPlaces(){ __placesToken = null; }
-        function buscarPredicoesPlaces(input){
+        // GEOCODE_AUTOCOMPLETE_V1: autocomplete pelo backend (Geoapify, franquia grátis) — já vem com
+        // coordenada, então escolher a sugestão não paga o Google. Se o backend não tiver a chave
+        // (indisponivel), cai no Google Places como antes.
+        async function buscarPredicoesPlaces(input){
+            try {
+                const r = await fetch(`${API_URL}/api/geocode/autocomplete?origem=solicitacao&texto=${encodeURIComponent(input)}`);
+                if (r.ok) {
+                    const d = await r.json();
+                    if (!d.indisponivel && Array.isArray(d.results)) {
+                        // sem número da casa: deixa o fluxo normal pedir o número (sugestão vai sem street_number)
+                        return d.results;
+                    }
+                }
+            } catch (_) { /* segue pro Places */ }
+            return buscarPredicoesGooglePlaces(input);
+        }
+        function buscarPredicoesGooglePlaces(input){
             return new Promise((resolve) => {
                 if (!__placesDisponivel()) { resolve(null); return; }
                 try {
@@ -211,7 +227,7 @@
         }
         async function resolverEnderecoTexto(texto){
             try {
-                const r = await fetch(`${API_URL}/api/geocode/google?endereco=${encodeURIComponent(texto)}`);
+                const r = await fetch(`${API_URL}/api/geocode/google?origem=solicitacao-selecao&endereco=${encodeURIComponent(texto)}`);
                 if (!r.ok) return null;
                 const d = await r.json();
                 return (d.results && d.results.length) ? d.results[0] : null;
@@ -1717,7 +1733,7 @@
                     try {
                         const preds = await buscarPredicoesPlaces(buscaNovoEndereco);
                         if (preds === null) {
-                            const resp = await fetch(`${API_URL}/api/geocode/google?endereco=${encodeURIComponent(buscaNovoEndereco)}`);
+                            const resp = await fetch(`${API_URL}/api/geocode/google?origem=solicitacao-digitando&endereco=${encodeURIComponent(buscaNovoEndereco)}`);
                             if (resp.ok) { const data = await resp.json(); setSugestoesNovoEndereco(data.results?.length > 0 ? data.results : []); }
                         } else {
                             setSugestoesNovoEndereco(preds);
@@ -2086,7 +2102,7 @@
                 // 🔄 2026-05-23: mínimo 6 chars (era 3) — endereços curtos quase nunca retornam algo útil
                 if (!termoBusca || termoBusca.length < 6) { showToast('Digite pelo menos 6 caracteres', 'warning'); return; }
                 setBuscando(true);
-                try { const resp = await fetch(`${API_URL}/api/geocode/google?endereco=${encodeURIComponent(termoBusca)}`); if (resp.ok) { const data = await resp.json(); if (data.results?.length > 0) setSugestoes(data.results); else showToast('Nenhum endereço', 'warning'); } }
+                try { const resp = await fetch(`${API_URL}/api/geocode/google?origem=solicitacao-buscar&endereco=${encodeURIComponent(termoBusca)}`); if (resp.ok) { const data = await resp.json(); if (data.results?.length > 0) setSugestoes(data.results); else showToast('Nenhum endereço', 'warning'); } }
                 catch (err) { showToast('Erro', 'error'); }
                 setBuscando(false);
             };
@@ -2095,7 +2111,7 @@
             const buscarEnderecoReverso = async (lat, lng) => {
                 setBuscandoEnderecoReverso(true);
                 try {
-                    const resp = await fetch(`${API_URL}/api/geocode/google?endereco=${lat},${lng}`);
+                    const resp = await fetch(`${API_URL}/api/geocode/google?origem=solicitacao-mapa&endereco=${lat},${lng}`);
                     if (resp.ok) {
                         const data = await resp.json();
                         if (data.results?.length > 0) {
@@ -2227,7 +2243,7 @@
                     try {
                         const preds = await buscarPredicoesPlaces(termoBusca);
                         if (preds === null) {
-                            const resp = await fetch(`${API_URL}/api/geocode/google?endereco=${encodeURIComponent(termoBusca)}`);
+                            const resp = await fetch(`${API_URL}/api/geocode/google?origem=solicitacao-digitando&endereco=${encodeURIComponent(termoBusca)}`);
                             if (resp.ok) { const data = await resp.json(); setSugestoes(data.results?.length > 0 ? data.results : []); }
                         } else {
                             setSugestoes(preds);
@@ -2531,11 +2547,24 @@
                     console.log(`🔢 Tentativa ${i+1}/${tentativas.length}: "${busca}"`);
                     
                     try {
-                        const resp = await fetch(`${API_URL}/api/geocode/google?endereco=${encodeURIComponent(busca)}`);
+                        // GEOCODE_AUTOCOMPLETE_V1: tenta primeiro no Geoapify (grátis); só vai ao Google se ele não achar o número exato
+                        let data = null;
+                        try {
+                            const ra = await fetch(`${API_URL}/api/geocode/autocomplete?origem=solicitacao-numero&texto=${encodeURIComponent(`${ruaFinal}, ${num}, ${cidade}${uf ? ' - ' + uf : ''}`)}`);
+                            if (ra.ok) {
+                                const da = await ra.json();
+                                const hit = (da.results || []).find(x => x.preciso && (x.componentes || []).some(c => c.types?.includes('street_number') && String(c.long_name).trim() === num));
+                                if (hit) data = { results: [hit] };
+                            }
+                        } catch (_) { /* segue pro Google */ }
+                        let resp = { ok: !!data, status: 200 };
+                        if (!data) {
+                            resp = await fetch(`${API_URL}/api/geocode/google?origem=solicitacao-numero&endereco=${encodeURIComponent(busca)}`);
+                        }
                         console.log(`🔢 Resposta tentativa ${i+1}: status=${resp.status}`);
                         
                         if (resp.ok) {
-                            const data = await resp.json();
+                            if (!data) data = await resp.json();
                             if (data.results?.length > 0) {
                                 const r = data.results[0];
                                 const rComp = r.componentes || [];

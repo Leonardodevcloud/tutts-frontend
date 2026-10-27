@@ -396,7 +396,7 @@ window.tailwind = window.tailwind || {}; tailwind.config = { theme: { extend: { 
                 }
             };
             
-            // Buscar endereço via Google (usando proxy do backend)
+            // Buscar endereço via Google (usando proxy do backend) — GEOCODE_AUTOCOMPLETE_V1: origem=roteirizador
             const buscarEndereco = async () => {
                 if (!termoBusca || termoBusca.length < 3) {
                     showToast('Digite pelo menos 3 caracteres', 'warning');
@@ -405,7 +405,7 @@ window.tailwind = window.tailwind || {}; tailwind.config = { theme: { extend: { 
                 
                 setBuscando(true);
                 try {
-                    const resp = await fetch(`${API_URL}/api/geocode/google?endereco=${encodeURIComponent(termoBusca)}`);
+                    const resp = await fetch(`${API_URL}/api/geocode/google?origem=roteirizador&endereco=${encodeURIComponent(termoBusca)}`);
                     if (resp.ok) {
                         const data = await resp.json();
                         if (data.results && data.results.length > 0) {
