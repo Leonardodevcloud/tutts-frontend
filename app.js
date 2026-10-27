@@ -767,6 +767,11 @@ function solcHojeTxt() {
 }
 const solcFmtDH = (dt) => { try { const d = new Date(dt); return d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); } catch (_) { return ""; } };
 /* NAV_ICONS_V4 HOME_ICONS_V2 HOME_REDESIGN_V1 BI_HOME_REDESIGN_V1 SOLIC_ADMIN_DEEMOJI_V2 */
+// GRAT_MENU_FIX_V1: módulos que são só PERMISSÃO (sem tela) nunca entram no menu. O catálogo vindo
+// do servidor (/modules-config) não trazia a flag "capacidade" e o item "Liberar gratificação do
+// garantido" aparecia no menu — clicar nele abria uma tela em branco.
+const MODULOS_CAPACIDADE = ["bi-gratificacao"];
+function ehCapacidadeModulo(m) { return !!(m && (m.capacidade || MODULOS_CAPACIDADE.indexOf(m.id) >= 0)); }
 let SISTEMA_MODULOS_CONFIG = [
     { id: "solicitacoes", label: "Solicitações", icon: "📋",
       abas: [{id: "dashboard", label: "Dashboard"}, {id: "search", label: "Busca"}, {id: "ranking", label: "Ranking"}, {id: "relatorios", label: "Relatórios"}]
@@ -978,7 +983,7 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
                     React.createElement(OverflowNav, {
                         items: [
                             { id: "__home__", label: "Início", icon: "🏠" },
-                            ...SISTEMA_MODULOS_CONFIG.filter(m => !m.capacidade /* GRATIFICACAO_GARANTIDO_V1 */ && hasModuleAccess(usuario, m.id)).map(m => ({ id: m.id, label: m.label, icon: m.icon, _modulo: m }))
+                            ...SISTEMA_MODULOS_CONFIG.filter(m => !ehCapacidadeModulo(m) /* GRATIFICACAO_GARANTIDO_V1 + GRAT_MENU_FIX_V1 */ && hasModuleAccess(usuario, m.id)).map(m => ({ id: m.id, label: m.label, icon: m.icon, _modulo: m }))
                         ],
                         activeId: moduloAtivo === "home" ? "__home__" : moduloAtivo,
                         onSelect: (item) => {
@@ -1112,7 +1117,7 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
             ),
             // Menu items
             React.createElement("div", {className: "flex-1 overflow-y-auto py-2"},
-                modulosComHome.filter(m => m.id === "home" || (!m.capacidade /* GRATIFICACAO_GARANTIDO_V1 */ && hasModuleAccess(usuario, m.id))).map(modulo => 
+                modulosComHome.filter(m => m.id === "home" || (!ehCapacidadeModulo(m) /* GRATIFICACAO_GARANTIDO_V1 + GRAT_MENU_FIX_V1 */ && hasModuleAccess(usuario, m.id))).map(modulo => 
                     React.createElement("div", {key: modulo.id},
                         React.createElement("button", {
                             onClick: () => handleModuloClick(modulo),
@@ -1185,7 +1190,7 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
                     React.createElement(OverflowNav, {
                         items: [
                             { id: "__home__", label: "Início", icon: "🏠" },
-                            ...SISTEMA_MODULOS_CONFIG.filter(m => !m.capacidade /* GRATIFICACAO_GARANTIDO_V1 */ && hasModuleAccess(usuario, m.id)).map(m => ({ id: m.id, label: m.label, icon: m.icon, _modulo: m }))
+                            ...SISTEMA_MODULOS_CONFIG.filter(m => !ehCapacidadeModulo(m) /* GRATIFICACAO_GARANTIDO_V1 + GRAT_MENU_FIX_V1 */ && hasModuleAccess(usuario, m.id)).map(m => ({ id: m.id, label: m.label, icon: m.icon, _modulo: m }))
                         ],
                         activeId: moduloAtivo === "home" ? "__home__" : moduloAtivo,
                         onSelect: (item) => {
@@ -1531,7 +1536,7 @@ const CommandPaletteTutts = () => {
         if (!c || !c.usuario) return [];
         const u = c.usuario;
         const out = [{ id: "__home__", titulo: "Início", sub: "Página inicial", icone: React.createElement("svg", { className: "ico", "aria-hidden": "true" }, React.createElement("use", { href: "#i-home" })), modulo: true, ir: () => c.irHome && c.irHome() }];
-        (SISTEMA_MODULOS_CONFIG || []).filter(m => !m.capacidade /* GRATIFICACAO_GARANTIDO_V1 */ && hasModuleAccess(u, m.id)).forEach(m => {
+        (SISTEMA_MODULOS_CONFIG || []).filter(m => !ehCapacidadeModulo(m) /* GRATIFICACAO_GARANTIDO_V1 + GRAT_MENU_FIX_V1 */ && hasModuleAccess(u, m.id)).forEach(m => {
             out.push({
                 id: m.id, titulo: m.label, sub: "Módulo", icone: navIconEl(m.icon), modulo: true,
                 ir: () => c.navegar(m.id, getFirstAllowedTab(u, m.id, (m.abas && m.abas[0] && m.abas[0].id) || null))
@@ -2981,7 +2986,7 @@ const hideLoadingScreen = () => {
             validacao: [],
             loja: [],
             gratuidades: []
-        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [isencaoUsuario, setIsencaoUsuario] = useState(null), [taxaFixaUsuario, setTaxaFixaUsuario] = useState(null) /* TAXA_FIXA_V1 */, [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState(() => { try { return localStorage.getItem("tutts_modulo_ativo") || "home"; } catch(e) { return "home"; } }), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(50), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [rankingResumo, setRankingResumo] = useState(null), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), [validacaoData, setValidacaoData] = useState(null), [validacaoLoading, setValidacaoLoading] = useState(false), [conciliacaoData, setConciliacaoData] = useState(null), [conciliacaoLoading, setConciliacaoLoading] = useState(false), [resumoData, setResumoData] = useState(null), [resumoLoading, setResumoLoading] = useState(false), [cadastroIndicados, setCadastroIndicados] = useState({}), [cadastroIndicadosLoading, setCadastroIndicadosLoading] = useState(false), [withdrawalCounts, setWithdrawalCounts] = useState(null); 
+        }), [j, C] = useState([]), [dashStats, setDashStats] = useState(null), [buscaResults, setBuscaResults] = useState([]), [buscaTotal, setBuscaTotal] = useState(0), [buscaLoading, setBuscaLoading] = useState(false), [A, S] = useState([]), [k, P] = useState(!1), [T, D] = useState(null), [L, I] = useState([]), [F, $] = useState(!1), [M, O] = useState([]), [q, U] = useState([]), [z, B] = useState([]), [V, J] = useState(null), [Q, H] = useState([]), [G, W] = useState([]), [isencaoUsuario, setIsencaoUsuario] = useState(null), [taxaFixaUsuario, setTaxaFixaUsuario] = useState(null) /* TAXA_FIXA_V1 */, [Z, Y] = useState([]), [K, X] = useState({}), [ee, te] = useState([]), [ae, le] = useState([]), [re, oe] = useState([]), [ce, se] = useState([]), [ne, me] = useState([]), [ie, de] = useState([]), [progressoNovatos, setProgressoNovatos] = useState([]), [modalEntregasNovatos, setModalEntregasNovatos] = useState(null), [pe, xe] = useState([]), [cidadesIndicacao, setCidadesIndicacao] = useState([]), [ue, ge] = useState(!1), [be, Re] = useState(null), [Ee, he] = useState(() => { try { const _m = localStorage.getItem("tutts_modulo_ativo") || "home"; return MODULOS_CAPACIDADE.indexOf(_m) >= 0 ? "home" : _m; /* GRAT_MENU_FIX_V1 */ } catch(e) { return "home"; } }), [mensagemGentileza, setMensagemGentileza] = useState(() => getMensagemGentileza()), [elegibilidadeNovatos, setElegibilidadeNovatos] = useState({ elegivel: false, motivo: '', promocoes: [], carregando: true }), [regioesNovatos, setRegioesNovatos] = useState([]), [clientesBINovatos, setClientesBINovatos] = useState([]), [clientesSelecionados, setClientesSelecionados] = useState([]), [carregandoClientes, setCarregandoClientes] = useState(false), [solicitacoesPagina, setSolicitacoesPagina] = useState(1), [acertoRealizado, setAcertoRealizado] = useState(() => { try { const saved = localStorage.getItem("tutts_acerto_realizado"); return saved !== null ? JSON.parse(saved) : true; } catch(e) { return true; } }), [solicitacoesPorPagina] = useState(50), [conciliacaoPagina, setConciliacaoPagina] = useState(1), [conciliacaoPorPagina] = useState(120), [processandoWithdrawals, setProcessandoWithdrawals] = useState(new Set()), [rankingRetorno, setRankingRetorno] = useState([]), [rankingLoading, setRankingLoading] = useState(false), [rankingResumo, setRankingResumo] = useState(null), [relatorioData, setRelatorioData] = useState(null), [relatorioLoading, setRelatorioLoading] = useState(false), [validacaoData, setValidacaoData] = useState(null), [validacaoLoading, setValidacaoLoading] = useState(false), [conciliacaoData, setConciliacaoData] = useState(null), [conciliacaoLoading, setConciliacaoLoading] = useState(false), [resumoData, setResumoData] = useState(null), [resumoLoading, setResumoLoading] = useState(false), [cadastroIndicados, setCadastroIndicados] = useState({}), [cadastroIndicadosLoading, setCadastroIndicadosLoading] = useState(false), [withdrawalCounts, setWithdrawalCounts] = useState(null); 
     const parseSaldoBR = (valor) => {
             if (typeof valor === "number") return valor;
             if (!valor) return 0;
@@ -3429,6 +3434,12 @@ const hideLoadingScreen = () => {
         // Sem side effects — não chama navegarSidebar (evita fetch antes de auth).
         useEffect(() => {
             try { localStorage.setItem("tutts_modulo_ativo", Ee || "home"); } catch(e) {}
+        }, [Ee]);
+
+        // GRAT_MENU_FIX_V1: "Liberar gratificação do garantido" é permissão, não tela — quem cair nele
+        // (atalho, favorito, link antigo) vai direto pra tela onde a liberação acontece: BI › Garantido.
+        useEffect(() => {
+            if (MODULOS_CAPACIDADE.indexOf(Ee) >= 0) { try { ht("garantido"); } catch (_) {} he("bi"); }
         }, [Ee]);
 
         useEffect(() => {
