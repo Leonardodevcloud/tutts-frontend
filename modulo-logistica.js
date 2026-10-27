@@ -1894,6 +1894,29 @@
         : { background: '#f3f4f6', color: '#6b7280', t: 'sem provedor', title: 'Sem provedor identificado' };
       return h('span', { key: c || 'na', title: st.title, style: { fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: st.background, color: st.color, whiteSpace: 'nowrap', flexShrink: 0 } }, st.t);
     };
+    // GEOCODE_ORIGEM_V1: selo "Endereço geocodificado" separado entre cache (sem custo) e Google (pago), com o motivo
+    const GEO_MOTIVO = {
+      nunca_consultado: ['1ª vez', 'Endereço nunca consultado antes. Foi pago uma vez e agora fica no cache para sempre.'],
+      texto_diferente: ['texto diferente', 'Esse MESMO lugar já estava no cache, mas escrito de outro jeito. Pagou de novo só porque o texto mudou.'],
+      cache_sem_detalhes: ['atualização', 'Estava no cache sem rua/número e foi atualizado uma vez.'],
+    };
+    const GEO_CONTEXTO = {
+      sem_coord_mapp: 'A OS veio da Mapp sem localização da entrega.',
+      regra_forca_google: 'A regra do cliente manda geocodificar a entrega (ignora a localização da Mapp).',
+      sem_regra: 'OS sem regra (lançamento manual): o Hub geocodifica a entrega.',
+    };
+    const seloGeocode = (g) => {
+      const base = 'O endereço da entrega foi geocodificado automaticamente — confira antes de confiar 100%.';
+      if (!g) return pilula('Endereço geocodificado', 'bg-amber-50 text-amber-800', { title: base + ' (corrida anterior ao registro de origem)' });
+      const [mot, ctx] = String(g.motivo || '').split('|');
+      const contexto = GEO_CONTEXTO[ctx] ? ' ' + GEO_CONTEXTO[ctx] : '';
+      if (g.fonte !== 'google') {
+        return pilula('Geocodificado · cache', 'bg-emerald-50 text-emerald-800', { title: 'Coordenada veio do cache — sem custo.' + contexto + ' ' + base });
+      }
+      const m = GEO_MOTIVO[mot] || ['Google', ''];
+      return pilula('Geocodificado · Google · ' + m[0], 'bg-amber-50 text-amber-800',
+        { title: 'Consultado no Google (pago). ' + m[1] + (mot === 'texto_diferente' && g.detalhe ? ' Texto já salvo: "' + g.detalhe + '".' : '') + contexto + ' ' + base });
+    };
     const pilula = (txt, cls, extra) => h(extra && extra.onClick ? 'button' : 'span', Object.assign({ className: `inline-flex items-center gap-1 text-[10.5px] font-semibold rounded-full px-2 py-0.5 ${cls}` }, extra || {}), txt);
     const btnBase = 'h-8 px-2 rounded-lg border text-xs inline-flex items-center gap-1.5 whitespace-nowrap ';
     const temRastreio = !!(e.rastreio_token || e.tracking_url);
@@ -1960,7 +1983,7 @@
       (e.return_code || e.entrega_geocodificada || e.cliente_final || e.nota_fiscal) && h('div', { className: 'flex flex-wrap gap-1.5' },
         e.return_code && pilula(['Devolução ', h('b', { key: 'c', style: MONO }, String(e.return_code))], 'bg-amber-50 text-amber-800 cursor-pointer', { title: 'Código de devolução — clique para copiar', onClick: () => { try { navigator.clipboard.writeText(String(e.return_code)); } catch (_) {} } }),
         /* MP_GEOCOD_SELO_V1 */
-        e.entrega_geocodificada && pilula('Endereço geocodificado', 'bg-amber-50 text-amber-800', { title: 'O cliente não enviou a localização. O endereço foi geocodificado automaticamente no Google — confira antes de confiar 100%.' }),
+        e.entrega_geocodificada && seloGeocode(e.entrega_geocode), // GEOCODE_ORIGEM_V1: cache x Google + motivo
         // CLIENTE_FINAL_NF_CARD
         e.cliente_final && pilula(e.cliente_final, 'bg-gray-100 text-gray-700', { title: 'Cliente final' }),
         e.nota_fiscal && pilula('NF ' + e.nota_fiscal, 'bg-gray-100 text-gray-700', { title: 'Nota fiscal' }),

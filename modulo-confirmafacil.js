@@ -21,6 +21,11 @@
     memoria: { t: 'cache memória', cls: 'bg-emerald-100 text-emerald-700', tip: 'Resolvido pelo cache em memória — sem consulta ao banco nem ao Google' },
     cache:   { t: 'cache banco',   cls: 'bg-emerald-100 text-emerald-700', tip: 'Resolvido pelo cache central (enderecos_geocodificados) — sem chamada ao Google' },
     google:  { t: 'Google',        cls: 'bg-sky-100 text-sky-700',         tip: 'Consultado no Google (1ª vez deste endereço — agora está no cache)' },
+    // GEOCODE_ORIGEM_V1: cache x Google com o motivo
+    'cache-similar':  { t: 'cache (mesmo endereço)', cls: 'bg-emerald-100 text-emerald-700', tip: 'Achado no cache pela rua + número + cidade — mesmo endereço que já veio escrito de outro jeito. Sem chamada ao Google' },
+    'google-novo':    { t: 'Google · 1ª vez',         cls: 'bg-amber-100 text-amber-800',   tip: 'Pago no Google: endereço nunca consultado antes (agora fica no cache para sempre)' },
+    'google-texto':   { t: 'Google · texto diferente', cls: 'bg-amber-100 text-amber-800',  tip: 'Pago no Google: esse mesmo lugar já estava no cache com outro texto e não foi reconhecido' },
+    'google-refresh': { t: 'Google · atualização',     cls: 'bg-amber-100 text-amber-800',  tip: 'Pago no Google: estava no cache sem rua/número e foi atualizado uma vez' },
   };
   const TagGeoGoogle = ({ fonte }) => {
     const f = GEO_FONTE[fonte] || null;
@@ -1372,7 +1377,7 @@
               geoRes && h('div', { className: 'mt-2 text-[12px] rounded-lg border p-2.5 ' + (geoRes.aplicado ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800') },
                 geoRes.aplicado
                   ? h('div', null,
-                      h('div', { className: 'font-semibold' }, (geoRes.fonte === 'memoria' ? 'Cache (memória)' : geoRes.fonte === 'cache' ? 'Cache (banco)' : 'Google') + ' · ' + (geoRes.location_type || '')),
+                      h('div', { className: 'font-semibold' }, (geoRes.fonte === 'memoria' ? 'Cache (memória)' : geoRes.fonte === 'cache' ? 'Cache (banco)' : (GEO_FONTE[geoRes.fonte] ? GEO_FONTE[geoRes.fonte].t : 'Google')) + ' · ' + (geoRes.location_type || '')),
                       h('div', { className: 'mt-1' }, h('span', { className: 'text-gray-500' }, 'Antes: '), [geoRes.antes.rua, geoRes.antes.numero, geoRes.antes.bairro, geoRes.antes.cidade, geoRes.antes.uf, geoRes.antes.cep].filter(Boolean).join(', ')),
                       h('div', null, h('span', { className: 'text-gray-500' }, 'Depois: '), [geoRes.depois.rua, geoRes.depois.numero, geoRes.depois.bairro, geoRes.depois.cidade, geoRes.depois.uf, geoRes.depois.cep].filter(Boolean).join(', ')),
                       h('div', { className: 'font-mono text-[11px] text-gray-500' }, geoRes.depois.la + ', ' + geoRes.depois.lo + ' — ' + (geoRes.endereco_formatado || ''))
