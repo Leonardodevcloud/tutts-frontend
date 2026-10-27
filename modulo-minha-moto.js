@@ -988,6 +988,8 @@
         h('span', { style: { width: 38, height: 38, borderRadius: 10, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center', flex: 'none' } }, ico('filetext', 18)),
         h('div', { style: { flex: 1 } }, h('b', { style: { display: 'block' } }, 'Contrato completo'), h('span', { className: 'mm-sub', style: { fontSize: 12 } }, 'Demonstrativo, cláusulas e Anexos')),
         h('span', { style: { color: ROXO, fontWeight: 700 } }, 'Ler PDF')),
+      h('p', { className: 'mm-sub', style: { margin: '-4px 2px 0', fontSize: 12, lineHeight: 1.45 } }, // AUTENTIQUE_CONFERIR_V1: o PDF daqui é a cópia para leitura
+        as.tutts_assinou_em ? 'A Tutts já assinou em ' + fDH(as.tutts_assinou_em) + ' e a assinatura dela aparece no PDF. A sua entra quando você assinar no Autentique.' : 'As assinaturas aparecem no PDF conforme cada um assina no Autentique.'),
       h('label', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13, lineHeight: 1.45, background: '#fff', border: '1.5px solid ' + (li ? ROXO : '#e5e7eb'), borderRadius: 14, padding: 12, cursor: 'pointer' } },
         h('input', { type: 'checkbox', checked: li, onChange: function (e) { setLi(e.target.checked); }, style: { width: 20, height: 20, accentColor: ROXO, flex: 'none', marginTop: 1 } }),
         'Li o contrato e entendi as regras de pagamento, atraso, vistoria' + (ct.plano === 'conquista' ? ' e opção de compra.' : '.')),
