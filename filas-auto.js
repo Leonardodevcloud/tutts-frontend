@@ -112,7 +112,7 @@
       }
       setBuscandoEndereco(true);
       try {
-        const r = await fetchAuthRef.current(`${apiUrlRef.current}/geocode/google?endereco=${encodeURIComponent(endereco)}`);
+        const r = await fetchAuthRef.current(`${apiUrlRef.current}/geocode/google?origem=filas&endereco=${encodeURIComponent(endereco)}`);
         const d = await r.json().catch(() => ({}));
 
         // Detectar API quebrada: 500/503 ou REQUEST_DENIED → ativa fallback manual
@@ -154,10 +154,13 @@
       }
     }, [toast]);
 
+    // GEOCODE_ECONOMIA_V1: digitar não busca mais no Google (cada pausa era uma chamada paga com o
+    // texto pela metade). Agora só busca ao sair do campo ou apertar Enter (buscarEnderecoAgora).
     const buscarEnderecoDebounced = React.useCallback((endereco) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => buscarEndereco(endereco), 800);
-    }, [buscarEndereco]);
+      setEnderecoValidado(false);
+      setCoordenadasEncontradas(null);
+    }, []);
 
     // Reseta estado do geocoding quando modal abre/fecha
     React.useEffect(() => {
@@ -616,6 +619,7 @@
       onSalvar: salvarCentral,
       onCancelar: () => setModalCentral(null),
       buscarEnderecoDebounced,
+      buscarEnderecoAgora: buscarEndereco, // GEOCODE_ECONOMIA_V1
       buscandoEndereco,
       enderecoValidado,
       coordenadasEncontradas,
@@ -1329,7 +1333,7 @@
   // ──────────────────────────────────────────────────────────
   function renderModalCentral(opts) {
     const { dados, onChange, onSalvar, onCancelar,
-            buscarEnderecoDebounced, buscandoEndereco, enderecoValidado, coordenadasEncontradas,
+            buscarEnderecoDebounced, buscarEnderecoAgora, buscandoEndereco, enderecoValidado, coordenadasEncontradas,
             modoManual, setModoManual, geocodeDown } = opts;
     const setCampo = (k, v) => onChange({ ...dados, [k]: v });
 
@@ -1375,12 +1379,15 @@
             e('input', {
               type: 'text',
               value: dados.endereco || '',
-              placeholder: 'Ex: Rua das Flores, 123, Salvador BA',
+              placeholder: 'Ex: Rua das Flores, 123, Salvador BA (Enter para buscar)',
               onChange: ev => {
                 const v = ev.target.value;
                 setCampo('endereco', v);
                 buscarEnderecoDebounced(v);
               },
+              // GEOCODE_ECONOMIA_V1: busca só ao sair do campo ou com Enter
+              onBlur: ev => { if (!enderecoValidado && buscarEnderecoAgora) buscarEnderecoAgora(ev.target.value); },
+              onKeyDown: ev => { if (ev.key === 'Enter') { ev.preventDefault(); if (buscarEnderecoAgora) buscarEnderecoAgora(ev.target.value); } },
               className: INPUT + ' pr-10' + (enderecoValidado ? ' border-green-600' : '')
             }),
             e('span', { className: 'absolute right-3 top-1/2 -translate-y-1/2 inline-flex' }, buscandoEndereco ? ico('clock', 16, '#6b7280') : enderecoValidado ? ico('check', 16, '#16a34a') : ico('search', 16, '#9ca3af'))
