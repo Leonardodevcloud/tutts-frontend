@@ -92,8 +92,11 @@
         { id: 'fat_total',        label: 'Fat. Total',        cor: '#166534', escala: 'auto', fmt: v => fmtMoneyShort(v) },
         { id: 'ticket_medio',     label: 'Ticket Médio',      cor: '#f67602', escala: 'auto', fmt: v => 'R$ ' + (v || 0).toFixed(2) },
         { id: 'tempo_medio_min',  label: 'Tempo Médio Entrega',   cor: '#6b7280', escala: 'auto', fmt: v => fmtMinTime(v) },
+        // BI_TEMPOS_SERIE_V1: mediana = tempo da entrega "típica" (a média sobe com poucas corridas que viram o dia)
+        { id: 'tempo_mediano_min', label: 'Tempo Mediano Entrega', cor: '#0f766e', escala: 'auto', fmt: v => fmtMinTime(v) },
+        // BI_TEMPOS_SERIE_V1: medidos no ponto 1 — alocação = criação → alocado; coleta = alocado → chegada na coleta
         { id: 'tempo_alocacao_min', label: 'Tempo Médio Alocação', cor: '#374151', escala: 'auto', fmt: v => fmtMinTime(v) },
-        { id: 'tempo_coleta_min', label: 'Tempo Médio Coleta',    cor: '#374151', escala: 'auto', fmt: v => fmtMinTime(v) },
+        { id: 'tempo_coleta_min', label: 'Tempo Médio Coleta',    cor: '#64748b', escala: 'auto', fmt: v => fmtMinTime(v) },
         { id: 'total_entregadores', label: 'Total Entregadores',  cor: '#1e40af', escala: 'auto', fmt: v => Math.round(v).toLocaleString('pt-BR') },
         { id: 'media_ent_prof',   label: 'Média Ent./Profissional', cor: '#1e40af', escala: 'auto', fmt: v => v.toFixed(1) },
     ];
@@ -866,6 +869,8 @@
                         h('table', { className: 'w-full text-[13px]' },
                             h('tbody', null,
                                 linha('Tempo médio de entrega', fmtMinTime(cliente.tempo_medio_min || 0)),
+                                linha('Tempo mediano de entrega', fmtMinTime(cliente.tempo_mediano_min || 0)),
+                                linha('Tempo médio de alocação', fmtMinTime(cliente.tempo_alocacao_min || 0)),
                                 linha('Faturamento total', fmtMoney(cliente.faturamento || 0)),
                                 linha('Total de entregas', (cliente.total_entregas || 0).toLocaleString('pt-BR')),
                                 linha('No prazo / fora do prazo', (cliente.no_prazo || 0) + ' / ' + ((cliente.total_entregas || 0) - (cliente.no_prazo || 0)), true)
