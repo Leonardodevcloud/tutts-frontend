@@ -167,16 +167,6 @@
 
     var e = React.createElement;
 
-    // GRATIFICACAO_GARANTIDO_V1: contador de pendências da sub-aba Gratificações
-    var sGrat = React.useState(0), nGrat = sGrat[0], setNGrat = sGrat[1];
-    React.useEffect(function () {
-      if (!window.fetchAuth) return;
-      window.fetchAuth((window.API_URL || "") + "/bi/gratificacao/contagem")
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { if (j && typeof j.pendentes === "number") setNGrat(j.pendentes); })
-        .catch(function () {});
-    }, []);
-
     var fmtBRL = function (v) { return "R$ " + (Number(v) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
     var fmtBRLshort = function (v) { return "R$ " + (Number(v) || 0).toLocaleString("pt-BR", { maximumFractionDigits: 0 }); };
     var fmtData = function (s) { return s ? new Date(s + "T12:00:00").toLocaleDateString("pt-BR") : "—"; };
@@ -201,6 +191,35 @@
     var qtdRegistros = (garantidoData || []).length;
     var st = garantidoStats || null;
 
+    // GRATIFICACAO_GARANTIDO_V2: pagamento do garantido (gratificação na Mapp) DENTRO desta tela.
+    // Os blocos vêm de modulo-bi-gratificacao.js (window.BIGrat). Sem ele, a tela segue como antes.
+    var GR = window.BIGrat || null;
+    var periodoPag = (function () {
+      var ini = garantidoFiltros.data_inicio || "", fim = garantidoFiltros.data_fim || "";
+      (garantidoData || []).forEach(function (r) {
+        if (!r.data) return;
+        if (!garantidoFiltros.data_inicio && (!ini || r.data < ini)) ini = r.data;
+        if (!garantidoFiltros.data_fim && (!fim || r.data > fim)) fim = r.data;
+      });
+      return [ini, fim];
+    })();
+    var pag = GR ? GR.usePagamento(periodoPag[0], periodoPag[1]) : null;
+    var sFp = React.useState("todos"), filtroPag = sFp[0], setFiltroPag = sFp[1];
+    var sMp = React.useState(null), modalPag = sMp[0], setModalPag = sMp[1];
+    var infoPag = function (r) { return GR.classificar(r, pag, garantidoStatusMap); };
+    var contPag = { todos: 0, decidir: 0, lancado: 0, aguardando: 0, recusado: 0 };
+    if (GR && pag.dados) (garantidoData || []).forEach(function (r) { var g = infoPag(r).grupo; contPag.todos++; if (contPag[g] != null) contPag[g]++; });
+    var dadosTabela = (!GR || !pag.dados || filtroPag === "todos") ? garantidoData
+      : (garantidoData || []).filter(function (r) { return infoPag(r).grupo === filtroPag; });
+    var rp = GR && pag.dados ? GR.resumoPeriodo(pag.dados) : null;
+    var emHist = garantidoSubTab === "historico";
+    var pagCelula = !GR ? null : function (row) {
+      if (!pag.dados) return e("span", { style: { fontSize: 12, color: "#9ca3af" } }, pag.erro ? "Pagamento indisponível: " + pag.erro : "Carregando pagamento…");
+      return e(GR.CelulaPagamento, { row: row, info: infoPag(row), onAbrir: function (id) { setModalPag({ drawer: id }); }, onMudou: pag.recarregar,
+        onErro: function (msg) { window.alert(msg); } });
+    };
+    var plural = function (n, um, varios) { return n + " " + (n === 1 ? um : varios); };
+
     var setF = function (campo) {
       return function (ev) {
         var v = ev.target.value;
@@ -212,9 +231,7 @@
       { id: "analise", label: "Garantido" },
       { id: "semanal", label: "Semanal" },
       { id: "cliente", label: "Por cliente" },
-      { id: "gratificacoes", label: "Gratificações", badge: nGrat }, // GRATIFICACAO_GARANTIDO_V1
-    ];
-    var emGrat = garantidoSubTab === "gratificacoes";
+    ].concat(GR ? [{ id: "historico", label: "Histórico de pagamentos" }] : []); // GRATIFICACAO_GARANTIDO_V1
 
     return e("div", {
       className: "w-full" /* BI_MARGEM_V1 */,
@@ -228,29 +245,35 @@
           e("p", { style: { margin: "4px 0 0", color: "#6b7280", fontSize: 13 } },
             "Negociado vs produção · " + periodoTxt + " · " + qtdRegistros.toLocaleString("pt-BR") + (qtdRegistros === 1 ? " registro" : " registros"))
         ),
-        e("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+        e("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" } },
+          GR && pag.dados && e(GR.ChipAuto, { dados: pag.dados, onConfig: function () { setModalPag("config"); } }), // GRATIFICACAO_GARANTIDO_V1
           e("button", {
             type: "button",
-            onClick: carregarGarantido,
+            onClick: function () { carregarGarantido(); if (pag) pag.recarregar(); },
             disabled: garantidoLoading,
             style: Object.assign({}, bigarBtnSec, { opacity: garantidoLoading ? 0.6 : 1, cursor: garantidoLoading ? "wait" : "pointer" })
           }, bigarIco(e, "refresh", 15), garantidoLoading ? "Carregando..." : "Atualizar")
         )
       ),
 
+      // GRATIFICACAO_GARANTIDO_V1: rodada do pagamento + avisos de decisão
+      GR && pag.dados && e(GR.Faixa, { dados: pag.dados, setModal: setModalPag }),
+
       // ====================== FAIXA DE KPIs ======================
-      st && !emGrat && e("section", {
+      st && !emHist && e("section", {
         "aria-label": "Resumo do garantido",
         style: Object.assign({}, bigarCard, { display: "flex", flexWrap: "wrap", overflow: "hidden" })
       },
         bigarKpi(e, "Negociado", fmtBRLshort(st.total_negociado || 0), "Mínimo combinado no período"),
         bigarKpi(e, "Produção", fmtBRLshort(st.total_produzido || 0), "Valor produzido pelos profissionais"),
-        bigarKpi(e, "A pagar", fmtBRLshort(st.total_complemento || 0), "Complemento do garantido", !(st.valor_nao_rodou > 0)),
-        (st.valor_nao_rodou > 0) ? bigarKpi(e, "Não rodou", fmtBRLshort(st.valor_nao_rodou || 0), "Garantido de quem não rodou", true) : null
+        bigarKpi(e, "A pagar", fmtBRLshort(st.total_complemento || 0), "Complemento do garantido", !(st.valor_nao_rodou > 0) && !rp),
+        (st.valor_nao_rodou > 0) ? bigarKpi(e, "Não rodou", fmtBRLshort(st.valor_nao_rodou || 0), "Garantido de quem não rodou", !rp) : null,
+        rp ? bigarKpi(e, "Lançado na Mapp", fmtBRLshort(rp.lancado), plural(rp.nLancado, "crédito", "créditos") + " · " + rp.auto + " autom. · " + rp.manual + " manual") : null, // GRATIFICACAO_GARANTIDO_V1
+        rp ? bigarKpi(e, "Para decidir", fmtBRLshort(rp.decidir), plural(rp.nDecidir, "motoboy", "motoboys") + (rp.incertos ? " · " + rp.incertos + " a conferir na Mapp" : ""), true) : null
       ),
 
       // ====================== FILTROS ======================
-      !emGrat && e("section", {
+      !emHist && e("section", {
         "aria-label": "Filtros",
         style: Object.assign({}, bigarCard, { padding: 16, display: "flex", flexDirection: "column", gap: 14 })
       },
@@ -279,7 +302,17 @@
             { id: "acima", label: "Acima", tom: "verde" },
             { id: "nao_rodou", label: "Não rodou", tom: "cinza" },
             { id: "rodou", label: "Rodou", tom: "azul" },
-          ].map(function (c) { return bigarChip(e, c, garantidoFiltros.filtro_status, aplicarFiltroRapido); })
+          ].map(function (c) { return bigarChip(e, c, garantidoFiltros.filtro_status, aplicarFiltroRapido); }),
+          // GRATIFICACAO_GARANTIDO_V1: filtro por situação do pagamento (local, sem recarregar)
+          GR && pag.dados && e("span", { "aria-hidden": "true", style: { width: 1, height: 22, background: "#e5e7eb", margin: "0 8px" } }),
+          GR && pag.dados && e("span", { style: { fontSize: 12, fontWeight: 600, color: "#374151", marginRight: 4 } }, "Pagamento"),
+          GR && pag.dados && [
+            { id: "todos", label: "Todos" },
+            { id: "decidir", label: "Para decidir · " + contPag.decidir, tom: "ambar" },
+            { id: "lancado", label: "Lançado · " + contPag.lancado, tom: "verde" },
+            { id: "aguardando", label: "Aguardando · " + contPag.aguardando, tom: "roxo" },
+            { id: "recusado", label: "Recusado · " + contPag.recusado, tom: "cinza" },
+          ].map(function (c) { return bigarChip(e, c, filtroPag, setFiltroPag); })
         )
       ),
 
@@ -300,12 +333,12 @@
                 fontWeight: ativa ? 600 : 500, color: ativa ? "#5d0b85" : "#6b7280",
                 borderBottom: "2px solid " + (ativa ? "#770fa8" : "transparent"),
               }
-            }, t.label, t.badge ? e("span", { style: { marginLeft: 6, background: "#b45309", color: "#fff", borderRadius: 999, fontSize: 11, padding: "1px 7px", fontWeight: 600 } }, String(t.badge)) : null);
+            }, t.label);
           })
         ),
 
         // LOADING
-        garantidoLoading && !emGrat && e("div", { style: { padding: 48, textAlign: "center" } },
+        garantidoLoading && !emHist && e("div", { style: { padding: 48, textAlign: "center" } },
           e("div", {
             style: {
               display: "inline-block", width: 28, height: 28,
@@ -318,7 +351,8 @@
 
         // SUB-ABA: ANÁLISE
         !garantidoLoading && garantidoSubTab === "analise" && bigarRenderTabelaAnalise({
-          e: e, garantidoData: garantidoData, garantidoStatusMap: garantidoStatusMap, garantidoStats: garantidoStats,
+          e: e, garantidoData: dadosTabela, garantidoStatusMap: garantidoStatusMap, garantidoStats: garantidoStats,
+          pagCelula: pagCelula, pagTotal: rp ? fmtBRL(rp.lancado) + " lançado · " + fmtBRL(rp.decidir) + " para decidir" : null, // GRATIFICACAO_GARANTIDO_V1
           salvarStatusGarantido: salvarStatusGarantido, setGarantidoModalStatus: setGarantidoModalStatus,
           setGarantidoMotivoReprovado: setGarantidoMotivoReprovado,
           il: il, fmtBRL: fmtBRL, fmtData: fmtData, iniciaisDe: iniciaisDe, carregarGarantido: carregarGarantido,
@@ -332,14 +366,14 @@
         // SUB-ABA: POR CLIENTE (renderizada pelo parent)
         !garantidoLoading && garantidoSubTab === "cliente" && (renderCliente
           ? e("div", { style: { padding: 16 } }, renderCliente())
-          : e("div", { style: { padding: 40, textAlign: "center", color: "#6b7280" } }, "Visão por cliente indisponível."))
+          : e("div", { style: { padding: 40, textAlign: "center", color: "#6b7280" } }, "Visão por cliente indisponível.")),
+
+        // SUB-ABA: HISTÓRICO DE PAGAMENTOS (GRATIFICACAO_GARANTIDO_V1)
+        GR && emHist && e(GR.Historico, null)
       ),
 
-      // SUB-ABA: GRATIFICAÇÕES (GRATIFICACAO_GARANTIDO_V1) — componente próprio em modulo-bi-gratificacao.js
-      emGrat && (window.BIGratificacoes
-        ? e(window.BIGratificacoes, { onContagem: setNGrat })
-        : e("div", { role: "alert", style: { padding: 24, color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 14 } },
-            "O componente de gratificações não carregou. Atualize a página (Ctrl+Shift+R)."))
+      // Painel lateral / modais do pagamento (GRATIFICACAO_GARANTIDO_V1)
+      GR && pag.dados && e(GR.Modais, { modal: modalPag, setModal: setModalPag, dados: pag.dados, recarregar: pag.recarregar })
     );
   };
 
@@ -454,6 +488,8 @@
         ),
 
         // Status de pagamento (select em formato de pílula)
+        // GRATIFICACAO_GARANTIDO_V1: com o módulo de pagamento carregado, a coluna mostra o pagamento na Mapp
+        a.pagCelula ? e("td", { style: bigarTd({ width: 340 }) }, a.pagCelula(row)) :
         e("td", { style: bigarTd({ width: 190 }) },
           e("div", { style: { display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-start" } },
             e("select", {
@@ -580,7 +616,7 @@
               fmtBRL(garantidoStats.total_produzido || 0) + " de " + fmtBRL(garantidoStats.total_negociado || 0)),
             e("td", { style: { padding: "12px 14px", background: "#f9fafb", borderTop: "1px solid #e5e7eb", textAlign: "right", color: "#991b1b", fontWeight: 600, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" } },
               fmtBRL(garantidoStats.total_complemento || 0)),
-            e("td", { style: { padding: "12px 14px", background: "#f9fafb", borderTop: "1px solid #e5e7eb" } }, "")
+            e("td", { style: { padding: "12px 14px", background: "#f9fafb", borderTop: "1px solid #e5e7eb", fontSize: 12, color: "#374151", fontWeight: 600 } }, a.pagTotal || "") // GRATIFICACAO_GARANTIDO_V1
           )
         )
       )

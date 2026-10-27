@@ -1,13 +1,12 @@
 /* GRATIFICACAO_GARANTIDO_V1
  * ============================================================================
- * modulo-bi-gratificacao.js — sub-aba "Gratificações" do BI › Garantido
+ * modulo-bi-gratificacao.js — pagamento do mínimo garantido (gratificação na Mapp)
  *
- *  Créditos     → rodada do dia (etapas), KPIs e todos os créditos de gratificação
- *                 (automático x manual, quem fez, idCaixa da Mapp)
- *  Pendências   → o que uma regra barrou / a Mapp recusou / ficou incerto: decisão manual
- *  Configuração → liga/desliga, horário da rodada, ambiente Mapp, produção mínima
+ *  Na tela do Garantido: coluna Pagamento, faixa da rodada, painel lateral de decisão,
+ *  pendências, configuração e a sub-aba "Histórico de pagamentos".
  *
- * Exporta window.BIGratificacoes (React UMD). Usa window.fetchAuth / window.API_URL.
+ * GRATIFICACAO_GARANTIDO_V2 (aprovado 27/10): o pagamento fica DENTRO da tela do Garantido (BIGarantidoV2.js).
+ * Exporta window.BIGrat com os blocos (React UMD). Usa window.fetchAuth / window.API_URL.
  * ============================================================================ */
 (function () {
   'use strict';
@@ -29,7 +28,7 @@
     falhou: { tom: 'vermelho', label: 'Mapp recusou' },
     incerto: { tom: 'vermelho', label: 'Conferir na Mapp' },
     recusado: { tom: 'cinza', label: 'Recusado' },
-    externo: { tom: 'cinza', label: 'Lançado fora (Análise)' },
+    externo: { tom: 'cinza', label: 'Pago fora do sistema' },
   };
   var DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 
@@ -125,60 +124,6 @@
     return e('span', { style: { width: 20, height: 20, borderRadius: 999, background: estado === 'futuro' ? '#f3f4f6' : cfg[0], color: estado === 'futuro' ? cfg[0] : '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, ico(cfg[1], 11));
   }
 
-  function RodadaCard(props) {
-    var d = props.dados, r = d.rodada, cfg = d.config;
-    var amb = cfg.ambiente === 'homologacao' ? 'Homologação · mototaxionline.com' : 'Produção · tutts.com.br';
-    var chip;
-    if (!r) chip = null;
-    else if (r.status === 'aguardando') chip = pill('ambar', 'Em andamento' + (r.proxima_tentativa_em ? ' · confere de novo ' + fmtHora(r.proxima_tentativa_em) : ''));
-    else if (r.status === 'concluida') chip = pill('verde', 'Concluída às ' + fmtHora(r.finalizada_em) + ' · ' + (r.origem === 'cron' ? 'automática' : 'manual por ' + (r.iniciada_por || '—')));
-    else chip = pill('vermelho', 'Não lançou · ' + (r.origem === 'cron' ? 'automática' : 'manual'));
-    return e('section', { 'aria-label': 'Rodada do dia', style: Object.assign({}, card, { padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }) },
-      e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 } },
-        e('div', { style: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' } },
-          e('b', { style: { fontFamily: SORA, fontSize: 15, color: '#3a1556' } }, r ? 'Rodada de ' + fmtDia(r.data) + ' (' + diaSemana(r.data) + ')' : 'Nenhuma rodada ainda'),
-          chip,
-          pill('roxo', amb),
-          !cfg.ativo && pill('cinza', 'Lançamento automático desligado')),
-        props.podeDecidir && e('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
-          e('button', { type: 'button', style: btnSec, onClick: props.onSimular }, ico('search', 15), 'Simular outra data'),
-          e('button', { type: 'button', style: desab(btnPri, r && r.status === 'aguardando'), disabled: !!(r && r.status === 'aguardando'), onClick: props.onRodar }, ico('play', 15), 'Rodar agora'))),
-      r ? e('ol', { style: { listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 } },
-        etapasDaRodada(r).map(function (s) {
-          return e('li', { key: s.k, style: { border: '1px solid #e5e7eb', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 4, background: '#fcfcfd' } },
-            e('span', { style: { display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, fontSize: 12.5, color: '#111827' } }, IconeEtapa(s.estado), s.titulo),
-            e('span', { style: { fontSize: 12, color: '#6b7280', lineHeight: 1.4 } }, s.det));
-        }))
-        : e('p', { style: { margin: 0, color: '#4b5563', lineHeight: 1.5 } }, cfg.ativo
-          ? 'A primeira rodada automática acontece às ' + cfg.horario + ', analisando o dia anterior.'
-          : 'Ligue o lançamento automático na Configuração, ou rode um dia manualmente.'),
-      r && r.status === 'falhou' && r.erro && e('div', { role: 'alert', style: { background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', borderRadius: 10, padding: '10px 12px', fontSize: 13 } }, r.erro),
-      e('span', { style: { fontSize: 12, color: '#6b7280' } }, cfg.ativo
-        ? 'Próxima rodada automática: todo dia às ' + cfg.horario + ' (dia anterior). Espera o BI até ' + cfg.espera_ate + '.'
-        : 'Com o automático desligado, a rodada calcula tudo e deixa os aprovados aguardando o botão “Lançar aprovados”.'));
-  }
-
-  function Kpis(props) {
-    var k = props.k;
-    var falhasApi = (k.incertos || 0) + (k.falhas || 0);
-    function caixa(conteudo, extra) { return e('div', { style: Object.assign({}, card, { borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 2 }, extra || {}) }, conteudo); }
-    return e('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12 } },
-      caixa([e('span', { key: 1, style: { fontSize: 12, color: '#6b7280' } }, 'Lançados no período'),
-        e('b', { key: 2, style: { fontFamily: SORA, fontSize: 22 } }, fmtBRL(k.valor_lancado)),
-        e('span', { key: 3, style: { fontSize: 12, color: '#4b5563' } }, (k.lancados || 0) + ' créditos · ' + (k.lancados_auto || 0) + ' automáticos, ' + (k.lancados_manual || 0) + ' manuais')]),
-      e('button', { type: 'button', onClick: props.onPendencias, style: { textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', background: k.pendentes ? '#fffbeb' : '#fff', border: '1px solid ' + (k.pendentes ? '#fcd34d' : '#e5e7eb'), borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 2, color: k.pendentes ? '#92400e' : '#111827' } },
-        e('span', { style: { fontSize: 12 } }, 'Pendentes de decisão'),
-        e('b', { style: { fontFamily: SORA, fontSize: 22 } }, String(k.pendentes || 0)),
-        e('span', { style: { fontSize: 12, textDecoration: 'underline' } }, 'Ver pendências')),
-      caixa([e('span', { key: 1, style: { fontSize: 12, color: '#6b7280' } }, 'Retornos barrados'),
-        e('b', { key: 2, style: { fontFamily: SORA, fontSize: 22 } }, String(k.retornos_barrados || 0)),
-        e('span', { key: 3, style: { fontSize: 12, color: '#4b5563' } }, 'Pedido após receber gratificação')]),
-      caixa([e('span', { key: 1, style: { fontSize: 12, color: '#6b7280' } }, 'Falhas na API Mapp'),
-        e('b', { key: 2, style: { fontFamily: SORA, fontSize: 22, color: falhasApi ? '#991b1b' : '#111827' } }, String(falhasApi)),
-        e('span', { key: 3, style: { fontSize: 12, color: '#4b5563' } }, k.incertos ? k.incertos + ' a conferir na Mapp' : k.falhas ? k.falhas + ' recusados pela Mapp' : 'Nenhum crédito em estado incerto')],
-        falhasApi ? { background: '#fef2f2', borderColor: '#fecaca' } : null));
-  }
-
   // ───────────────────────── Tabela de créditos ─────────────────────────
   function exportarCSV(lista) {
     var cab = ['Dia', 'Cód. motoboy', 'Motoboy', 'Cliente', 'Negociado', 'Produzido', '% produção', 'Gratificação', 'Origem', 'Quem', 'Situação', 'Caixa Mapp', 'Justificativa'];
@@ -195,7 +140,7 @@
 
   function quemFez(c) {
     if (c.status === 'pendente') return (window.__GRAT_MOTIVOS || {})[c.motivo] || 'Barrado por regra';
-    if (c.status === 'externo') return 'Marcado na Análise';
+    if (c.status === 'externo') return c.decidido_por ? (c.decidido_por_nome || '—') + (c.decidido_em ? ' · ' + fmtDataHora(c.decidido_em) : '') : 'Marcado como lançado na Análise';
     if (c.origem === 'manual' || c.decidido_por_nome) return (c.decidido_por_nome || '—') + (c.decidido_em ? ' · ' + fmtDataHora(c.decidido_em) : '');
     if (c.status === 'incerto' || c.status === 'falhou') return c.mapp_mensagem || 'Rodada automática';
     return 'Rodada automática' + (c.lancado_em ? ' · ' + fmtHora(c.lancado_em) : '');
@@ -341,9 +286,10 @@
       props.podeDecidir && decidivel && e('div', { style: { borderTop: '1px solid #f3f4f6', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 10 } },
         outroValor && e('label', { style: Object.assign({}, lbl, { fontSize: 13, color: '#111827' }) }, 'Valor a lançar (até ' + fmtBRL(c.valor_negociado) + ')',
           e('input', { type: 'text', inputMode: 'decimal', value: valor, onChange: function (ev) { setValor(ev.target.value); }, placeholder: String(c.valor_calculado).replace('.', ','), style: Object.assign({}, inp, { width: 180, height: 42 }) })),
-        e('label', { style: Object.assign({}, lbl, { fontSize: 13, color: '#111827' }) }, precisaJust ? 'Justificativa (obrigatória)' : 'Justificativa (opcional para lançar, obrigatória para recusar)',
+        e('label', { style: Object.assign({}, lbl, { fontSize: 13, color: '#111827' }) }, precisaJust ? 'Justificativa (obrigatória)' : 'Justificativa (opcional para lançar; obrigatória para recusar ou pago fora)',
           e('textarea', { rows: 2, value: just, onChange: function (ev) { setJust(ev.target.value); }, placeholder: 'Ex.: chuva forte à tarde, operação reduziu as rotas do cliente', style: Object.assign({}, inp, { height: 'auto', padding: 10, resize: 'vertical' }) })),
         e('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' } },
+          e('button', { type: 'button', disabled: enviando || just.trim().length < 5, style: desab(btnSec, enviando || just.trim().length < 5), title: 'Ex.: pago por PIX direto. Conta como recebido e trava o retorno do dia.', onClick: function () { agir('pago-fora', { justificativa: just }, 'Marcado como pago fora do sistema'); } }, 'Pago fora do sistema'),
           e('button', { type: 'button', disabled: enviando || just.trim().length < 5, style: desab(btnSec, enviando || just.trim().length < 5), onClick: function () { agir('recusar', { justificativa: just }, 'Gratificação recusada'); } }, 'Recusar gratificação'),
           !outroValor && e('button', { type: 'button', disabled: enviando, style: btnRoxoSec, onClick: function () { setOutroValor(true); } }, 'Liberar outro valor'),
           e('button', { type: 'button', disabled: enviando || !justOk || !(valorFinal > 0), style: desab(btnPri, enviando || !justOk || !(valorFinal > 0)),
@@ -573,69 +519,211 @@
         } }, env ? 'Lançando…' : 'Lançar ' + fmtBRL(k.valor_a_lancar))));
   }
 
-  // ───────────────────────── Componente principal ─────────────────────────
-  window.BIGratificacoes = function BIGratificacoes(props) {
-    var s1 = React.useState('creditos'), view = s1[0], setView = s1[1];
-    var s2 = React.useState(null), dados = s2[0], setDados = s2[1];
-    var s3 = React.useState(null), erro = s3[0], setErro = s3[1];
-    var s4 = React.useState({ data_inicio: '', data_fim: '', origem: '', status: '', busca: '' }), filtros = s4[0], setFiltros = s4[1];
-    var s5 = React.useState(null), aviso = s5[0], setAviso = s5[1];
-    var s6 = React.useState(null), modal = s6[0], setModal = s6[1];
-    var s7 = React.useState(null), detalheId = s7[0], setDetalheId = s7[1];
-    var filtrosRef = React.useRef(filtros); filtrosRef.current = filtros;
+  // ───────────────────────── V2: blocos usados dentro da tela do Garantido ─────────────────────────
+  // BIGarantidoV2.js monta: chip do automático + "Configurar pagamento", faixa da rodada, KPIs extras,
+  // filtro "Pagamento", coluna Pagamento (CelulaPagamento), painel lateral (Drawer) e a sub-aba Histórico.
 
-    var carregar = React.useCallback(function () {
-      var f = filtrosRef.current; var q = [];
-      Object.keys(f).forEach(function (k) { if (f[k]) q.push(k + '=' + encodeURIComponent(f[k])); });
+  function usePagamento(ini, fim) {
+    var s1 = React.useState(null), dados = s1[0], setDados = s1[1];
+    var s2 = React.useState(null), erro = s2[0], setErro = s2[1];
+    var recarregar = React.useCallback(function () {
+      var q = [];
+      if (ini) q.push('data_inicio=' + ini);
+      if (fim) q.push('data_fim=' + fim);
       return api('/bi/gratificacao/painel' + (q.length ? '?' + q.join('&') : '')).then(function (d) {
         window.__GRAT_MOTIVOS = d.motivos || {};
         setDados(d); setErro(null);
-        if (props.onContagem) props.onContagem((d.kpis.pendentes || 0) + (d.kpis.incertos || 0) + (d.kpis.falhas || 0));
       }).catch(function (er) { setErro(er.message); });
+    }, [ini, fim]);
+    React.useEffect(function () { recarregar(); }, [recarregar]);
+    var andando = !!(dados && dados.rodada && dados.rodada.status === 'aguardando');
+    React.useEffect(function () {
+      if (!andando) return undefined;
+      var t = setInterval(recarregar, 8000);
+      return function () { clearInterval(t); };
+    }, [andando, recarregar]);
+    var mapa = React.useMemo(function () {
+      var m = {};
+      ((dados && dados.creditos) || []).forEach(function (c) { m[Number(c.cod_prof) + '_' + c.data] = c; });
+      return m;
+    }, [dados]);
+    return { dados: dados, erro: erro, recarregar: recarregar, mapa: mapa };
+  }
+
+  /** Situação de pagamento de uma linha do garantido. grupo: decidir | lancado | aguardando | recusado | sem */
+  function classificar(row, pag, statusMap) {
+    var cod = Number(row.cod_prof);
+    var c = pag && pag.mapa ? pag.mapa[cod + '_' + row.data] : null;
+    var dados = pag && pag.dados;
+    var pode = !!(dados && dados.pode_decidir);
+    var mot = window.__GRAT_MOTIVOS || {};
+    if (c) {
+      var quem = c.decidido_por_nome || '';
+      switch (c.status) {
+        case 'pendente': return { grupo: 'decidir', tom: 'ambar', label: 'Para decidir', sub: (mot[c.motivo] || 'Barrado por regra') + (c.motivo === 'producao_baixa' && c.pct != null ? ' (' + Math.round(c.pct) + '%)' : ''), acao: { texto: pode ? 'Decidir' : 'Ver', pri: pode, id: c.id } };
+        case 'incerto': return { grupo: 'decidir', tom: 'vermelho', label: 'Conferir na Mapp', sub: 'Mapp não confirmou · não reenviado', acao: { texto: pode ? 'Conferir' : 'Ver', id: c.id } };
+        case 'falhou': return { grupo: 'decidir', tom: 'vermelho', label: 'Mapp recusou', sub: c.mapp_mensagem || 'Nada foi creditado', acao: { texto: pode ? 'Decidir' : 'Ver', pri: pode, id: c.id } };
+        case 'a_lancar': return { grupo: 'aguardando', tom: 'roxo', label: 'Aprovado · aguardando', sub: dados && dados.config && dados.config.ativo ? 'Passou nas regras · sai na rodada' : 'Passou nas regras · sai no “Lançar aprovados”', acao: { texto: 'Ver', id: c.id } };
+        case 'lancando': return { grupo: 'aguardando', tom: 'azul', label: 'Enviando', sub: 'Lançando na Mapp agora', acao: null };
+        case 'lancado': return { grupo: 'lancado', tom: 'verde', label: 'Lançado na Mapp', sub: (c.origem === 'manual' ? 'Manual · ' + (quem || '—') : 'Automático' + (c.lancado_em ? ' · ' + fmtHora(c.lancado_em) : '')) + (c.mapp_id_caixa ? ' · caixa ' + c.mapp_id_caixa : ''), acao: { texto: 'Ver', id: c.id, discreto: true } };
+        case 'externo': return { grupo: 'lancado', tom: 'cinza', label: 'Pago fora do sistema', sub: quem ? quem + (c.justificativa ? ' · “' + c.justificativa + '”' : '') : 'Marcado como lançado na Análise', acao: { texto: 'Ver', id: c.id, discreto: true } };
+        case 'recusado': return { grupo: 'recusado', tom: 'cinza', label: 'Recusado', sub: (quem || '—') + (c.justificativa ? ' · “' + c.justificativa + '”' : ''), acao: { texto: 'Ver', id: c.id, discreto: true } };
+        default: return { grupo: 'aguardando', tom: 'cinza', label: c.status, sub: '', acao: { texto: 'Ver', id: c.id } };
+      }
+    }
+    if (!(Number(row.complemento) > 0)) return { grupo: 'sem', tom: 'cinza', label: 'Sem complemento', sub: 'Produziu acima do mínimo', acao: null };
+    var gs = statusMap ? statusMap[row.cod_prof + '_' + row.data + '_' + row.cod_cliente_garantido] : null;
+    if (gs && gs.status === 'lancado') return { grupo: 'lancado', tom: 'cinza', label: 'Pago fora do sistema', sub: 'Marcado na Análise' + (gs.alterado_por ? ' · ' + gs.alterado_por : ''), acao: null };
+    if (gs && gs.status === 'reprovado') return { grupo: 'recusado', tom: 'cinza', label: 'Reprovado', sub: gs.motivo_reprovado || 'Reprovado na Análise', acao: null };
+    if (String(row.data) >= hojeISO()) return { grupo: 'aguardando', tom: 'cinza', label: 'Dia em andamento', sub: 'Entra na rodada de amanhã', acao: null };
+    if (!cod) return { grupo: 'aguardando', tom: 'cinza', label: 'Sem código', sub: 'Planilha sem código do motoboy', acao: null };
+    return { grupo: 'aguardando', tom: 'cinza', label: 'Aguardando rodada', sub: 'Ainda não passou pela rodada', acao: pode ? { texto: 'Lançar', preparar: true } : null };
+  }
+
+  function CelulaPagamento(props) {
+    var info = props.info;
+    var s1 = React.useState(false), ocupado = s1[0], setOcupado = s1[1];
+    var btn = null;
+    if (info.acao) {
+      var st = info.acao.pri ? Object.assign({}, btnPri, { height: 34, padding: '0 12px', fontSize: 12.5 })
+        : info.acao.discreto ? { height: 30, padding: '0 10px', border: 'none', borderRadius: 8, background: 'transparent', color: '#6b7280', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }
+          : Object.assign({}, btnSec, { height: 34, padding: '0 12px', fontSize: 12.5 });
+      btn = e('button', { type: 'button', disabled: ocupado, style: desab(st, ocupado), onClick: function () {
+        if (info.acao.preparar) {
+          setOcupado(true);
+          api('/bi/gratificacao/preparar', { method: 'POST', body: JSON.stringify({ cod_prof: Number(props.row.cod_prof), data: props.row.data }) })
+            .then(function (r) { props.onAbrir(r.id); props.onMudou && props.onMudou(); })
+            .catch(function (er) { if (props.onErro) props.onErro(er.message); })
+            .then(function () { setOcupado(false); });
+        } else props.onAbrir(info.acao.id);
+      } }, ocupado ? 'Abrindo…' : info.acao.texto);
+    }
+    return e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, minWidth: 280 } },
+      e('div', { style: { display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'flex-start', minWidth: 0 } },
+        pill(info.tom, info.label),
+        info.sub && e('span', { title: info.sub, style: { fontSize: 11.5, color: '#6b7280', maxWidth: 230, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, info.sub)),
+      btn);
+  }
+
+  function ChipAuto(props) {
+    var d = props.dados; if (!d) return null;
+    var c = d.config;
+    return e('div', { style: { display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' } },
+      e('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, borderRadius: 999, padding: '5px 12px', background: c.ativo ? '#f0fdf4' : '#f3f4f6', color: c.ativo ? '#166534' : '#374151', border: '1px solid ' + (c.ativo ? '#bbf7d0' : '#e5e7eb') } },
+        e('span', { 'aria-hidden': 'true', style: { width: 7, height: 7, borderRadius: 999, background: c.ativo ? '#16a34a' : '#9ca3af' } }),
+        c.ativo ? 'Lançamento automático ligado · todo dia ' + c.horario : 'Lançamento automático desligado'),
+      e('button', { type: 'button', style: btnSec, onClick: props.onConfig }, ico('settings', 15), 'Configurar pagamento'));
+  }
+
+  function etapaCurta(r) {
+    var et = r.etapas || {};
+    return etapasDaRodada(r).map(function (s) {
+      var curto = s.k === 'planilha' ? (et.planilha && et.planilha.ok ? 'Planilha · ' + et.planilha.motoboys + ' motoboys' : 'Planilha')
+        : s.k === 'bi' ? (et.bi && et.bi.pulado ? 'BI atual (simulação)' : et.bi && et.bi.ok ? 'BI reimportado' + (et.bi.finalizado_em ? ' ' + fmtHora(et.bi.finalizado_em) : '') : 'BI reimportando')
+          : s.k === 'calcular' ? 'Regras aplicadas'
+            : (et.lancar && et.lancar.pulado ? 'Aprovados aguardando' : (et.lancar && et.lancar.lancados != null ? et.lancar.lancados + ' lançados na Mapp' : 'Créditos na Mapp'));
+      return { k: s.k, estado: s.estado, texto: curto, det: s.det };
+    });
+  }
+
+  function Faixa(props) {
+    var d = props.dados; if (!d) return null;
+    var r = d.rodada, k = d.kpis, pode = d.pode_decidir;
+    var nPend = (k.pendentes || 0) + (k.incertos || 0) + (k.falhas || 0);
+    var chip = !r ? null : r.status === 'aguardando' ? pill('ambar', 'Em andamento' + (r.proxima_tentativa_em ? ' · confere de novo ' + fmtHora(r.proxima_tentativa_em) : ''))
+      : r.status === 'concluida' ? pill('verde', 'Rodada concluída ' + fmtHora(r.finalizada_em) + ' · ' + (r.origem === 'cron' ? 'automática' : 'manual'))
+        : pill('vermelho', 'Não lançou');
+    var avisados = (d.avisados || []).map(function (a) { return a.nome; });
+    return e(React.Fragment, null,
+      e('section', { 'aria-label': 'Rodada de pagamento', style: Object.assign({}, card, { padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }) },
+        e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 } },
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' } },
+            e('b', { style: { fontFamily: SORA, color: '#3a1556', fontSize: 14 } }, r ? 'Pagamento de ' + fmtDia(r.data) : 'Pagamento do garantido'),
+            chip,
+            r ? etapaCurta(r).map(function (s) {
+              return e('span', { key: s.k, title: s.det, style: { display: 'inline-flex', alignItems: 'center', gap: 6, color: s.estado === 'futuro' ? '#9ca3af' : '#374151', fontSize: 12.5 } }, IconeEtapa(s.estado), s.texto);
+            }) : e('span', { style: { color: '#6b7280' } }, d.config.ativo ? 'A primeira rodada roda às ' + d.config.horario + ' (dia anterior).' : 'Nenhuma rodada ainda. Rode um dia ou ligue o automático.')),
+          pode && e('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
+            e('button', { type: 'button', style: Object.assign({}, btnSec, { height: 38 }), onClick: function () { props.setModal('simular'); } }, ico('search', 14), 'Simular outra data'),
+            e('button', { type: 'button', disabled: !!(r && r.status === 'aguardando'), style: desab(Object.assign({}, btnPri, { height: 38 }), !!(r && r.status === 'aguardando')), onClick: function () { props.setModal('rodar'); } }, ico('play', 14), 'Rodar agora'))),
+        r && r.status === 'falhou' && r.erro && e('div', { role: 'alert', style: { background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', borderRadius: 10, padding: '8px 12px', fontSize: 12.5 } }, r.erro)),
+      nPend > 0 && e('div', { role: 'status', style: { background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 14, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', color: '#92400e' } },
+        e('span', null,
+          e('b', null, (k.pendentes || 0) + (k.pendentes === 1 ? ' aguardando decisão' : ' aguardando decisão')),
+          k.incertos ? ' · ' + k.incertos + ' a conferir na Mapp' : '', k.falhas ? ' · ' + k.falhas + ' recusados pela Mapp' : '',
+          avisados.length ? ' · aviso no WhatsApp para ' + avisados.join(', ') : ''),
+        e('button', { type: 'button', style: { height: 36, padding: '0 14px', border: '1px solid #f59e0b', borderRadius: 10, background: '#fff', color: '#92400e', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }, onClick: function () { props.setModal('pendencias'); } }, 'Abrir pendências')),
+      !d.config.ativo && k.a_lancar > 0 && e('div', { style: { background: '#faf7fd', border: '1px solid #e9d5f9', borderRadius: 14, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' } },
+        e('span', { style: { color: '#3a1556' } }, e('b', null, k.a_lancar + (k.a_lancar === 1 ? ' aprovado aguardando lançamento' : ' aprovados aguardando lançamento')), ' · ' + fmtBRL(k.valor_a_lancar)),
+        pode && e('button', { type: 'button', style: btnPri, onClick: function () { props.setModal('aprovados'); } }, 'Lançar aprovados')));
+  }
+
+  /** KPIs extras do período (sobre os créditos já gravados). */
+  function resumoPeriodo(d) {
+    var out = { lancado: 0, nLancado: 0, auto: 0, manual: 0, decidir: 0, nDecidir: 0, incertos: 0 };
+    ((d && d.creditos) || []).forEach(function (c) {
+      if (c.status === 'lancado') { out.lancado += Number(c.valor_lancado != null ? c.valor_lancado : c.valor_calculado) || 0; out.nLancado++; if (c.origem === 'manual') out.manual++; else out.auto++; }
+      if (c.status === 'pendente' || c.status === 'incerto' || c.status === 'falhou') { out.decidir += Number(c.valor_calculado) || 0; out.nDecidir++; if (c.status === 'incerto') out.incertos++; }
+    });
+    return out;
+  }
+
+  function Drawer(props) {
+    React.useEffect(function () {
+      function esc(ev) { if (ev.key === 'Escape') props.onFechar(); }
+      document.addEventListener('keydown', esc);
+      return function () { document.removeEventListener('keydown', esc); };
+    }, []);
+    return e('div', { style: { position: 'fixed', inset: 0, zIndex: 60 } },
+      e('div', { style: { position: 'absolute', inset: 0, background: 'rgba(17,24,39,.45)' }, onMouseDown: props.onFechar }),
+      e('aside', { role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Pagamento do garantido', style: { position: 'absolute', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: 600, background: '#fff', boxShadow: '-20px 0 50px rgba(0,0,0,.18)', display: 'flex', flexDirection: 'column' } },
+        e('div', { style: { padding: '14px 20px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+          e('b', { style: { fontFamily: SORA, fontSize: 14, color: '#6b7280' } }, 'Pagamento do garantido'),
+          e('button', { type: 'button', 'aria-label': 'Fechar', onClick: props.onFechar, style: { border: 'none', background: '#f3f4f6', borderRadius: 10, width: 36, height: 36, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#374151' } }, ico('x', 15))),
+        e('div', { style: { flex: 1, overflowY: 'auto', padding: '18px 22px 24px' } },
+          e(Detalhe, { id: props.id, podeDecidir: props.podeDecidir, onMudou: props.onMudou }))));
+  }
+
+  /** Todos os modais/painéis do pagamento, controlados pela tela do Garantido. */
+  function Modais(props) {
+    var m = props.modal, d = props.dados, fechar = function () { props.setModal(null); };
+    if (!m || !d) return null;
+    if (m === 'rodar') return e(ModalRodar, { config: d.config, onFechar: fechar, onOk: function () { fechar(); setTimeout(props.recarregar, 600); } });
+    if (m === 'simular') return e(ModalSimular, { onFechar: fechar });
+    if (m === 'aprovados') return e(ModalLancarAprovados, { kpis: d.kpis, onFechar: fechar, onMudou: props.recarregar });
+    if (m === 'pendencias') return e(Modal, { titulo: 'Pendências de pagamento', largura: 1180, onFechar: fechar }, e(Pendencias, { dados: d, onMudou: props.recarregar }));
+    if (m === 'config') return e(Modal, { titulo: 'Configurar pagamento do garantido', largura: 1180, onFechar: fechar }, e(Config, { dados: d, onMudou: props.recarregar }));
+    if (m && m.drawer) return e(Drawer, { id: m.drawer, podeDecidir: d.pode_decidir, onFechar: fechar, onMudou: props.recarregar });
+    return null;
+  }
+
+  /** Sub-aba "Histórico de pagamentos": todos os créditos, automático x manual, quem fez. */
+  function Historico() {
+    var s1 = React.useState(null), dados = s1[0], setDados = s1[1];
+    var s2 = React.useState(null), erro = s2[0], setErro = s2[1];
+    var s3 = React.useState({ data_inicio: '', data_fim: '', origem: '', status: '', busca: '' }), filtros = s3[0], setFiltros = s3[1];
+    var s4 = React.useState(null), det = s4[0], setDet = s4[1];
+    var ref = React.useRef(filtros); ref.current = filtros;
+    var carregar = React.useCallback(function () {
+      var f = ref.current; var q = [];
+      Object.keys(f).forEach(function (k) { if (f[k]) q.push(k + '=' + encodeURIComponent(f[k])); });
+      return api('/bi/gratificacao/painel' + (q.length ? '?' + q.join('&') : '')).then(function (d) { window.__GRAT_MOTIVOS = d.motivos || {}; setDados(d); setErro(null); })
+        .catch(function (er) { setErro(er.message); });
     }, []);
     React.useEffect(function () { carregar(); }, []);
-    var rodadaAndando = dados && dados.rodada && dados.rodada.status === 'aguardando';
-    React.useEffect(function () {
-      if (!rodadaAndando) return undefined;
-      var t = setInterval(carregar, 8000);
-      return function () { clearInterval(t); };
-    }, [rodadaAndando]);
-
-    if (erro && !dados) return e('div', { role: 'alert', style: Object.assign({}, card, { padding: 24, color: '#991b1b' }) }, erro);
-    if (!dados) return e('div', { style: Object.assign({}, card, { padding: 48, textAlign: 'center', color: '#6b7280' }) }, 'Carregando gratificações…');
-
+    if (erro && !dados) return e('div', { role: 'alert', style: { padding: 24, color: '#991b1b' } }, erro);
+    if (!dados) return e('div', { style: { padding: 40, textAlign: 'center', color: '#6b7280' } }, 'Carregando histórico…');
     var k = dados.kpis;
-    var nPend = (k.pendentes || 0) + (k.incertos || 0) + (k.falhas || 0);
-    var abas = [{ id: 'creditos', label: 'Créditos' }, { id: 'pendencias', label: 'Pendências', n: nPend }, { id: 'config', label: 'Configuração' }];
+    return e('div', { style: { display: 'flex', flexDirection: 'column', gap: 14, padding: 16 } },
+      e('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
+        pill('verde', (k.lancados || 0) + ' lançados · ' + fmtBRL(k.valor_lancado)), pill('cinza', (k.lancados_auto || 0) + ' automáticos · ' + (k.lancados_manual || 0) + ' manuais'),
+        k.retornos_barrados ? pill('azul', k.retornos_barrados + ' retornos barrados') : null),
+      e(TabelaCreditos, { dados: dados, filtros: filtros, setFiltros: setFiltros, onFiltrar: carregar, onAbrir: setDet }),
+      det && e(Drawer, { id: det, podeDecidir: dados.pode_decidir, onFechar: function () { setDet(null); }, onMudou: carregar }));
+  }
 
-    return e('div', { style: { display: 'flex', flexDirection: 'column', gap: 16 } },
-      e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 } },
-        e('div', { style: { display: 'flex', flexDirection: 'column', gap: 2 } },
-          e('b', { style: { fontFamily: SORA, fontSize: 18, color: '#111827' } }, 'Gratificações'),
-          e('span', { style: { fontSize: 12.5, color: '#6b7280' } }, 'Complemento do mínimo garantido lançado no saldo do motoboy na Mapp')),
-        e('div', { role: 'tablist', 'aria-label': 'Visões das gratificações', style: { display: 'flex', flexWrap: 'wrap', background: '#f3f4f6', borderRadius: 10, padding: 3 } },
-          abas.map(function (a) {
-            var at = view === a.id;
-            return e('button', { key: a.id, type: 'button', role: 'tab', 'aria-selected': at, onClick: function () { setView(a.id); },
-              style: { height: 36, padding: '0 14px', border: 'none', borderRadius: 8, background: at ? '#fff' : 'transparent', color: at ? '#5d0b85' : '#4b5563', fontWeight: at ? 600 : 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'inherit', fontSize: 13 } },
-            a.label, a.n ? e('span', { style: { background: '#b45309', color: '#fff', borderRadius: 999, fontSize: 11, padding: '1px 7px' } }, String(a.n)) : null);
-          }))),
-      e(Aviso, { aviso: aviso, onFechar: function () { setAviso(null); } }),
-
-      view === 'creditos' && e(React.Fragment, null,
-        e(RodadaCard, { dados: dados, podeDecidir: dados.pode_decidir, onRodar: function () { setModal('rodar'); }, onSimular: function () { setModal('simular'); } }),
-        !dados.config.ativo && k.a_lancar > 0 && e('div', { style: { background: '#faf7fd', border: '1px solid #e9d5f9', borderRadius: 14, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' } },
-          e('span', { style: { color: '#3a1556' } }, e('b', null, k.a_lancar + (k.a_lancar === 1 ? ' aprovado aguardando lançamento' : ' aprovados aguardando lançamento')), ' · ' + fmtBRL(k.valor_a_lancar) + (k.a_lancar === 1 ? ' · passou em todas as regras' : ' · passaram em todas as regras')),
-          dados.pode_decidir && e('button', { type: 'button', style: btnPri, onClick: function () { setModal('aprovados'); } }, 'Lançar aprovados')),
-        e(Kpis, { k: k, onPendencias: function () { setView('pendencias'); } }),
-        e(TabelaCreditos, { dados: dados, filtros: filtros, setFiltros: setFiltros, onFiltrar: carregar, onAbrir: setDetalheId })),
-      view === 'pendencias' && e(Pendencias, { dados: dados, onMudou: carregar }),
-      view === 'config' && e(Config, { dados: dados, onMudou: carregar }),
-
-      modal === 'rodar' && e(ModalRodar, { config: dados.config, onFechar: function () { setModal(null); }, onOk: function (t) { setModal(null); setAviso({ tipo: 'ok', texto: t }); setTimeout(carregar, 600); } }),
-      modal === 'simular' && e(ModalSimular, { onFechar: function () { setModal(null); } }),
-      modal === 'aprovados' && e(ModalLancarAprovados, { kpis: k, onFechar: function () { setModal(null); }, onMudou: carregar }),
-      detalheId && e(Modal, { titulo: 'Gratificação', largura: 760, onFechar: function () { setDetalheId(null); } },
-        e(Detalhe, { id: detalheId, podeDecidir: dados.pode_decidir, onMudou: carregar })));
+  window.BIGrat = {
+    usePagamento: usePagamento, classificar: classificar, CelulaPagamento: CelulaPagamento, ChipAuto: ChipAuto,
+    Faixa: Faixa, Modais: Modais, Historico: Historico, resumoPeriodo: resumoPeriodo, fmtBRL: fmtBRL, pill: pill,
   };
 })();
