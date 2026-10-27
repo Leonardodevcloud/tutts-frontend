@@ -81,6 +81,27 @@
     return e('svg', { width: size || 16, height: size || 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' },
       (Array.isArray(d) ? d : [d]).map((x, i) => e('path', { key: i, d: x })));
   }
+  // ── DIARIA_MAPP_V1: crédito na Mapp por motoboy ──
+  const MAPP_ST = {
+    pendente: { txt: 'Aguardando decisão', bg: '#fffbeb', fg: '#92400e' },
+    a_lancar: { txt: 'Na fila p/ lançar', bg: '#faf7fd', fg: '#770fa8' },
+    lancando: { txt: 'Lançando…', bg: '#faf7fd', fg: '#770fa8' },
+    lancado:  { txt: 'Lançado na Mapp', bg: '#f0fdf4', fg: '#166534' },
+    falhou:   { txt: 'Mapp recusou', bg: '#fef2f2', fg: '#991b1b' },
+    incerto:  { txt: 'Conferir na Mapp', bg: '#fffbeb', fg: '#92400e' },
+    recusado: { txt: 'Não pago', bg: '#f3f4f6', fg: '#374151' },
+    pago_fora:{ txt: 'Pago por fora', bg: '#f3f4f6', fg: '#374151' },
+  };
+  function MappPill({ c }) {
+    if (!c) return e('span', { className: 'text-xs text-gray-400' }, '—');
+    const st = MAPP_ST[c.status] || { txt: c.status, bg: '#f3f4f6', fg: '#374151' };
+    return e('div', null,
+      e('span', { className: 'text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap', style: { background: st.bg, color: st.fg }, title: c.mapp_mensagem || '' }, st.txt),
+      e('div', { className: 'text-[11px] text-gray-500 mt-0.5 whitespace-nowrap' },
+        c.status === 'lancado' ? (brl(c.valor) + (c.mapp_id_caixa ? ' · caixa ' + c.mapp_id_caixa : '') + (c.lancado_em ? ' · ' + c.lancado_em : ''))
+          : (c.status === 'falhou' || c.status === 'incerto') ? (c.mapp_mensagem || '') : (c.descricao || '')));
+  }
+
   function Card({ titulo, cor, valor, sub, escuro }) {
     return e('div', { className: 'rounded-xl p-4 flex flex-col gap-1 ' + (escuro ? 'text-white' : 'bg-white border border-gray-200'), style: escuro ? { background: '#770fa8' } : null },
       e('span', { className: 'text-xs font-semibold flex items-center gap-1.5', style: escuro ? { opacity: .9 } : { color: cor } },
@@ -97,11 +118,12 @@
     const [filtro, setFiltro] = React.useState('todos');
     const [job, setJob] = React.useState(null); // {id, status, progresso}
     const [ocupado, setOcupado] = React.useState(false);
+    const [mappOcupado, setMappOcupado] = React.useState(null); // DIARIA_MAPP_V1: cod em lançamento / 'rodar'
     const pollRef = React.useRef(null);
 
-    const carregar = React.useCallback(async (dt) => {
+    const carregar = React.useCallback(async (dt, silencioso) => {
       if (!centralId) return;
-      setLoading(true);
+      if (!silencioso) setLoading(true);
       try {
         const r = await fetchAuth(`${apiUrl}/diaria/fechamento/${centralId}?data=${dt || data}`);
         const d = await r.json();
@@ -113,6 +135,59 @@
     }, [apiUrl, centralId, data]);
 
     React.useEffect(() => { setDecisoes({}); carregar(data); }, [data, carregar]);
+
+    // DIARIA_MAPP_V1: tela ao vivo — motoboy entrou na fila, rodada andou ou crédito voltou da Mapp,
+    // a tela atualiza sozinha (30 s; 8 s enquanto o pagamento está rodando).
+    const rodando = !!(dados && dados.pagamento && dados.pagamento.rodada && dados.pagamento.rodada.status === 'aguardando');
+    React.useEffect(() => {
+      if (!dados || job) return undefined;
+      const vivo = (!dados.fechado && dados.eh_hoje) || rodando
+        || (dados.pagamento && Object.values(dados.pagamento.creditos || {}).some((c) => c.status === 'lancando' || c.status === 'a_lancar'));
+      if (!vivo) return undefined;
+      const t = setInterval(() => { if (!document.hidden) carregar(data, true); }, rodando ? 8000 : 30000);
+      return () => clearInterval(t);
+    }, [dados, job, rodando, data, carregar]);
+
+    const pg = (dados && dados.pagamento) || null;
+    const credDe = (cod) => (pg && pg.creditos && pg.creditos[String(cod)]) || null;
+    const chamarMapp = async (url, corpo, chave, okMsg) => {
+      setMappOcupado(chave);
+      try {
+        const r = await fetchAuth(`${apiUrl}${url}`, { method: corpo === undefined ? 'POST' : (corpo && corpo._metodo) || 'POST', body: JSON.stringify(corpo || {}) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { showToast && showToast(d.erro || 'Erro', 'error'); return null; }
+        if (okMsg) showToast && showToast(typeof okMsg === 'function' ? okMsg(d) : okMsg, d.status === 'falhou' || d.status === 'incerto' ? 'error' : 'success');
+        carregar(data, true);
+        return d;
+      } catch (_) { showToast && showToast('Erro de conexão', 'error'); return null; }
+      finally { setMappOcupado(null); }
+    };
+    const rodarMapp = () => {
+      if (!window.confirm(`Lançar a diária de ${dataBR(data)} na Mapp agora?\n\nO sistema atualiza o BI do dia (uns minutos), lança quem está "Pagar" e deixa quem precisa de decisão aguardando você.`)) return;
+      chamarMapp(`/diaria/pagamento/${centralId}/rodar`, { data }, 'rodar', 'Pagamento iniciado — atualizando o BI do dia');
+    };
+    const lancarUm = (it) => {
+      const escolha = decisoes[it.cod_profissional] || it.sugerido || null;
+      const v = valorEscolhido(it, escolha);
+      const txt = v.valor > 0 ? `Lançar ${brl(v.valor)} na Mapp para ${nomeDe(it)}?` : `Marcar ${nomeDe(it)} como NÃO pago (nada vai para a Mapp)?`;
+      if (!window.confirm(txt)) return;
+      chamarMapp(`/diaria/pagamento/${centralId}/lancar`, { data, cod_profissional: it.cod_profissional, escolha: it.decisao === 'pagar' ? null : escolha }, it.cod_profissional,
+        (d) => d.status === 'lancado' ? 'Lançado na Mapp' + (d.id_caixa ? ' · caixa ' + d.id_caixa : '') : d.status === 'recusado' ? 'Marcado como não pago' : (d.status === 'falhou' ? 'A Mapp recusou: ' : 'Resposta incerta: ') + (d.mensagem || ''));
+    };
+    const acoesMapp = (it) => {
+      const c = credDe(it.cod_profissional);
+      if (!pg || !pg.ativo) return null;
+      const ocup = mappOcupado === it.cod_profissional || mappOcupado === 'rodar' || rodando;
+      const btn = (txt, fn, cls) => e('button', { onClick: fn, disabled: ocup, className: 'h-7 px-2.5 rounded-md text-xs font-semibold disabled:opacity-50 ' + (cls || 'border border-purple-600 text-purple-700 hover:bg-purple-50') }, txt);
+      if (c && c.status === 'falhou') return btn('Tentar de novo', () => chamarMapp(`/diaria/pagamento/credito/${c.id}/retentar`, {}, it.cod_profissional, (d) => d.success ? 'Lançado na Mapp' : 'A Mapp recusou de novo: ' + (d.mensagem || '')));
+      if (c && c.status === 'incerto') return e('div', { className: 'flex gap-1' },
+        btn('Creditou', () => chamarMapp(`/diaria/pagamento/credito/${c.id}/incerto`, { creditou: true }, it.cod_profissional, 'Marcado como lançado')),
+        btn('Não creditou', () => chamarMapp(`/diaria/pagamento/credito/${c.id}/incerto`, { creditou: false }, it.cod_profissional, 'Voltou para "Mapp recusou" — dá pra tentar de novo'), 'border border-gray-300 text-gray-700 hover:bg-gray-50'));
+      if (c && ['lancado', 'lancando', 'pago_fora', 'a_lancar'].indexOf(c.status) >= 0) return null;
+      if (dados.fechado) return null;
+      if (it.situacao === 'aberta') return null; // ainda rodando: entra na rodada / no fechamento
+      return btn(it.decisao === 'pagar' ? 'Lançar' : 'Lançar decisão', () => lancarUm(it));
+    };
     React.useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
     function acompanhar(jobId) {
@@ -215,6 +290,32 @@
         e('span', { className: 'text-xs text-gray-600' }, dados.dados_de_txt ? ('Dados do BI de ' + dados.dados_de_txt) : 'Sem importação do BI nesse dia ainda'))
     );
 
+    // DIARIA_MAPP_V1: faixa do pagamento na Mapp
+    const rod = pg && pg.rodada;
+    const ETAPA_TXT = { bi: 'atualizando o BI do dia', lancar: 'lançando na Mapp' };
+    const faixaMapp = pg && e('div', { className: 'bg-white border border-gray-200 rounded-xl px-4 py-3 flex flex-wrap items-center gap-3' },
+      e('span', { className: 'text-xs font-bold px-2 py-0.5 rounded-full', style: pg.ativo ? { background: '#f0fdf4', color: '#166534' } : { background: '#f3f4f6', color: '#374151' } },
+        pg.ativo ? 'Pagamento na Mapp ligado' : 'Pagamento na Mapp desligado'),
+      e('span', { className: 'text-xs text-gray-600 flex-1 min-w-[240px]' },
+        !pg.ativo ? 'Ligue em “Configuração e escala” para lançar a diária direto no saldo do motoboy.'
+          : (!pg.token_ok ? 'Token da Mapp (' + pg.ambiente + ') não configurado no servidor — nada será lançado.'
+            : (dados && dados.fechado ? (function () {
+                const cs = Object.values(pg.creditos || {});
+                const lan = cs.filter((c) => c.status === 'lancado');
+                const abertos = cs.filter((c) => ['a_lancar', 'lancando', 'falhou', 'incerto', 'pendente'].indexOf(c.status) >= 0).length;
+                return lan.length + (lan.length === 1 ? ' crédito lançado' : ' créditos lançados') + ' na Mapp · ' + brl(lan.reduce((t, c) => t + Number(c.valor || 0), 0))
+                  + (abertos ? ' · ' + abertos + ' ainda sem crédito confirmado' : '');
+              })()
+            : rod
+              ? (rod.status === 'aguardando' ? ('Pagamento ' + (rod.origem === 'cron' ? 'automático' : 'manual') + ' em andamento · ' + (ETAPA_TXT[rod.etapa] || rod.etapa) + (rod.proxima ? ' · confere de novo ' + rod.proxima : ''))
+                : rod.status === 'concluida' ? ('Pagamento ' + (rod.origem === 'cron' ? 'automático' : 'manual') + ' às ' + (rod.finalizada_em || '').slice(-5) + ' · ' + ((rod.resumo && rod.resumo.lancados) || 0) + ' lançados' + (rod.resumo && rod.resumo.pendentes ? ' · ' + rod.resumo.pendentes + ' aguardando decisão' : ''))
+                  : ('O último pagamento não lançou: ' + (rod.erro || 'erro')))
+              : ('Automático às ' + pg.horario + ' — atualiza o BI, lança quem está “Pagar” e deixa as decisões com você.' + (pg.ambiente === 'homologacao' ? ' (homologação)' : ''))))),
+      pg.ativo && pg.token_ok && !(dados && dados.fechado) && e('button', {
+        onClick: rodarMapp, disabled: rodando || mappOcupado === 'rodar' || !!job,
+        className: 'h-9 px-4 rounded-lg bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white text-sm font-bold inline-flex items-center gap-2'
+      }, e(Ico, { d: ['M12 2v20', 'M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'] }), rodando ? 'Lançando…' : 'Lançar na Mapp agora'));
+
     if (loading && !dados) return e('div', { className: 'text-center py-10 text-gray-400 text-sm' }, 'Carregando fechamento...');
     if (!dados) return e('div', { className: 'space-y-4' }, cabecalho);
 
@@ -247,6 +348,7 @@
       };
       return e('div', { className: 'space-y-4' },
         cabecalho,
+        faixaMapp,
         e('div', { className: 'flex flex-wrap gap-2 justify-end' },
           e('button', { onClick: copiar, className: 'h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50' }, 'Copiar resumo'),
           e('button', { onClick: baixar, className: 'h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50' }, 'Baixar planilha'),
@@ -262,7 +364,7 @@
           e('div', { style: { overflowX: 'auto' } },
             e('table', { className: 'w-full text-sm', style: { minWidth: 760, borderCollapse: 'collapse' } },
               e('thead', null, e('tr', { className: 'bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-600' },
-                ['Motoboy', 'Cód.', 'Rodou', 'Corridas', 'Regra', 'Valor'].map((h, i) => e('th', { key: h, className: 'px-4 py-2 font-semibold' + (i === 5 ? ' text-right' : '') }, h)))),
+                ['Motoboy', 'Cód.', 'Rodou', 'Corridas', 'Regra', 'Valor'].concat(pg && pg.ativo ? ['Mapp'] : []).map((h, i) => e('th', { key: h, className: 'px-4 py-2 font-semibold' + (i === 5 ? ' text-right' : '') }, h)))),
               e('tbody', null,
                 pagos.map((x) => {
                   const rg = rotuloRegra(x);
@@ -272,11 +374,13 @@
                     e('td', { className: 'px-4 py-2.5 tabular-nums' }, (x.entrada || '--:--') + ' → ' + (x.situacao === 'aberta' ? 'em execução' : (x.ultima_finalizacao || '--:--'))),
                     e('td', { className: 'px-4 py-2.5 tabular-nums' }, x.corridas + (x.abertas ? ' + ' + x.abertas : '')),
                     e('td', { className: 'px-4 py-2.5' }, e('span', { className: 'text-xs font-semibold px-2 py-0.5 rounded-full', style: { background: rg.bg, color: rg.fg } }, rg.txt)),
-                    e('td', { className: 'px-4 py-2.5 text-right font-bold tabular-nums' }, brl(x.valor_final)));
+                    e('td', { className: 'px-4 py-2.5 text-right font-bold tabular-nums' }, brl(x.valor_final)),
+                    pg && pg.ativo && e('td', { className: 'px-4 py-2.5' }, e('div', { className: 'flex flex-col gap-1 items-start' }, e(MappPill, { c: credDe(x.cod_profissional) }), acoesMapp(x))));
                 }),
                 e('tr', { className: 'bg-gray-50', style: { borderTop: '2px solid #e5e7eb' } },
                   e('td', { className: 'px-4 py-3 font-extrabold', colSpan: 5 }, 'Total'),
-                  e('td', { className: 'px-4 py-3 text-right font-extrabold tabular-nums' }, brl(f.total))))))),
+                  e('td', { className: 'px-4 py-3 text-right font-extrabold tabular-nums' }, brl(f.total)),
+                  pg && pg.ativo && e('td', null)))))),
         e('div', { className: 'grid gap-3', style: { gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' } },
           e('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-2' },
             e('div', { className: 'font-bold text-gray-800 text-sm' }, 'Fora deste pagamento'),
@@ -324,6 +428,7 @@
 
     return e('div', { className: 'space-y-4' },
       cabecalho,
+      faixaMapp,
       !dados.diaria_ativa && e('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800' }, 'A diária está desligada nesta central — o fechamento mostra só os registros que existirem nesse dia.'),
       e('div', { className: 'grid gap-3', style: { gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' } },
         e(Card, { titulo: 'Prontos para pagar', cor: '#16a34a', valor: prontos.length, sub: brl(prontos.reduce((s, x) => s + x.valor_entrada, 0)) + (prontos.some((x) => x.situacao === 'longe') ? ' · ' + prontos.filter((x) => x.situacao === 'longe').length + ' encerraram longe' : '') }),
@@ -355,7 +460,7 @@
           : e('div', { style: { overflowX: 'auto' } },
               e('table', { className: 'w-full text-sm', style: { minWidth: 1000, borderCollapse: 'collapse' } },
                 e('thead', null, e('tr', { className: 'bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-600' },
-                  ['Motoboy', 'Entrou', 'Corridas', 'Última finalização', 'Em aberto', 'Situação', 'Diária', 'Decisão'].map((h, i) =>
+                  ['Motoboy', 'Entrou', 'Corridas', 'Última finalização', 'Em aberto', 'Situação', 'Diária', 'Decisão'].concat(pg && pg.ativo ? ['Mapp'] : []).map((h, i) =>
                     e('th', { key: h, className: 'px-4 py-2 font-semibold' + (i === 6 ? ' text-right' : '') }, h)))),
                 e('tbody', null, lista.map((it) => {
                   const cv = valorEscolhido(it, decisoes[it.cod_profissional]);
@@ -395,7 +500,8 @@
                         : e('div', { role: 'radiogroup', 'aria-label': 'Decisão da diária de ' + nomeDe(it), className: 'inline-flex border border-gray-300 rounded-lg overflow-hidden' },
                             escolhaBtn(it, 'integral', 'Integral', '#16a34a'),
                             (it.situacao === 'cedo' || it.situacao === 'ausente') && escolhaBtn(it, 'proporcional', 'Proporcional', '#770fa8'),
-                            escolhaBtn(it, 'nao', 'Não pagar', '#991b1b'))));
+                            escolhaBtn(it, 'nao', 'Não pagar', '#991b1b'))),
+                    pg && pg.ativo && e('td', { className: 'px-4 py-2.5' }, e('div', { className: 'flex flex-col gap-1 items-start' }, e(MappPill, { c: credDe(it.cod_profissional) }), acoesMapp(it))));
                 }))))),
       itens.length > 0 && e('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-center gap-3' },
         e('div', { className: 'flex-1 min-w-[280px]' },
@@ -403,7 +509,8 @@
           e('div', { className: 'text-xs text-gray-600 mt-0.5 leading-relaxed' },
             (decidir.length ? decidir.length + (decidir.length === 1 ? ' decisão usa' : ' decisões usam') + ' a sugestão marcada, a menos que você mude. ' : '')
             + (abertos.length ? abertos.length + ' com corrida em aberto entra' + (abertos.length === 1 ? '' : 'm') + ' pago' + (abertos.length === 1 ? '' : 's') + ' — ainda tem operação. ' : '')
-            + 'O resumo fica gravado e não muda se o BI mudar depois.')),
+            + 'O resumo fica gravado e não muda se o BI mudar depois.'
+            + (pg && pg.ativo && pg.token_ok ? ' Com o pagamento na Mapp ligado, quem ainda não foi lançado é lançado na hora.' : ''))),
         e('button', {
           onClick: () => fechar(total, qtdPagos), disabled: ocupado || !!job,
           className: 'h-11 px-5 rounded-lg bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white text-sm font-bold inline-flex items-center gap-2'
@@ -521,6 +628,19 @@
           showToast && showToast(d.erro || 'Erro ao salvar', 'error');
           carregarConfig();
         }
+      } catch (_) { showToast && showToast('Erro ao salvar', 'error'); }
+      finally { setSalvando(false); }
+    };
+
+    // DIARIA_MAPP_V1: liga/desliga e horário do pagamento na Mapp
+    const salvarMapp = async (patch) => {
+      setSalvando(true);
+      try {
+        const r = await fetchAuth(`${apiUrl}/diaria/pagamento/${centralId}/config`, { method: 'PUT', body: JSON.stringify(patch) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { showToast && showToast(d.erro || 'Erro ao salvar', 'error'); return; }
+        setCfg((c) => ({ ...c, diaria_mapp_ativo: d.ativo, diaria_mapp_horario: d.horario }));
+        showToast && showToast(patch.ativo !== undefined ? (d.ativo ? 'Pagamento na Mapp ligado — automático às ' + d.horario : 'Pagamento na Mapp desligado') : 'Horário salvo', 'success');
       } catch (_) { showToast && showToast('Erro ao salvar', 'error'); }
       finally { setSalvando(false); }
     };
@@ -650,6 +770,33 @@
           ', só que medido contra o horário de cada um. Quem entra depois da saída não recebe nada; quem entra no meio recebe proporcional.'
         )
       ),
+
+      // ── DIARIA_MAPP_V1: PAGAMENTO NA MAPP (por fila) ──
+      e('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
+        e('div', { className: 'flex items-center justify-between gap-3 pb-3 border-b border-gray-100' },
+          e('div', null,
+            e('div', { className: 'font-bold text-gray-800 text-sm' }, 'Pagar a diária direto na Mapp'),
+            e('div', { className: 'text-xs text-gray-500' }, 'Crédito no saldo do motoboy, com a mesma API da gratificação do garantido. Vale só para esta fila.')),
+          e('button', {
+            role: 'switch', 'aria-checked': !!cfg.diaria_mapp_ativo, 'aria-label': 'Pagamento da diária na Mapp',
+            onClick: () => salvarMapp({ ativo: !cfg.diaria_mapp_ativo }), disabled: salvando,
+            className: `relative w-12 h-7 rounded-full transition-colors flex-shrink-0 ${cfg.diaria_mapp_ativo ? 'bg-purple-600' : 'bg-gray-300'}`
+          }, e('span', { className: `absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${cfg.diaria_mapp_ativo ? 'right-1' : 'left-1'}` }))),
+        cfg.mapp && !cfg.mapp.token_ok && e('div', { className: 'mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800' },
+          'Token da Mapp (' + cfg.mapp.ambiente + ') não configurado no servidor — mesmo ligado, nada será lançado.'),
+        e('div', { className: 'grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 items-end' },
+          e('div', null, e('label', { className: 'block text-xs text-gray-500 mb-1', htmlFor: 'diaria-mapp-hora' }, 'Pagamento automático às'),
+            e('input', { id: 'diaria-mapp-hora', type: 'time', defaultValue: cfg.diaria_mapp_horario || '18:00', key: 'mh' + cfg.diaria_mapp_horario,
+              onBlur: (ev) => { if (ev.target.value && ev.target.value !== cfg.diaria_mapp_horario) salvarMapp({ horario: ev.target.value }); },
+              className: 'w-full px-3 py-2 border rounded-lg' })),
+          e('div', { className: 'sm:col-span-2 text-xs text-gray-600 leading-relaxed' },
+            e('strong', null, 'Descrição na Mapp: '), 'Diária (cód. da loja onde ele rodou). ',
+            cfg.mapp ? e('span', null, 'Ambiente: ', e('strong', null, cfg.mapp.ambiente === 'homologacao' ? 'homologação' : 'produção'), ' (o mesmo da gratificação).') : null)),
+        e('div', { className: 'mt-3 bg-purple-50 rounded-lg p-3 text-xs text-purple-800 leading-relaxed' },
+          e('strong', null, 'Como funciona: '),
+          'no horário, o sistema ', e('strong', null, 'atualiza o BI do dia'), ', aplica as regras do fechamento e lança na Mapp quem está “Pagar”. ',
+          'Quem parou cedo, sumiu no meio do dia ou não rodou fica ', e('strong', null, 'aguardando sua decisão'), ' no Fechamento do dia (aviso no WhatsApp de quem libera a gratificação). ',
+          'Dá para lançar na hora pelo botão “Lançar na Mapp agora”, e fechar o dia lança o que faltou. Nunca paga duas vezes o mesmo motoboy no mesmo dia.')),
 
       // ── ESCALA (as EXCEÇÕES) ──
       e('div', { className: 'bg-white border border-gray-200 rounded-xl p-4' },
