@@ -18968,7 +18968,7 @@ const hideLoadingScreen = () => {
                 var _osArray = Object.keys(_osAgrupadas).sort(function(a, b) { return parseInt(b) - parseInt(a); });
                 // ===== PRAZO_PROF_COLETA_V1: métricas por ponto / por OS — mesma régua do backend =====
                 // Loja: criação → finalização. Profissional: COLETA (finalização do ponto 1) → finalização.
-                // Regra das 17h: início >= 17:00 e fim em dia posterior → conta das 08:00 do dia do fim.
+                // Horário útil (PRAZO_HORARIO_UTIL_V1): virou o dia → só conta o expediente 08:00–17:00.
                 // Ícones/cores vêm das ENTREGAS (ponto >= 2), nunca da linha da coleta.
                 var _partesDH = function(v) {
                     if (!v) return null;
@@ -18976,15 +18976,23 @@ const hideLoadingScreen = () => {
                     if (!m) return null;
                     return { y: +m[1], mo: +m[2] - 1, d: +m[3], h: +m[4], mi: +m[5], s: +(m[6] || 0) };
                 };
+                // PRAZO_HORARIO_UTIL_V1: mesma regra do backend (src/shared/prazo-regra.js) —
+                // mesmo dia = corrido; virou o dia = só expediente 08:00–17:00 (sábado só se criada no sábado).
                 var _minRegra17 = function(ini, fim) {
                     var a = _partesDH(ini), b = _partesDH(fim);
                     if (!a || !b) return null;
                     var tA = Date.UTC(a.y, a.mo, a.d, a.h, a.mi, a.s), tB = Date.UTC(b.y, b.mo, b.d, b.h, b.mi, b.s);
-                    if (Date.UTC(b.y, b.mo, b.d) > Date.UTC(a.y, a.mo, a.d) && a.h >= 17) {
-                        return Math.max(0, (tB - Date.UTC(b.y, b.mo, b.d, 8, 0, 0)) / 60000);
-                    }
                     if (tB < tA) return null;
-                    return (tB - tA) / 60000;
+                    var diaA = Date.UTC(a.y, a.mo, a.d), diaB = Date.UTC(b.y, b.mo, b.d);
+                    if (diaA === diaB) return (tB - tA) / 60000;
+                    var H = 3600000, DIA = 24 * H;
+                    var parteA = Math.max(0, (diaA + 17 * H) - Math.max(tA, diaA + 8 * H)) / 60000;
+                    var sab = new Date(diaA).getUTCDay() === 6, dias = 0;
+                    for (var d = diaA + DIA; d < diaB; d += DIA) {
+                        var dw = new Date(d).getUTCDay();
+                        if ((dw >= 1 && dw <= 5) || (dw === 6 && sab)) dias++;
+                    }
+                    return parteA + dias * 540 + Math.max(0, tB - (diaB + 8 * H)) / 60000;
                 };
                 var _agregaPrazo = function(lista, campo) {
                     var temTrue = false;
