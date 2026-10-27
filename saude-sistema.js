@@ -254,6 +254,106 @@
     }
 
     // ── Componente Principal ─────────────────────────────────────────────
+    // ═══════════════ GEOCODE_USO_TELA_V1: Custo de APIs (Google Geocoding) ═══════════════
+    const ORIGENS_GEO = [
+        [/^cf-|^similar$/, 'ConfirmaFácil'],
+        [/^hub-/, 'Hub (Uber/99)'],
+        [/^geocode-google:filas/, 'Filas'],
+        [/^geocode-google|^geocode-reverse/, 'Telas (solicitação, coleta, roteirizador)'],
+        [/^roteirizador-tutts/, 'Roteirizador Tutts'],
+        [/^agent-|^playwright-agent/, 'Agente RPA'],
+        [/^coleta-/, 'Consultar endereços'],
+    ];
+    const nomeOrigem = (o) => { for (const [re, n] of ORIGENS_GEO) if (re.test(o || '')) return n; return o || '—'; };
+    const TIPOS_GEO = {
+        'fwd-novo': ['Endereço novo (1ª vez)', 'pago'], 'forward': ['Endereço (antes do detalhamento)', 'pago'],
+        'fwd-texto': ['Mesmo lugar, texto diferente', 'pago'], 'fwd-refresh': ['Atualização de cache antigo', 'pago'],
+        'reverse': ['Coordenada → endereço', 'pago'], 'cep': ['CEP por coordenada (Hub)', 'pago'],
+        'hit-fwd': ['Cache por texto', 'cache'], 'hit-sim': ['Cache por rua + número', 'cache'], 'hit-cep': ['Cache de CEP', 'cache'],
+        'hit-rev': ['Cache de coordenada', 'cache'], 'hit-neg': ['Já sabia que não existe', 'cache'],
+    };
+    const brl = (v) => 'R$ ' + (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const num = (v) => (Number(v) || 0).toLocaleString('pt-BR');
+
+    function GeocodeUsoCard({ apiUrl, fetchAuth }) {
+        const h = React.createElement;
+        const [dias, setDias] = React.useState(30);
+        const [d, setD] = React.useState(null);
+        const [erro, setErro] = React.useState(null);
+        const carregar = React.useCallback(async () => {
+            try {
+                const r = await fetchAuth(apiUrl + '/system/geocode-uso?dias=' + dias);
+                const j = await r.json();
+                if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+                setD(j); setErro(null);
+            } catch (e) { setErro(e.message); }
+        }, [apiUrl, fetchAuth, dias]);
+        React.useEffect(() => { carregar(); }, [carregar]);
+
+        const kpi = (rot, val, sub, tom) => h('div', { className: 'rounded-xl border p-3 ' + (tom === 'verde' ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-white') },
+            h('div', { className: 'text-xs ' + (tom === 'verde' ? 'text-green-800' : 'text-gray-500') }, rot),
+            h('div', { className: 'text-xl font-semibold ' + (tom === 'verde' ? 'text-green-800' : 'text-gray-900'), style: { fontVariantNumeric: 'tabular-nums' } }, val),
+            h('div', { className: 'text-xs ' + (tom === 'verde' ? 'text-green-800' : 'text-gray-500') }, sub));
+
+        let corpo;
+        if (erro && !d) corpo = h('p', { className: 'text-sm text-red-700' }, 'Não deu para carregar: ' + erro);
+        else if (!d) corpo = h('p', { className: 'text-sm text-gray-500' }, 'Carregando…');
+        else if (!d.desde) corpo = h('p', { className: 'text-sm text-gray-600' }, 'Ainda não há chamadas registradas. O contador começa a partir do deploy do pacote de economia do geocode.');
+        else {
+            const t = d.totais;
+            const maxDia = Math.max(1, ...d.por_dia.map((x) => x.pagas));
+            const totPagas = d.por_origem.reduce((a, x) => a + x.pagas, 0) || 1;
+            const th = 'text-left text-xs font-semibold text-gray-500 py-2 px-2';
+            const td = 'text-sm py-2 px-2 border-t border-gray-100';
+            corpo = h('div', { className: 'flex flex-col gap-4' },
+                h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-3' },
+                    kpi('Hoje', brl(t.hoje.custo), num(t.hoje.chamadas) + ' chamadas pagas'),
+                    kpi('Últimos 7 dias', brl(t.semana.custo), num(t.semana.chamadas) + ' chamadas pagas'),
+                    kpi('Este mês', brl(t.mes.custo), num(t.mes.chamadas) + ' chamadas pagas'),
+                    kpi('Economizado pelo cache (mês)', brl(t.economia_mes.custo), num(t.economia_mes.acertos) + ' consultas sem pagar', 'verde')),
+                h('div', null,
+                    h('div', { className: 'text-xs font-semibold text-gray-600 mb-2' }, 'Chamadas pagas por dia'),
+                    h('div', { className: 'flex items-end gap-1 overflow-x-auto', style: { height: 120, paddingBottom: 2 } },
+                        d.por_dia.map((x) => h('div', { key: x.dia, className: 'flex flex-col items-center', style: { minWidth: 18, flex: '1 0 18px' },
+                            title: x.dia.split('-').reverse().join('/') + ': ' + num(x.pagas) + ' pagas (' + brl(x.custo) + ') · ' + num(x.cache) + ' do cache' },
+                            h('div', { style: { width: '100%', maxWidth: 22, height: Math.max(2, Math.round((x.pagas / maxDia) * 100)), background: '#770fa8', borderRadius: '4px 4px 0 0' } }),
+                            h('span', { className: 'text-gray-400', style: { fontSize: 9, marginTop: 2 } }, x.dia.slice(8)))))),
+                h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-4' },
+                    h('div', { className: 'rounded-xl border border-gray-200 overflow-x-auto' },
+                        h('table', { className: 'w-full', style: { borderCollapse: 'collapse', minWidth: 420 } },
+                            h('thead', null, h('tr', null, h('th', { className: th }, 'Quem gasta'), h('th', { className: th + ' text-right' }, 'Pagas'), h('th', { className: th + ' text-right' }, 'Custo'), h('th', { className: th + ' text-right' }, 'Do cache'))),
+                            h('tbody', null, d.por_origem.filter((x) => x.pagas || x.cache).map((x) => h('tr', { key: x.origem },
+                                h('td', { className: td }, h('div', { className: 'font-medium text-gray-900' }, nomeOrigem(x.origem)), h('div', { className: 'text-xs text-gray-400' }, x.origem)),
+                                h('td', { className: td + ' text-right', style: { fontVariantNumeric: 'tabular-nums' } }, num(x.pagas), h('div', { className: 'text-xs text-gray-400' }, Math.round((x.pagas / totPagas) * 100) + '%')),
+                                h('td', { className: td + ' text-right font-semibold', style: { fontVariantNumeric: 'tabular-nums' } }, brl(x.custo)),
+                                h('td', { className: td + ' text-right text-green-700', style: { fontVariantNumeric: 'tabular-nums' } }, num(x.cache))))))),
+                    h('div', { className: 'rounded-xl border border-gray-200 overflow-x-auto' },
+                        h('table', { className: 'w-full', style: { borderCollapse: 'collapse', minWidth: 360 } },
+                            h('thead', null, h('tr', null, h('th', { className: th }, 'Por quê'), h('th', { className: th + ' text-right' }, 'Consultas'))),
+                            h('tbody', null, d.por_tipo.map((x) => {
+                                const info = TIPOS_GEO[x.tipo] || [x.tipo, 'pago'];
+                                return h('tr', { key: x.tipo },
+                                    h('td', { className: td }, h('span', { className: 'inline-flex items-center gap-2' },
+                                        h('span', { 'aria-hidden': 'true', style: { width: 8, height: 8, borderRadius: 99, background: info[1] === 'cache' ? '#16a34a' : '#d97706' } }),
+                                        info[0], h('span', { className: 'text-xs ' + (info[1] === 'cache' ? 'text-green-700' : 'text-amber-700') }, info[1] === 'cache' ? 'grátis' : 'pago'))),
+                                    h('td', { className: td + ' text-right', style: { fontVariantNumeric: 'tabular-nums' } }, num(x.chamadas)));
+                            }))))),
+                h('p', { className: 'text-xs text-gray-500 m-0' }, 'Custo estimado em ' + brl(d.custo_mil_brl) + ' por mil chamadas. O valor oficial é o da fatura do Google Cloud. Contando desde ' + d.desde.split('-').reverse().join('/') + '.'));
+        }
+
+        return h('section', { className: 'mt-8 rounded-2xl border border-gray-200 bg-white p-5', 'aria-label': 'Custo de APIs do Google' },
+            h('div', { className: 'flex items-center justify-between flex-wrap gap-2 mb-4' },
+                h('div', null,
+                    h('h3', { className: 'text-lg font-semibold m-0' }, 'Custo de APIs · Google Geocoding'),
+                    h('p', { className: 'text-sm text-gray-500 m-0', style: { marginTop: 2 } }, 'Quanto o sistema está pagando para transformar endereço em coordenada, e quanto o cache está economizando')),
+                h('div', { className: 'flex items-center gap-2' },
+                    h('label', { className: 'text-xs text-gray-600 flex items-center gap-2' }, 'Período',
+                        h('select', { value: dias, onChange: (ev) => setDias(Number(ev.target.value)), className: 'border border-gray-300 rounded-md px-2 py-1 text-sm bg-white' },
+                            h('option', { value: 7 }, '7 dias'), h('option', { value: 30 }, '30 dias'), h('option', { value: 90 }, '90 dias'))),
+                    h('button', { type: 'button', onClick: carregar, className: 'px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-md' }, 'Atualizar'))),
+            corpo);
+    }
+
     window.SaudeSistemaView = function SaudeSistemaView({ apiUrl, fetchAuth, showToast, usuario }) {
         const [dados, setDados] = React.useState(null);
         const [erro, setErro] = React.useState(null);
@@ -326,7 +426,9 @@
                 React.createElement('button', {
                     onClick: carregar,
                     className: 'mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700'
-                }, 'Tentar novamente')
+                }, 'Tentar novamente'),
+                // GEOCODE_USO_TELA_V1: o custo aparece mesmo com o worker de agentes fora do ar
+                React.createElement('div', { className: 'text-left' }, React.createElement(GeocodeUsoCard, { apiUrl, fetchAuth }))
             );
         }
 
@@ -419,6 +521,9 @@
                     })
                 )
             ),
+
+            // GEOCODE_USO_TELA_V1: custo do Google Geocoding
+            React.createElement(GeocodeUsoCard, { apiUrl, fetchAuth }),
 
             // Modal de restart
             modalRestartAberto && React.createElement(ModalRestart, {
