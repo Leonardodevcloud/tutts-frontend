@@ -2472,6 +2472,294 @@
     }).catch(function (e) { if (w) w.close(); toast(e.message, 'error'); });
   }
 
+  // ───────────────────────── AUTENTIQUE_POSICOES_V2: posicionar assinaturas no PDF ─────────────────────────
+  /* Prévia do contrato com as caixas de assinatura/rubrica de cada signatário. Arrasta, redimensiona, adiciona,
+     repete em todas as páginas. x/y/w/h em % da página (topo-esquerda), igual ao que vai para o Autentique. */
+  var POS_COR = { locatario: '#f67602', tutts: '#5d0b85' };
+  var POS_FUNDO = { locatario: 'rgba(246,118,2,.10)', tutts: 'rgba(93,11,133,.10)' };
+  var POS_EL = { SIGNATURE: 'Assinatura', INITIALS: 'Rubrica' };
+  function posR2(v) { return Math.round(Number(v) * 100) / 100; }
+  function posNovoId() { return 'manual-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6); }
+
+  function PosicionarAssinaturas(props) {
+    var api = props.api, toast = props.toast, cid = props.contrato.id;
+    var _d = useState(null), dados = _d[0], setDados = _d[1];
+    var _e = useState(null), erro = _e[0], setErro = _e[1];
+    var _pg = useState(null), paginas = _pg[0], setPaginas = _pg[1]; // [{ src, ratio }]
+    var _it = useState([]), itens = _it[0], setItens = _it[1];
+    var _s = useState(null), sel = _s[0], setSel = _s[1];
+    var _p = useState(1), pag = _p[0], setPag = _p[1];
+    var _z = useState(1), zoom = _z[0], setZoom = _z[1];
+    var _o = useState(null), ocupado = _o[0], setOcupado = _o[1];
+    var _m = useState(false), mexeu = _m[0], setMexeu = _m[1];
+    var _w = useState(window.innerWidth), larg = _w[0], setLarg = _w[1];
+    var folhaRef = useRef(null), arrasto = useRef(null);
+
+    var carregar = useCallback(function () {
+      setErro(null); setDados(null); setPaginas(null);
+      api('/contratos/' + cid + '/posicoes-assinatura').then(function (d) {
+        setDados(d); setItens(d.itens || []); setSel(null); setMexeu(false);
+        // o GET acima regenera o PDF quando está aguardando assinatura; só então baixa o arquivo
+        return Promise.all([window.LocacaoCRLV.carregarPdfJs(), api('/contratos/' + cid + '/pdf', { raw: true }).then(function (r) { return r.arrayBuffer(); })]);
+      }).then(function (r) {
+        var lib = r[0];
+        return lib.getDocument({ data: new Uint8Array(r[1]) }).promise.then(function (doc) {
+          var out = [], seq = Promise.resolve();
+          for (var i = 1; i <= doc.numPages; i++) (function (n) {
+            seq = seq.then(function () {
+              return doc.getPage(n).then(function (p) {
+                var v0 = p.getViewport({ scale: 1 }), vp = p.getViewport({ scale: 1100 / v0.width });
+                var cv = document.createElement('canvas'); cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+                return p.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise.then(function () {
+                  out.push({ src: cv.toDataURL('image/png'), ratio: vp.height / vp.width });
+                });
+              });
+            });
+          })(i);
+          return seq.then(function () { setPaginas(out); setPag(function (x) { return Math.min(x, out.length) || 1; }); });
+        });
+      }).catch(function (e) { setErro(e.message || 'Não deu para abrir o contrato'); });
+    }, [api, cid]);
+    useEffect(carregar, [carregar]);
+    useEffect(function () {
+      var fn = function () { setLarg(window.innerWidth); };
+      window.addEventListener('resize', fn);
+      return function () { window.removeEventListener('resize', fn); };
+    }, []);
+
+    var B = (dados && dados.bases) || { SIGNATURE: { w: 20, h: 5 }, INITIALS: { w: 8, h: 3 } };
+    var nPag = paginas ? paginas.length : (dados ? dados.paginas : 0);
+    var item = sel ? itens.find(function (x) { return x.id === sel; }) : null;
+
+    var mudar = function (fn) { setItens(function (lst) { return fn(lst); }); setMexeu(true); };
+    var limitar = function (it) {
+      var b = B[it.element], w = Math.max(b.w * 0.5, Math.min(b.w * 4, Number(it.w) || b.w)), hh = posR2(w * b.h / b.w);
+      return Object.assign({}, it, { w: posR2(w), h: hh, x: posR2(Math.max(0, Math.min(100 - w, Number(it.x) || 0))), y: posR2(Math.max(0, Math.min(100 - hh, Number(it.y) || 0))) });
+    };
+    var atualizar = function (id, campos) { mudar(function (lst) { return lst.map(function (x) { return x.id === id ? limitar(Object.assign({}, x, campos)) : x; }); }); };
+    var adicionar = function (quem, element) {
+      var b = B[element];
+      var novo = limitar({ id: posNovoId(), origem: 'manual', quem: quem, element: element, z: pag, x: 50 - b.w / 2, y: 50 - b.h / 2, w: b.w, h: b.h });
+      mudar(function (lst) { return lst.concat([novo]); }); setSel(novo.id);
+    };
+    var remover = function (id) { mudar(function (lst) { return lst.filter(function (x) { return x.id !== id; }); }); setSel(null); };
+    var repetir = function (it) {
+      var novos = [];
+      for (var z = 1; z <= nPag; z++) {
+        if (z === it.z) continue;
+        var ja = itens.some(function (x) { return x.z === z && x.quem === it.quem && x.element === it.element && Math.abs(x.x - it.x) < 2 && Math.abs(x.y - it.y) < 2; });
+        if (!ja) novos.push(Object.assign({}, it, { id: posNovoId() + z, origem: 'manual', z: z }));
+      }
+      if (!novos.length) { toast('Já tem uma igual em todas as páginas', 'info'); return; }
+      mudar(function (lst) { return lst.concat(novos); });
+      toast('Repetida em mais ' + novos.length + ' página' + (novos.length > 1 ? 's' : ''), 'success');
+    };
+    var rubricaEmTodas = function (quem) {
+      if (!nPag) return false;
+      for (var z = 1; z <= nPag; z++) if (!itens.some(function (x) { return x.z === z && x.quem === quem && x.element === 'INITIALS'; })) return false;
+      return true;
+    };
+    var alternarRubricas = function (quem, ligar) {
+      if (!ligar) {
+        mudar(function (lst) { return lst.filter(function (x) { return !(x.quem === quem && x.element === 'INITIALS'); }); });
+        if (item && item.quem === quem && item.element === 'INITIALS') setSel(null);
+        return;
+      }
+      var auto = (dados && dados.auto) || [], b = B.INITIALS;
+      var novos = [];
+      for (var z = 1; z <= nPag; z++) {
+        if (itens.some(function (x) { return x.z === z && x.quem === quem && x.element === 'INITIALS'; })) continue;
+        var ref = auto.find(function (x) { return x.z === z && x.quem === quem && x.element === 'INITIALS'; });
+        var outro = (auto.concat(itens)).find(function (x) { return x.z === z && x.quem !== quem && x.element === 'INITIALS'; });
+        var base = ref ? Object.assign({}, ref)
+          : outro ? { x: outro.x + (quem === 'tutts' ? -14 : 14), y: outro.y, w: outro.w }
+          : { x: quem === 'tutts' ? 74 : 88, y: 93, w: b.w };
+        novos.push(limitar(Object.assign(base, { id: (ref ? ref.id : posNovoId() + z), origem: ref ? ref.origem : 'manual', quem: quem, element: 'INITIALS', z: z })));
+      }
+      mudar(function (lst) { return lst.concat(novos); });
+    };
+
+    // arrastar / redimensionar
+    var iniciar = function (e, it, modo) {
+      e.preventDefault(); e.stopPropagation(); setSel(it.id);
+      var r = folhaRef.current && folhaRef.current.getBoundingClientRect();
+      if (!r) return;
+      arrasto.current = { id: it.id, modo: modo, x0: e.clientX, y0: e.clientY, it: it, rw: r.width, rh: r.height };
+      var mover = function (ev) {
+        var a = arrasto.current; if (!a) return;
+        var dx = (ev.clientX - a.x0) / a.rw * 100, dy = (ev.clientY - a.y0) / a.rh * 100;
+        if (a.modo === 'mover') atualizar(a.id, { x: a.it.x + dx, y: a.it.y + dy });
+        else atualizar(a.id, { w: a.it.w + dx });
+      };
+      var soltar = function () { arrasto.current = null; window.removeEventListener('pointermove', mover); window.removeEventListener('pointerup', soltar); };
+      window.addEventListener('pointermove', mover); window.addEventListener('pointerup', soltar);
+    };
+    // teclado: setas movem (Shift = passo maior), Delete remove
+    useEffect(function () {
+      var fn = function (e) {
+        if (!item || /INPUT|SELECT|TEXTAREA/.test((e.target && e.target.tagName) || '')) return;
+        var p = e.shiftKey ? 2 : 0.25, m = { ArrowLeft: [-p, 0], ArrowRight: [p, 0], ArrowUp: [0, -p], ArrowDown: [0, p] }[e.key];
+        if (m) { e.preventDefault(); atualizar(item.id, { x: item.x + m[0], y: item.y + m[1] }); }
+        else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); remover(item.id); }
+      };
+      document.addEventListener('keydown', fn);
+      return function () { document.removeEventListener('keydown', fn); };
+    });
+
+    var fechar = function () {
+      if (mexeu && !window.confirm('Sair sem salvar os ajustes das assinaturas?')) return;
+      props.onClose();
+    };
+    useEffect(function () {
+      var fn = function (e) { if (e.key === 'Escape') fechar(); };
+      document.addEventListener('keydown', fn);
+      return function () { document.removeEventListener('keydown', fn); };
+    });
+
+    var validar = function () {
+      if (!itens.some(function (x) { return x.quem === 'locatario' && x.element === 'SIGNATURE'; })) { toast('Coloque pelo menos uma assinatura do locatário', 'error'); return false; }
+      return true;
+    };
+    var limpos = function () { return itens.map(function (x) { return { id: x.id, origem: x.origem || null, quem: x.quem, element: x.element, z: x.z, x: x.x, y: x.y, w: x.w, h: x.h }; }); };
+    var salvarContrato = function () { return api('/contratos/' + cid + '/posicoes-assinatura', { method: 'PUT', body: { itens: limpos() } }); };
+    var rodar = function (chave, fn, msg, depois) {
+      setOcupado(chave);
+      return fn().then(function (r) { if (msg) toast(msg, 'success'); setMexeu(false); if (depois) depois(r); })
+        .catch(function (e) { toast(e.message, 'error'); }).then(function () { setOcupado(null); });
+    };
+    var salvarEste = function () { if (validar()) rodar('salvar', salvarContrato, 'Posições salvas para este contrato', function () { props.aoMudar && props.aoMudar(); }); };
+    var salvarPadrao = function () {
+      if (!validar()) return;
+      rodar('padrao', function () {
+        return salvarContrato().then(function () {
+          return api('/contratos/' + cid + '/posicoes-assinatura/padrao', { method: 'PUT', body: { itens: limpos(), rubrica_todas: { locatario: rubricaEmTodas('locatario'), tutts: rubricaEmTodas('tutts') } } });
+        });
+      }, 'Padrão salvo: os próximos contratos já saem assim', function () { props.aoMudar && props.aoMudar(); });
+    };
+    var salvarEnviar = function () {
+      if (!validar()) return;
+      rodar('enviar', function () {
+        return salvarContrato().then(function () { return api('/contratos/' + cid + '/reenviar-assinatura', { method: 'POST', body: {} }); });
+      }, 'Enviado ao Autentique com as assinaturas posicionadas', function () { props.aoEnviar ? props.aoEnviar() : props.onClose(); });
+    };
+    var voltarAuto = function () {
+      if (!window.confirm('Descartar os ajustes deste contrato e voltar para as posições automáticas?')) return;
+      rodar('auto', function () { return api('/contratos/' + cid + '/posicoes-assinatura', { method: 'PUT', body: { automatico: true } }); }, 'Voltou para as posições automáticas', function () { carregar(); props.aoMudar && props.aoMudar(); });
+    };
+
+    // ── peças visuais ──
+    var caixa = function (it, mini) {
+      var cor = POS_COR[it.quem], on = !mini && it.id === sel;
+      var st = { position: 'absolute', left: it.x + '%', top: it.y + '%', width: it.w + '%', height: it.h + '%', boxSizing: 'border-box', borderRadius: mini ? 1 : 4,
+        background: POS_FUNDO[it.quem], border: (mini ? 1 : on ? 2 : 1.5) + 'px ' + (on || mini ? 'solid ' : 'dashed ') + cor };
+      if (mini) return h('div', { key: it.id, style: st });
+      return h('div', { key: it.id, role: 'button', tabIndex: 0, 'aria-label': POS_EL[it.element] + ' de ' + (it.quem === 'tutts' ? 'Tutts' : 'locatário'),
+        onPointerDown: function (e) { iniciar(e, it, 'mover'); },
+        style: Object.assign(st, { cursor: 'move', touchAction: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', zIndex: on ? 3 : 2, boxShadow: on ? '0 0 0 3px ' + POS_FUNDO[it.quem] : 'none' }) },
+        h('span', { style: { fontSize: Math.max(9, 11 * zoom), fontWeight: 700, color: cor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', padding: '0 4px', pointerEvents: 'none', userSelect: 'none' } },
+          it.element === 'INITIALS' ? 'Rubrica' : 'Assinatura · ' + (it.quem === 'tutts' ? 'Tutts' : 'Locatário')),
+        on ? h('div', { onPointerDown: function (e) { iniciar(e, it, 'tamanho'); }, title: 'Arraste para mudar o tamanho',
+          style: { position: 'absolute', right: -6, bottom: -6, width: 12, height: 12, borderRadius: 3, background: '#fff', border: '2px solid ' + cor, cursor: 'nwse-resize', touchAction: 'none' } }) : null);
+    };
+    var cartaoSig = function (quem, nome, papel) {
+      var cor = POS_COR[quem], doQuem = itens.filter(function (x) { return x.quem === quem; });
+      var nA = doQuem.filter(function (x) { return x.element === 'SIGNATURE'; }).length, nR = doQuem.length - nA;
+      var todas = rubricaEmTodas(quem);
+      return h('div', { style: { border: '1px solid #e5e7eb', borderRadius: 12, padding: 12, background: '#fff' } },
+        h('div', { style: { display: 'flex', gap: 10, alignItems: 'center' } },
+          h('div', { style: { width: 10, height: 10, borderRadius: 99, background: cor, flex: 'none' } }),
+          h('div', { style: { minWidth: 0, flex: 1 } },
+            h('div', { style: { fontWeight: 700, fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, nome),
+            h('div', { style: { fontSize: 12, color: '#6b7280' } }, papel + ' · ' + nA + ' assinatura' + (nA === 1 ? '' : 's') + ' · ' + nR + ' rubrica' + (nR === 1 ? '' : 's')))),
+        h('div', { style: { display: 'flex', gap: 6, marginTop: 10 } },
+          Btn({ small: true, icon: 'plus', onClick: function () { adicionar(quem, 'SIGNATURE'); }, children: 'Assinatura', style: { flex: 1 } }),
+          Btn({ small: true, icon: 'plus', onClick: function () { adicionar(quem, 'INITIALS'); }, children: 'Rubrica', style: { flex: 1 } })),
+        h('label', { style: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 12.5, marginTop: 10, cursor: 'pointer', color: '#374151' } },
+          h('input', { type: 'checkbox', checked: todas, onChange: function (e) { alternarRubricas(quem, e.target.checked); }, style: { width: 16, height: 16, accentColor: cor } }),
+          'Rubrica em todas as páginas'));
+    };
+    var campo = function (rot, valor, onChange, extra) {
+      return h('label', { style: { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11.5, color: '#6b7280', fontWeight: 600, minWidth: 0 } }, rot,
+        h('input', Object.assign({ type: 'number', value: valor, onChange: function (e) { var v = parseFloat(e.target.value); if (isFinite(v)) onChange(v); },
+          style: { height: 34, border: '1px solid #e5e7eb', borderRadius: 8, padding: '0 8px', fontSize: 13, color: '#111827', width: '100%', boxSizing: 'border-box' } }, extra || {})));
+    };
+
+    var estreito = larg < 1000;
+    var pagAtual = paginas && paginas[pag - 1];
+    var larguraFolha = Math.round(680 * zoom);
+    var noPag = itens.filter(function (x) { return x.z === pag; });
+    var sig = (dados && dados.signatarios) || {};
+
+    var corpo;
+    if (erro) corpo = h('div', { style: { padding: 24, maxWidth: 520, margin: '40px auto' } }, Aviso('vermelho', 'Não deu para abrir o contrato', erro), h('div', { style: { marginTop: 12 } }, Btn({ icon: 'refresh', onClick: carregar, children: 'Tentar de novo' })));
+    else if (!dados || !paginas) corpo = Spinner('Montando a prévia do contrato...');
+    else corpo = h('div', { style: { flex: 1, minHeight: 0, display: 'flex', flexDirection: estreito ? 'column' : 'row', overflow: estreito ? 'auto' : 'hidden' } },
+      // painel esquerdo
+      h('div', { style: { width: estreito ? 'auto' : 300, flex: 'none', borderRight: estreito ? 0 : '1px solid #e5e7eb', borderBottom: estreito ? '1px solid #e5e7eb' : 0, padding: 16, overflowY: estreito ? 'visible' : 'auto', display: 'flex', flexDirection: 'column', gap: 12, background: '#fafafa' } },
+        dados.salvo_descartado ? Aviso('ambar', 'O contrato mudou', 'O ajuste anterior não batia mais com o PDF (páginas ou linhas diferentes) e foi trocado pelas posições automáticas. Confira antes de enviar.') : null,
+        h('div', { style: { fontSize: 11.5, fontWeight: 700, color: '#6b7280', letterSpacing: '.04em', textTransform: 'uppercase' } }, 'Signatários'),
+        cartaoSig('locatario', sig.locatario || 'Locatário', 'Locatário'),
+        cartaoSig('tutts', sig.tutts || 'Tutts', 'Tutts'),
+        h('div', { style: { fontSize: 11.5, fontWeight: 700, color: '#6b7280', letterSpacing: '.04em', textTransform: 'uppercase', marginTop: 4 } }, 'Selecionado'),
+        item ? h('div', { style: { border: '1px solid ' + POS_COR[item.quem], borderRadius: 12, padding: 12, background: '#fff', display: 'flex', flexDirection: 'column', gap: 10 } },
+          h('div', { style: { fontWeight: 700, fontSize: 13.5, color: POS_COR[item.quem] } }, POS_EL[item.element] + ' · ' + (item.quem === 'tutts' ? 'Tutts' : 'Locatário')),
+          h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 } },
+            campo('X (%)', item.x, function (v) { atualizar(item.id, { x: v }); }, { step: 0.25, min: 0, max: 100 }),
+            campo('Y (%)', item.y, function (v) { atualizar(item.id, { y: v }); }, { step: 0.25, min: 0, max: 100 }),
+            campo('Tamanho (%)', Math.round(item.w / B[item.element].w * 100), function (v) { atualizar(item.id, { w: B[item.element].w * v / 100 }); }, { step: 5, min: 50, max: 400 }),
+            h('label', { style: { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11.5, color: '#6b7280', fontWeight: 600 } }, 'Página',
+              h('select', { value: item.z, onChange: function (e) { var z = parseInt(e.target.value, 10); atualizar(item.id, { z: z }); setPag(z); },
+                style: { height: 34, border: '1px solid #e5e7eb', borderRadius: 8, padding: '0 6px', fontSize: 13, background: '#fff' } },
+                Array.from({ length: nPag }, function (_, i) { return h('option', { key: i, value: i + 1 }, i + 1 + ' de ' + nPag); })))),
+          Btn({ small: true, icon: 'filetext', onClick: function () { repetir(item); }, children: 'Repetir em todas as páginas' }),
+          Btn({ small: true, variant: 'perigo', icon: 'trash', onClick: function () { remover(item.id); }, children: 'Remover' }),
+          h('div', { style: { fontSize: 11.5, color: '#9ca3af', lineHeight: 1.45 } }, 'Setas movem a caixa (Shift = passo maior). Delete remove.'))
+          : h('div', { style: { fontSize: 12.5, color: '#6b7280', lineHeight: 1.5, border: '1px dashed #e5e7eb', borderRadius: 12, padding: 12, background: '#fff' } }, 'Clique numa caixa na página para ajustar posição, tamanho e página. Arraste para mover; puxe o canto para mudar o tamanho.')),
+      // miniaturas
+      estreito ? null : h('div', { style: { width: 112, flex: 'none', borderRight: '1px solid #e5e7eb', overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 12, background: '#fff' } },
+        paginas.map(function (p, i) {
+          var z = i + 1, on = z === pag, qtd = itens.filter(function (x) { return x.z === z; }).length;
+          return h('button', { key: z, type: 'button', onClick: function () { setPag(z); setSel(null); }, 'aria-label': 'Ir para a página ' + z, style: { background: 'transparent', border: 0, padding: 0, cursor: 'pointer', textAlign: 'center' } },
+            h('div', { style: { position: 'relative', width: '100%', aspectRatio: '1 / ' + p.ratio, borderRadius: 4, overflow: 'hidden', border: '2px solid ' + (on ? ROXO : '#e5e7eb'), background: '#fff' } },
+              h('img', { src: p.src, alt: '', style: { width: '100%', height: '100%', display: 'block' } }),
+              itens.filter(function (x) { return x.z === z; }).map(function (x) { return caixa(x, true); })),
+            h('div', { style: { fontSize: 11.5, marginTop: 4, color: on ? ROXO : '#6b7280', fontWeight: on ? 700 : 500 } }, z + (qtd ? ' · ' + qtd : '')));
+        })),
+      // página
+      h('div', { style: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: '#f3f4f6' } },
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderBottom: '1px solid #e5e7eb', background: '#fff', flexWrap: 'wrap' } },
+          Btn({ small: true, disabled: pag <= 1, onClick: function () { setPag(pag - 1); setSel(null); }, ariaLabel: 'Página anterior', children: '‹' }),
+          h('span', { style: { fontSize: 13, fontWeight: 600, minWidth: 92, textAlign: 'center' } }, 'Página ' + pag + ' de ' + nPag),
+          Btn({ small: true, disabled: pag >= nPag, onClick: function () { setPag(pag + 1); setSel(null); }, ariaLabel: 'Próxima página', children: '›' }),
+          h('span', { style: { fontSize: 12, color: '#6b7280', marginLeft: 6 } }, noPag.length ? noPag.length + ' caixa' + (noPag.length > 1 ? 's' : '') + ' nesta página' : 'Nenhuma assinatura nesta página'),
+          h('div', { style: { flex: 1 } }),
+          Btn({ small: true, icon: 'minus', disabled: zoom <= 0.6, onClick: function () { setZoom(Math.max(0.6, posR2(zoom - 0.2))); }, ariaLabel: 'Diminuir zoom' }),
+          h('span', { style: { fontSize: 12.5, minWidth: 44, textAlign: 'center', fontWeight: 600 } }, Math.round(zoom * 100) + '%'),
+          Btn({ small: true, icon: 'plus', disabled: zoom >= 2.4, onClick: function () { setZoom(Math.min(2.4, posR2(zoom + 0.2))); }, ariaLabel: 'Aumentar zoom' })),
+        h('div', { onPointerDown: function (e) { if (e.target === e.currentTarget) setSel(null); }, style: { flex: 1, overflow: 'auto', padding: 24, minHeight: estreito ? 520 : 0 } },
+          pagAtual ? h('div', { ref: folhaRef, onPointerDown: function (e) { if (e.target.tagName === 'IMG') setSel(null); },
+            style: { position: 'relative', width: larguraFolha, maxWidth: estreito ? '100%' : 'none', aspectRatio: '1 / ' + pagAtual.ratio, margin: '0 auto', background: '#fff', boxShadow: '0 4px 20px -6px rgba(17,24,39,.25)' } },
+            h('img', { src: pagAtual.src, alt: 'Página ' + pag + ' do contrato', draggable: false, style: { width: '100%', height: '100%', display: 'block', userSelect: 'none' } }),
+            noPag.map(function (x) { return caixa(x, false); })) : null)));
+
+    var statusTxt = !dados ? '' : mexeu ? 'Ajustes não salvos' : dados.ajustado ? 'Ajustado manualmente' + (dados.salvo_em ? ' em ' + fDHc(dados.salvo_em) : '') + (dados.salvo_por ? ' por ' + dados.salvo_por : '') : 'Posições automáticas' + (dados.padrao ? ' (com o padrão salvo)' : '');
+    var pronto = !!(dados && paginas);
+    return h('div', { role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Posicionar assinaturas', style: { position: 'fixed', inset: 0, zIndex: 85, background: 'rgba(17,24,39,.45)', display: 'flex', padding: estreito ? 0 : 20 } },
+      h('div', { style: { flex: 1, display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: estreito ? 0 : 16, overflow: 'hidden', boxShadow: '0 20px 50px -20px rgba(17,24,39,.35)' } },
+        h('div', { style: { padding: '14px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 12 } },
+          h('div', { style: { flex: 1, minWidth: 0 } },
+            h('h2', { style: { margin: 0, fontFamily: SORA, fontSize: 17, fontWeight: 700 } }, 'Posicionar assinaturas'),
+            h('div', { style: { fontSize: 12.5, color: '#6b7280', marginTop: 2 } }, 'Contrato ' + (props.contrato.numero || cid) + (statusTxt ? ' · ' + statusTxt : ''))),
+          h('button', { type: 'button', onClick: fechar, 'aria-label': 'Fechar', className: 'hover:bg-gray-100', style: { width: 34, height: 34, borderRadius: 8, display: 'grid', placeItems: 'center', color: '#6b7280', cursor: 'pointer' } }, ico('x', 17))),
+        corpo,
+        h('div', { style: { padding: '12px 20px', borderTop: '1px solid #e5e7eb', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' } },
+          Btn({ small: estreito, variant: 'link', disabled: !pronto || !!ocupado || (!dados.ajustado && !mexeu), onClick: voltarAuto, children: ocupado === 'auto' ? 'Voltando...' : 'Voltar para as posições automáticas' }),
+          h('div', { style: { flex: 1 } }),
+          Btn({ small: estreito, disabled: !pronto || !!ocupado, onClick: salvarPadrao, title: 'Os próximos contratos já saem com esse ajuste', children: ocupado === 'padrao' ? 'Salvando...' : 'Salvar como padrão' }),
+          Btn({ small: estreito, disabled: !pronto || !!ocupado, onClick: salvarEste, children: ocupado === 'salvar' ? 'Salvando...' : 'Salvar para este contrato' }),
+          Btn({ small: estreito, variant: 'pri', icon: 'upload', disabled: !pronto || !!ocupado, onClick: salvarEnviar, children: ocupado === 'enviar' ? 'Enviando...' : 'Salvar e enviar para assinatura' }))));
+  }
+
   function ContratoDetalhe(props) {
     var api = props.api, toast = props.toast, nav = props.nav;
     var _d = useState(null), d = _d[0], setD = _d[1];
@@ -2582,6 +2870,7 @@
               .then(function (r) { if (r && r.enviado) toast('Aviso enviado no WhatsApp do locatário', 'success'); else toast('WhatsApp não enviado' + (r && r.motivo ? ': ' + r.motivo : '') + '. Copie o link e mande você.', 'error'); carregar(); })
               .catch(function (e) { toast(e.message, 'error'); }).then(function () { setOcupado(null); });
           }, children: ocupado === 'aviso' ? 'Enviando...' : 'Reenviar aviso no WhatsApp' }) : null,
+          Btn({ small: true, icon: 'pencil', disabled: !!ocupado, onClick: function () { setModal('posicoes'); }, children: 'Posicionar assinaturas' }), // AUTENTIQUE_POSICOES_V2
           Btn({ small: true, icon: 'upload', disabled: !!ocupado, onClick: function () { acao('reenviar', '/contratos/' + c.id + '/reenviar-assinatura', {}, 'Enviado ao Autentique'); }, children: c.autentique_doc_id ? 'Reenviar ao Autentique' : 'Enviar ao Autentique' }),
           Btn({ small: true, icon: 'check', disabled: !!ocupado, onClick: function () { setModal('assinado'); }, children: 'Marcar como assinado' }),
           Btn({ small: true, variant: 'perigo', disabled: !!ocupado, onClick: function () { setModal('cancelar'); }, children: 'Cancelar contrato' }))) : null,
@@ -2664,6 +2953,7 @@
       modal === 'devolucao' ? h(MotivoModal, { titulo: 'Registrar moto devolvida', label: 'Observação', botao: 'Registrar devolução', perigo: true,
         texto: 'O contrato é encerrado e a moto volta para Disponível. A vistoria de devolução fica pendente para a equipe.', onClose: function () { setModal(null); }, onConfirm: function (m) { return acao('dev', '/contratos/' + c.id + '/registrar-devolucao', { observacao: m || null }, 'Devolução registrada'); } }) : null,
       modal === 'vistoriaEntrega' ? h(VistoriaAnexoIVModal, { api: api, toast: toast, moto: mo, contrato: c, tipo: 'retirada', onClose: function () { setModal(null); }, aoSalvar: function () { setModal(null); carregar(); props.aoMudar && props.aoMudar(); } }) : null, // LOCACAO_FLUXO_V1
+      modal === 'posicoes' ? h(PosicionarAssinaturas, { api: api, toast: toast, contrato: c, onClose: function () { setModal(null); }, aoMudar: carregar, aoEnviar: function () { setModal(null); carregar(); props.aoMudar && props.aoMudar(); } }) : null, // AUTENTIQUE_POSICOES_V2
       modal === 'assinado' ? h(MotivoModal, { titulo: 'Marcar como assinado', label: 'Motivo', obrigatorio: true, botao: 'Marcar como assinado', hint: 'Fica no histórico. Use só se o Autentique não devolveu o status.',
         texto: 'As ' + nParc + ' parcelas serão criadas a partir do 1º vencimento e o contrato vira Ativo.', onClose: function () { setModal(null); }, onConfirm: function (m) { return acao('ass', '/contratos/' + c.id + '/marcar-assinado', { motivo: m }, 'Contrato ativado'); } }) : null,
       modal === 'cancelar' ? h(MotivoModal, { titulo: 'Cancelar contrato', label: 'Motivo', obrigatorio: true, botao: 'Cancelar contrato', perigo: true,
