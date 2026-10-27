@@ -167,6 +167,16 @@
 
     var e = React.createElement;
 
+    // GRATIFICACAO_GARANTIDO_V1: contador de pendências da sub-aba Gratificações
+    var sGrat = React.useState(0), nGrat = sGrat[0], setNGrat = sGrat[1];
+    React.useEffect(function () {
+      if (!window.fetchAuth) return;
+      window.fetchAuth((window.API_URL || "") + "/bi/gratificacao/contagem")
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { if (j && typeof j.pendentes === "number") setNGrat(j.pendentes); })
+        .catch(function () {});
+    }, []);
+
     var fmtBRL = function (v) { return "R$ " + (Number(v) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
     var fmtBRLshort = function (v) { return "R$ " + (Number(v) || 0).toLocaleString("pt-BR", { maximumFractionDigits: 0 }); };
     var fmtData = function (s) { return s ? new Date(s + "T12:00:00").toLocaleDateString("pt-BR") : "—"; };
@@ -202,7 +212,9 @@
       { id: "analise", label: "Garantido" },
       { id: "semanal", label: "Semanal" },
       { id: "cliente", label: "Por cliente" },
+      { id: "gratificacoes", label: "Gratificações", badge: nGrat }, // GRATIFICACAO_GARANTIDO_V1
     ];
+    var emGrat = garantidoSubTab === "gratificacoes";
 
     return e("div", {
       className: "w-full" /* BI_MARGEM_V1 */,
@@ -227,7 +239,7 @@
       ),
 
       // ====================== FAIXA DE KPIs ======================
-      st && e("section", {
+      st && !emGrat && e("section", {
         "aria-label": "Resumo do garantido",
         style: Object.assign({}, bigarCard, { display: "flex", flexWrap: "wrap", overflow: "hidden" })
       },
@@ -238,7 +250,7 @@
       ),
 
       // ====================== FILTROS ======================
-      e("section", {
+      !emGrat && e("section", {
         "aria-label": "Filtros",
         style: Object.assign({}, bigarCard, { padding: 16, display: "flex", flexDirection: "column", gap: 14 })
       },
@@ -288,12 +300,12 @@
                 fontWeight: ativa ? 600 : 500, color: ativa ? "#5d0b85" : "#6b7280",
                 borderBottom: "2px solid " + (ativa ? "#770fa8" : "transparent"),
               }
-            }, t.label);
+            }, t.label, t.badge ? e("span", { style: { marginLeft: 6, background: "#b45309", color: "#fff", borderRadius: 999, fontSize: 11, padding: "1px 7px", fontWeight: 600 } }, String(t.badge)) : null);
           })
         ),
 
         // LOADING
-        garantidoLoading && e("div", { style: { padding: 48, textAlign: "center" } },
+        garantidoLoading && !emGrat && e("div", { style: { padding: 48, textAlign: "center" } },
           e("div", {
             style: {
               display: "inline-block", width: 28, height: 28,
@@ -321,7 +333,13 @@
         !garantidoLoading && garantidoSubTab === "cliente" && (renderCliente
           ? e("div", { style: { padding: 16 } }, renderCliente())
           : e("div", { style: { padding: 40, textAlign: "center", color: "#6b7280" } }, "Visão por cliente indisponível."))
-      )
+      ),
+
+      // SUB-ABA: GRATIFICAÇÕES (GRATIFICACAO_GARANTIDO_V1) — componente próprio em modulo-bi-gratificacao.js
+      emGrat && (window.BIGratificacoes
+        ? e(window.BIGratificacoes, { onContagem: setNGrat })
+        : e("div", { role: "alert", style: { padding: 24, color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 14 } },
+            "O componente de gratificações não carregou. Atualize a página (Ctrl+Shift+R)."))
     );
   };
 

@@ -814,6 +814,7 @@ let SISTEMA_MODULOS_CONFIG = [
     { id: "uber", label: "Hub Logístico", icon: "🚚", abas: [{id:"dashboard",label:"Dashboard"},{id:"tracking",label:"Tracking"},{id:"entregas",label:"Entregas"},{id:"regras",label:"Regras"},{id:"barrados",label:"Barrados"},{id:"frequentes",label:"Frequentes"},{id:"provedores",label:"Provedores"},{id:"relatorio",label:"Relatório"},{id:"cancelamentos",label:"Cancelamentos"},{id:"chat",label:"Chat 99"}] },  // id "uber" e slug interno estavel (permissoes/rotas) — label e o que o usuario ve
     { id: "controle-maquinas", label: "Controle de Máquinas", icon: "🔒", admin: true, abas: [] }, // PERM_V6
     { id: "rh", label: "RH", icon: "🫂", optIn: true, abas: [{id: "nps", label: "Painel NPS"}, {id: "pessoas", label: "Líderes e equipe"}, {id: "sensivel", label: "Espaço sensível"}, {id: "config", label: "Configuração"}] }, // RH_NPS_V1
+    { id: "bi-gratificacao", label: "Liberar gratificação do garantido", icon: "💰", optIn: true, capacidade: true, abas: [] }, // GRATIFICACAO_GARANTIDO_V1: permissão sem tela (fica fora do menu)
     { id: "confirmafacil", label: "ConfirmaFácil", icon: "🔗", admin: true, sempreLiberado: true, abas: [] },
     { id: "painel", label: "Meu Painel", icon: "📈", admin: true, sempreLiberado: true, abas: [] }, // PAINEL_V1
     { id: "roadmap", label: "Desenvolvimentos", icon: "⚡", admin: true, sempreLiberado: true, abas: [] }
@@ -977,7 +978,7 @@ const NavegacaoHorizontal = ({ usuario, moduloAtivo, abaAtiva, onNavigate, hasMo
                     React.createElement(OverflowNav, {
                         items: [
                             { id: "__home__", label: "Início", icon: "🏠" },
-                            ...SISTEMA_MODULOS_CONFIG.filter(m => hasModuleAccess(usuario, m.id)).map(m => ({ id: m.id, label: m.label, icon: m.icon, _modulo: m }))
+                            ...SISTEMA_MODULOS_CONFIG.filter(m => !m.capacidade /* GRATIFICACAO_GARANTIDO_V1 */ && hasModuleAccess(usuario, m.id)).map(m => ({ id: m.id, label: m.label, icon: m.icon, _modulo: m }))
                         ],
                         activeId: moduloAtivo === "home" ? "__home__" : moduloAtivo,
                         onSelect: (item) => {
@@ -1111,7 +1112,7 @@ const Sidebar = ({ usuario, moduloAtivo, setModulo, menuAberto, setMenuAberto, s
             ),
             // Menu items
             React.createElement("div", {className: "flex-1 overflow-y-auto py-2"},
-                modulosComHome.filter(m => m.id === "home" || hasModuleAccess(usuario, m.id)).map(modulo => 
+                modulosComHome.filter(m => m.id === "home" || (!m.capacidade /* GRATIFICACAO_GARANTIDO_V1 */ && hasModuleAccess(usuario, m.id))).map(modulo => 
                     React.createElement("div", {key: modulo.id},
                         React.createElement("button", {
                             onClick: () => handleModuloClick(modulo),
@@ -1184,7 +1185,7 @@ const HeaderCompacto = ({ usuario, moduloAtivo, abaAtiva, socialProfile, isLoadi
                     React.createElement(OverflowNav, {
                         items: [
                             { id: "__home__", label: "Início", icon: "🏠" },
-                            ...SISTEMA_MODULOS_CONFIG.filter(m => hasModuleAccess(usuario, m.id)).map(m => ({ id: m.id, label: m.label, icon: m.icon, _modulo: m }))
+                            ...SISTEMA_MODULOS_CONFIG.filter(m => !m.capacidade /* GRATIFICACAO_GARANTIDO_V1 */ && hasModuleAccess(usuario, m.id)).map(m => ({ id: m.id, label: m.label, icon: m.icon, _modulo: m }))
                         ],
                         activeId: moduloAtivo === "home" ? "__home__" : moduloAtivo,
                         onSelect: (item) => {
@@ -1530,7 +1531,7 @@ const CommandPaletteTutts = () => {
         if (!c || !c.usuario) return [];
         const u = c.usuario;
         const out = [{ id: "__home__", titulo: "Início", sub: "Página inicial", icone: React.createElement("svg", { className: "ico", "aria-hidden": "true" }, React.createElement("use", { href: "#i-home" })), modulo: true, ir: () => c.irHome && c.irHome() }];
-        (SISTEMA_MODULOS_CONFIG || []).filter(m => hasModuleAccess(u, m.id)).forEach(m => {
+        (SISTEMA_MODULOS_CONFIG || []).filter(m => !m.capacidade /* GRATIFICACAO_GARANTIDO_V1 */ && hasModuleAccess(u, m.id)).forEach(m => {
             out.push({
                 id: m.id, titulo: m.label, sub: "Módulo", icone: navIconEl(m.icon), modulo: true,
                 ir: () => c.navegar(m.id, getFirstAllowedTab(u, m.id, (m.abas && m.abas[0] && m.abas[0].id) || null))
@@ -9970,6 +9971,9 @@ const hideLoadingScreen = () => {
                     const errData = await resp.json().catch(() => ({}));
                     if (errData.error === 'foto_duplicada') {
                         x(prev => ({ ...prev, _modalFotoDuplicada: true, _fotoDupOS: errData.os_original || '?', _fotoDupData: errData.data_original || '?' }));
+                    } else if (errData.error === 'gratificacao_recebida') {
+                        // GRATIFICACAO_GARANTIDO_V1: já recebeu a gratificação do mínimo garantido do dia da OS
+                        x(prev => ({ ...prev, _modalGratificacao: true, _gratOS: errData.os || '?', _gratData: errData.data ? errData.data.split('-').reverse().slice(0, 2).join('/') : '?', _gratValor: errData.valor || 0 }));
                     } else if (errData.error === 'janela_expirada') {
                         // OS antiga (>24h) detectada via cruzamento com BI
                         const dataFmt = errData.os_data_hora ? new Date(errData.os_data_hora).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
@@ -11620,6 +11624,27 @@ const hideLoadingScreen = () => {
                 ),
                 React.createElement("button", {
                     onClick: function() { x(function(prev) { return { ...prev, _modalFotoDuplicada: false }; }); },
+                    className: "w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700"
+                }, "Entendi")
+            )
+        ),
+        // GRATIFICACAO_GARANTIDO_V1: MODAL DE RETORNO BARRADO (já recebeu a gratificação do dia)
+        p._modalGratificacao && React.createElement("div", { className: "fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" },
+            React.createElement("div", { role: "alertdialog", "aria-modal": "true", "aria-label": "Retorno não permitido", className: "bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full" },
+                React.createElement("h2", { className: "text-lg font-bold mb-3", style: { color: "#92400e" } }, "Não dá pra pedir retorno desta OS"),
+                React.createElement("div", { className: "rounded-xl p-4 mb-4", style: { background: "#fffbeb", border: "1px solid #fcd34d", color: "#78350f" } },
+                    React.createElement("p", { className: "text-sm mb-2", style: { lineHeight: 1.5 } },
+                        "Você já recebeu a gratificação do mínimo garantido de ",
+                        React.createElement("strong", null, p._gratData || "?"),
+                        p._gratValor ? " (R$ " + Number(p._gratValor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ")" : "",
+                        ". Esse valor já cobre o dia, então o retorno da OS ",
+                        React.createElement("strong", null, p._gratOS || "?"),
+                        " não pode ser pago de novo."),
+                    React.createElement("p", { className: "text-sm", style: { lineHeight: 1.5 } }, "Achou que tem algo errado? Fale com a operação pelo suporte.")
+                ),
+                React.createElement("button", {
+                    type: "button",
+                    onClick: function() { x(function(prev) { return { ...prev, _modalGratificacao: false }; }); },
                     className: "w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700"
                 }, "Entendi")
             )
