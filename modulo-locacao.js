@@ -2971,19 +2971,39 @@
         ].map(function (r) { return h('div', { key: r[0], style: { display: 'flex', justifyContent: 'space-between', gap: 12, padding: '8px 0', borderTop: '1px solid #f3f4f6', fontSize: 13 } }, h('span', { style: { color: '#6b7280' } }, r[0]), h('b', { style: TAB }, r[1])); }))) : null);
   }
 
-  function BaixaModal(props) {
+  function BaixaModal(props) { /* BAIXA_SEM_JUROS_V1: escolhe baixar com ou sem os encargos */
     var _d = useState(hojeISO()), data = _d[0], setData = _d[1];
     var _o = useState(''), obs = _o[0], setObs = _o[1];
     var _s = useState(false), s = _s[0], setS = _s[1];
+    var _x = useState(false), semEnc = _x[0], setSemEnc = _x[1];
     var p = props.p;
-    return h(Modal, { titulo: 'Baixa manual · parcela ' + p.numero, onClose: props.onClose, largura: 480,
-      rodape: [Btn({ key: 'c', onClick: props.onClose, children: 'Voltar' }), Btn({ key: 'o', variant: 'pri', icon: 'check', disabled: s || obs.trim().length < 3, onClick: function () { setS(true); Promise.resolve(props.onConfirm({ data_pagamento: data, observacao: obs.trim() })).catch(function () {}).then(function () { setS(false); }); }, children: s ? 'Salvando...' : 'Registrar baixa' })] },
+    var enc = num(p.juros), total = p.saldo != null ? num(p.saldo) : num(p.total), principal = Math.max(0, total - enc);
+    var e = p.encargos || null;
+    var detalhe = e ? [e.multa ? 'multa ' + fR(e.multa) : null, e.juros ? 'juros ' + fR(e.juros) : null, e.correcao ? 'correção ' + fR(e.correcao) : null].filter(Boolean).join(' · ') : 'juros ' + fR(enc);
+    var podeConfirmar = !s && obs.trim().length >= 3 && (!semEnc || obs.trim().length >= 3);
+    var confirmar = function () {
+      setS(true);
+      Promise.resolve(props.onConfirm({ data_pagamento: data, observacao: obs.trim(), dispensar_encargos: semEnc })).catch(function () {}).then(function () { setS(false); });
+    };
+    var opcao = function (on, titulo, valor, sub, onClick) {
+      return h('button', { type: 'button', role: 'radio', 'aria-checked': on, onClick: onClick,
+        style: { textAlign: 'left', display: 'flex', gap: 10, alignItems: 'flex-start', padding: 12, borderRadius: 12, cursor: 'pointer', background: on ? '#faf7fd' : '#fff', border: (on ? 2 : 1) + 'px solid ' + (on ? ROXO : '#e5e7eb') } },
+        h('span', { style: { width: 16, height: 16, borderRadius: 99, border: '2px solid ' + (on ? ROXO : '#d1d5db'), display: 'grid', placeItems: 'center', marginTop: 2, flex: 'none' } }, on ? h('span', { style: { width: 8, height: 8, borderRadius: 99, background: ROXO } }) : null),
+        h('div', { style: { flex: 1, minWidth: 0 } },
+          h('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 8 } }, h('b', { style: { fontSize: 13.5 } }, titulo), h('b', { style: Object.assign({ fontSize: 14 }, TAB) }, fR(valor))),
+          h('div', { style: { fontSize: 12, color: '#6b7280', marginTop: 2 } }, sub)));
+    };
+    return h(Modal, { titulo: 'Baixa manual · parcela ' + p.numero, onClose: props.onClose, largura: 500,
+      rodape: [Btn({ key: 'c', onClick: props.onClose, children: 'Voltar' }), Btn({ key: 'o', variant: 'pri', icon: 'check', disabled: !podeConfirmar, onClick: confirmar, children: s ? 'Salvando...' : 'Registrar baixa de ' + fR(semEnc ? principal : total) })] },
       h('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-        h('div', { style: { fontSize: 13.5, color: '#374151' } }, 'Total a quitar: ', h('b', { style: TAB }, fR(p.saldo != null ? num(p.saldo) + num(p.juros) : p.total)), num(p.juros) > 0 ? h('span', { style: { color: '#991b1b' } }, ' (inclui juros ' + fR(p.juros) + ')') : null),
-        h(Field, { label: 'Data do pagamento', req: true }, Input({ type: 'date', value: data, max: hojeISO(), onChange: function (e) { setData(e.target.value); } })),
-        h(Field, { label: 'Observação', req: true, hint: 'Ex.: PIX recebido na conta da empresa, comprovante no WhatsApp. Fica no log.' }, TextArea({ rows: 3, value: obs, onChange: function (e) { setObs(e.target.value); } }))));
+        enc > 0 ? h('div', { role: 'radiogroup', 'aria-label': 'Valor da baixa', style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+          opcao(!semEnc, 'Com encargos', total, 'Parcela ' + fR(principal) + ' + ' + detalhe + (p.dias_atraso ? ' (' + p.dias_atraso + ' dias de atraso)' : ''), function () { setSemEnc(false); }),
+          opcao(semEnc, 'Sem encargos', principal, 'Dispensa ' + fR(enc) + ' de encargos. Fica registrado no histórico com o seu nome.', function () { setSemEnc(true); }))
+          : h('div', { style: { fontSize: 13.5, color: '#374151' } }, 'Total a quitar: ', h('b', { style: TAB }, fR(total))),
+        enc > 0 ? h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Os encargos são recalculados pela data do pagamento. Se o pagamento foi antes de hoje, o valor final pode ser menor.') : null,
+        h(Field, { label: 'Data do pagamento', req: true }, Input({ type: 'date', value: data, max: hojeISO(), onChange: function (ev) { setData(ev.target.value); } })),
+        h(Field, { label: 'Observação', req: true, hint: semEnc ? 'Diga por que os encargos foram dispensados. Ex.: atraso combinado, PIX caiu no fim de semana.' : 'Ex.: PIX recebido na conta da empresa, comprovante no WhatsApp. Fica no log.' }, TextArea({ rows: 3, value: obs, onChange: function (ev) { setObs(ev.target.value); } }))));
   }
-
   function AcessoPortalBtn(props) {
     var _s = useState(false), s = _s[0], setS = _s[1];
     var _r = useState(null), r = _r[0], setR = _r[1];
