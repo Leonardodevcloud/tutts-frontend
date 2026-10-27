@@ -103,6 +103,7 @@
       if (r.status === 'concluida') return et[k] && et[k].ok === false ? 'falhou' : 'ok';
       if (et[k] && et[k].ok) return 'ok';
       if (atual === 'fim') return 'ok';
+      if (r.status === 'cancelada') return i < idxAtual ? 'ok' : 'futuro'; // GRATIFICACAO_GARANTIDO_V4
       if (i === idxAtual) return r.status === 'falhou' ? 'falhou' : 'esperando';
       return i < idxAtual ? 'ok' : 'futuro';
     }
@@ -448,6 +449,35 @@
         } }, ico('play', 15), env ? 'Iniciando…' : 'Rodar ' + fmtDia(data))));
   }
 
+  // GRATIFICACAO_GARANTIDO_V4: cancelar rodada parada (antes de lançar na Mapp)
+  function ModalCancelarRodada(props) {
+    var r = props.rodada;
+    var s1 = React.useState(false), env = s1[0], setEnv = s1[1];
+    var s2 = React.useState(null), erro = s2[0], setErro = s2[1];
+    return e(Modal, { titulo: 'Cancelar a rodada de ' + fmtDia(r.data) + '?', onFechar: props.onFechar },
+      e('p', { style: { margin: 0, color: '#4b5563', lineHeight: 1.5 } },
+        'A rodada para de esperar o BI e não lança nada na Mapp. O automático também não roda mais esse dia. ',
+        'Use quando o pagamento de ' + fmtDia(r.data) + ' já foi feito por fora. Para pagar pelo sistema depois, é só usar “Rodar agora”.'),
+      erro && e(Aviso, { aviso: { tipo: 'erro', texto: erro }, onFechar: function () { setErro(null); } }),
+      e('div', { style: { display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' } },
+        e('button', { type: 'button', style: btnSec, onClick: props.onFechar }, 'Manter rodada'),
+        e('button', { type: 'button', disabled: env, style: desab(Object.assign({}, btnPri, { background: '#dc2626', borderColor: '#dc2626' }), env), onClick: function () {
+          setEnv(true); setErro(null);
+          api('/bi/gratificacao/rodadas/' + r.id + '/cancelar', { method: 'POST', body: '{}' })
+            .then(function () { props.onOk(); })
+            .catch(function (er) { setErro(er.message); setEnv(false); });
+        } }, env ? 'Cancelando…' : 'Cancelar rodada de ' + fmtDia(r.data))));
+  }
+
+  /** GRATIFICACAO_GARANTIDO_V4: o robô (worker/servidor) bate a cada ~1 min; mais de 6 min parado = problema. */
+  function roboParado(cfg) {
+    if (!cfg) return null;
+    if (!cfg.ultimo_tick_em) return { desde: null };
+    var t = new Date(cfg.ultimo_tick_em).getTime();
+    if (isNaN(t) || Date.now() - t < 6 * 60000) return null;
+    return { desde: cfg.ultimo_tick_em };
+  }
+
   function ModalSimular(props) {
     var s1 = React.useState(ontemISO()), data = s1[0], setData = s1[1];
     var s2 = React.useState(false), env = s2[0], setEnv = s2[1];
@@ -632,7 +662,10 @@
     var nPend = (k.pendentes || 0) + (k.incertos || 0) + (k.falhas || 0);
     var chip = !r ? null : r.status === 'aguardando' ? pill('ambar', 'Em andamento' + (r.proxima_tentativa_em ? ' · confere de novo ' + fmtHora(r.proxima_tentativa_em) : ''))
       : r.status === 'concluida' ? pill('verde', 'Rodada concluída ' + fmtHora(r.finalizada_em) + ' · ' + (r.origem === 'cron' ? 'automática' : 'manual'))
-        : pill('vermelho', 'Não lançou');
+        : r.status === 'cancelada' ? pill('cinza', 'Rodada cancelada')
+          : pill('vermelho', 'Não lançou');
+    var podeCancelar = !!(r && r.status === 'aguardando' && ['planilha', 'bi', 'calcular'].indexOf(r.etapa) >= 0);
+    var parado = (d.config.ativo || (r && r.status === 'aguardando')) ? roboParado(d.config) : null;
     var avisados = (d.avisados || []).map(function (a) { return a.nome; });
     return e(React.Fragment, null,
       e('section', { 'aria-label': 'Rodada de pagamento', style: Object.assign({}, card, { padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }) },
@@ -644,8 +677,13 @@
               return e('span', { key: s.k, title: s.det, style: { display: 'inline-flex', alignItems: 'center', gap: 6, color: s.estado === 'futuro' ? '#9ca3af' : '#374151', fontSize: 12.5 } }, IconeEtapa(s.estado), s.texto);
             }) : e('span', { style: { color: '#6b7280' } }, d.config.ativo ? 'A primeira rodada roda às ' + d.config.horario + ' (dia anterior).' : 'Nenhuma rodada ainda. Rode um dia ou ligue o automático.')),
           pode && e('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
+            podeCancelar && e('button', { type: 'button', style: Object.assign({}, btnSec, { height: 38, color: '#991b1b' }), onClick: function () { props.setModal('cancelarRodada'); } }, ico('x', 14), 'Cancelar rodada'),
             e('button', { type: 'button', style: Object.assign({}, btnSec, { height: 38 }), onClick: function () { props.setModal('simular'); } }, ico('search', 14), 'Simular outra data'),
             e('button', { type: 'button', disabled: !!(r && r.status === 'aguardando'), style: desab(Object.assign({}, btnPri, { height: 38 }), !!(r && r.status === 'aguardando')), onClick: function () { props.setModal('rodar'); } }, ico('play', 14), 'Rodar agora'))),
+        parado && e('div', { role: 'alert', style: { background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', borderRadius: 10, padding: '8px 12px', fontSize: 12.5 } },
+          e('b', null, parado.desde ? 'O robô do pagamento parou às ' + fmtHora(parado.desde) + '. ' : 'O robô do pagamento ainda não rodou. '),
+          'Rodadas não avançam e o automático não dispara até ele voltar. Avise o suporte técnico (serviços do Railway).'),
+        r && r.status === 'cancelada' && r.erro && e('div', { style: { color: '#6b7280', fontSize: 12.5 } }, r.erro + (r.finalizada_em ? ' às ' + fmtHora(r.finalizada_em) : '') + '.'),
         r && r.status === 'falhou' && r.erro && e('div', { role: 'alert', style: { background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', borderRadius: 10, padding: '8px 12px', fontSize: 12.5 } }, r.erro)),
       nPend > 0 && e('div', { role: 'status', style: { background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 14, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', color: '#92400e' } },
         e('span', null,
@@ -690,6 +728,7 @@
     if (!m || !d) return null;
     if (m === 'rodar') return e(ModalRodar, { config: d.config, onFechar: fechar, onOk: function () { fechar(); setTimeout(props.recarregar, 600); } });
     if (m === 'simular') return e(ModalSimular, { onFechar: fechar });
+    if (m === 'cancelarRodada' && d.rodada) return e(ModalCancelarRodada, { rodada: d.rodada, onFechar: fechar, onOk: function () { fechar(); props.recarregar(); } });
     if (m === 'aprovados') return e(ModalLancarAprovados, { kpis: d.kpis, onFechar: fechar, onMudou: props.recarregar });
     if (m === 'pendencias') return e(Modal, { titulo: 'Pendências de pagamento', largura: 1180, onFechar: fechar }, e(Pendencias, { dados: d, onMudou: props.recarregar }));
     if (m === 'config') return e(Modal, { titulo: 'Configurar pagamento do garantido', largura: 1180, onFechar: fechar }, e(Config, { dados: d, onMudou: props.recarregar }));
