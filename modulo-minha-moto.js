@@ -325,6 +325,14 @@
             h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 4, marginTop: 8 } }, POSICOES.map(function (x) { return h('span', { key: x[0], title: x[1], style: { height: 22, borderRadius: 6, background: '#f3f4f6', color: '#9ca3af', display: 'grid', placeItems: 'center' } }, ico('camera', 12)); })))),
         h('button', { type: 'button', className: 'mm-btn pri', style: { height: 44 }, onClick: function () { p.ir('vistoria', { tipo: pend.tipo }); } }, ico('camera', 18), 'Fazer vistoria agora'),
         mo.tem_foto ? null : h('div', { style: { fontSize: 12, color: '#6b7280', textAlign: 'center' } }, 'A foto de frente vira a imagem da sua moto aqui.')) : null,
+      (function () { /* LOCACAO_APP_CRLV_V1: CRLV-e a um toque */
+        var crlv = (r.documentos_moto || []).find(function (x) { return x.id === 'crlv'; });
+        if (!crlv) return null;
+        return h('button', { type: 'button', className: 'mm-card', disabled: !crlv.disponivel, onClick: function () { if (crlv.disponivel) abrirArquivo(p.api, crlv.url, crlv.arquivo, p.toast); }, style: { flexDirection: 'row', alignItems: 'center', gap: 12, textAlign: 'left', opacity: crlv.disponivel ? 1 : 0.7 } },
+          h('span', { style: { width: 40, height: 40, borderRadius: 10, background: '#eff6ff', color: '#1d4ed8', display: 'grid', placeItems: 'center', flex: 'none' } }, ico('idcard', 20)),
+          h('span', { style: { flex: 1, minWidth: 0 } }, h('b', { style: { display: 'block' } }, 'Documento da moto (CRLV-e)'), h('span', { style: { fontSize: 12.5, color: '#6b7280' } }, crlv.disponivel ? 'Abra e mostre na hora, se pedirem na rua.' : crlv.subtitulo)),
+          crlv.disponivel ? h('span', { className: 'mm-lnk' }, 'Abrir', ico('arrowright', 14)) : null);
+      })(),
       h('button', { type: 'button', className: 'mm-card', onClick: function () { p.ir('problema'); }, style: { flexDirection: 'row', alignItems: 'center', gap: 12, textAlign: 'left' } },
         h('span', { style: { width: 40, height: 40, borderRadius: 10, background: '#fef2f2', color: '#dc2626', display: 'grid', placeItems: 'center', flex: 'none' } }, ico('alert', 20)),
         h('span', { style: { flex: 1, minWidth: 0 } }, h('b', { style: { display: 'block' } }, 'Algum problema com a moto?'), h('span', { style: { fontSize: 12.5, color: '#6b7280' } }, 'Pneu, pane, batida ou roubo: avise a Tutts por aqui.' + (r.avisos_abertos ? ' (' + r.avisos_abertos + ' em aberto)' : ''))),
@@ -519,6 +527,17 @@
       var u = URL.createObjectURL(b); var a = document.createElement('a'); a.href = u; a.download = nome || 'documento.pdf'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
     }).catch(function (e) { toast(e.message); });
   }
+  /* LOCACAO_APP_CRLV_V1: abre o documento numa aba (para mostrar na hora, ex.: blitz); se o navegador bloquear, baixa */
+  function abrirArquivo(api, path, nome, toast) {
+    var w = null;
+    try { w = window.open('', '_blank'); } catch (e) { w = null; }
+    return api(path, { raw: true }).then(function (res) { return res.blob(); }).then(function (b) {
+      var u = URL.createObjectURL(b);
+      if (w && !w.closed) { try { w.opener = null; } catch (e) { /* ok */ } w.location.href = u; }
+      else { var a = document.createElement('a'); a.href = u; a.download = nome || 'documento'; document.body.appendChild(a); a.click(); a.remove(); }
+      setTimeout(function () { URL.revokeObjectURL(u); }, 60000);
+    }).catch(function (e) { if (w) w.close(); toast(e.message); });
+  }
   function Cl(t) { return t ? h('span', { style: { fontSize: 10.5, fontWeight: 700, color: '#6b7280', background: '#f3f4f6', borderRadius: 5, padding: '1px 5px', whiteSpace: 'nowrap' } }, /^cl/i.test(t) ? t : 'Cl. ' + t) : null; }
   function Rotulo(t) { return h('div', { style: { fontSize: 11.5, fontWeight: 700, color: '#6b7280', letterSpacing: '.06em', textTransform: 'uppercase' } }, t); }
 
@@ -543,6 +562,7 @@
       var path = doc.url || (doc.id === 'contrato' ? '/contrato/pdf' : doc.id === 'anexo_iv' && doc.vistoria_id ? '/vistorias/' + doc.vistoria_id + '/anexo-iv.pdf' : null);
       if (!path) { p.toast('Documento indisponível no momento.'); return; }
       setBaixando(doc.id);
+      if (doc.ver) { abrirArquivo(p.api, path, doc.arquivo, p.toast).then(function () { setBaixando(null); }); return; } // LOCACAO_APP_CRLV_V1
       baixarPdf(p.api, path.replace(/^\/api\/locacao-minha/, ''), (doc.arquivo || doc.id) + '-' + (ct.numero || 'moto') + '.pdf', p.toast).then(function () { setBaixando(null); });
     };
     var mudarDesconto = function (v) {
@@ -577,7 +597,7 @@
           return h('div', { key: dc.id + i, className: 'mm-row', style: i === 0 ? { borderTop: 0, marginTop: 4 } : null },
             h('div', { style: { display: 'flex', gap: 10, alignItems: 'center', minWidth: 0 } }, h('span', { style: { width: 34, height: 34, borderRadius: 9, background: '#f3e8fb', color: ROXO_ESC, display: 'grid', placeItems: 'center', flex: 'none' } }, ico('filetext', 16)),
               h('div', { style: { minWidth: 0 } }, h('div', { style: { fontWeight: 600 } }, dc.titulo), dc.subtitulo ? h('div', { style: { fontSize: 12, color: '#6b7280' } }, dc.subtitulo) : null)),
-            dc.disponivel === false ? h('span', { style: { fontSize: 12, color: '#9ca3af' } }, 'em breve') : h('button', { type: 'button', className: 'mm-lnk', disabled: baixando === dc.id, onClick: function () { baixar(dc); } }, ico('download', 15), baixando === dc.id ? '...' : 'Baixar'));
+            dc.disponivel === false ? h('span', { style: { fontSize: 12, color: '#9ca3af' } }, 'em breve') : h('button', { type: 'button', className: 'mm-lnk', disabled: baixando === dc.id, onClick: function () { baixar(dc); } }, ico(dc.ver ? 'eye' : 'download', 15), baixando === dc.id ? '...' : (dc.ver ? 'Abrir' : 'Baixar')));
         })) : null,
       tar.length ? h('section', { className: 'mm-card', style: { gap: 0 } },
         Rotulo('Tarifário · Anexo I'),
