@@ -138,7 +138,7 @@
     if (m.status === 'alugada') return Pill('Alugada · em dia', 'verde');
     return Pill(m.status_label || ROT_MOTO[m.status] || m.status, TOM_MOTO[m.status] || 'cinza');
   }
-  function pillSit(c) { if (c.situacao === 'aguardando_assinatura' && c.etapa === 'vistoria') return Pill('Aguardando vistoria de entrega', 'ambar'); /* LOCACAO_FLUXO_V1 */ return Pill(c.situacao_label || c.situacao, TOM_SIT[c.situacao] || 'cinza'); }
+  function pillSit(c) { if (c.situacao === 'aguardando_assinatura' && (c.etapa === 'vistoria' || c.etapa === 'laudo')) return Pill('Aguardando fotos da moto', 'ambar'); /* LOCACAO_FLUXO_V2 */ /* LOCACAO_FLUXO_V1 */ return Pill(c.situacao_label || c.situacao, TOM_SIT[c.situacao] || 'cinza'); }
   function pillParc(p) { return Pill(p.status_label || p.status, TOM_PARC[p.status] || 'cinza'); }
 
   // ───────── componentes de UI ─────────
@@ -273,10 +273,28 @@
         src ? h('img', { src: src, alt: label || '', loading: 'lazy', style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } }) : ico('image', 18)),
       label ? h('span', { style: { fontSize: 11.5, color: '#374151', textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, label) : null);
   }
+  function blobDeDataUrl(src) { /* LOCACAO_AJUSTES_V1 */
+    var m = /^data:([^;,]+)(;base64)?,(.*)$/.exec(String(src || ''));
+    if (!m) return null;
+    var bin = m[2] ? atob(m[3]) : decodeURIComponent(m[3]), arr = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: m[1] });
+  }
   function Lightbox(props) {
+    var ehPdf = props.src && /^data:application\/pdf/.test(props.src);
+    var _u = useState(null), url = _u[0], setUrl = _u[1];
+    useEffect(function () { /* LOCACAO_AJUSTES_V1: o Chrome não abre PDF em data: dentro de iframe — vira blob */
+      if (!ehPdf) { setUrl(null); return; }
+      var b = null; try { b = blobDeDataUrl(props.src); } catch (e) { b = null; }
+      if (!b) return;
+      var u = URL.createObjectURL(b); setUrl(u);
+      return function () { URL.revokeObjectURL(u); };
+    }, [props.src]);
     return h(Modal, { titulo: props.titulo || 'Foto', onClose: props.onClose, largura: 900 },
-      props.src ? (/^data:application\/pdf/.test(props.src)
-        ? h('iframe', { src: props.src, title: props.titulo || 'Documento', style: { width: '100%', height: '70vh', border: 0, borderRadius: 10 } })
+      props.src ? (ehPdf
+        ? (url ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+            h('iframe', { src: url, title: props.titulo || 'Documento', style: { width: '100%', height: '70vh', border: 0, borderRadius: 10 } }),
+            h('a', { href: url, target: '_blank', rel: 'noopener noreferrer', style: { color: ROXO, fontWeight: 600, fontSize: 13, alignSelf: 'flex-end' } }, 'Abrir em outra aba')) : Spinner('Abrindo o PDF...'))
         : h('img', { src: props.src, alt: props.titulo || '', style: { width: '100%', maxHeight: '75vh', objectFit: 'contain', borderRadius: 10, background: '#111827' } }))
         : Spinner('Abrindo...'),
       props.legenda ? h('div', { style: { fontSize: 12.5, color: '#6b7280', marginTop: 8 } }, props.legenda) : null);
@@ -373,7 +391,7 @@
           Busca(q, setQ, 'Placa, modelo ou cliente')),
         frota.length === 0 ? Vazio('Nenhuma moto cadastrada', 'Cadastre a primeira moto para começar a locação.', Btn({ variant: 'pri', icon: 'plus', onClick: function () { nav({ tela: 'moto', id: null }); }, children: 'Cadastrar moto' })) :
         lista.length === 0 ? Vazio('Nenhuma moto neste filtro', 'Troque o filtro ou limpe a busca.') :
-        Tabela([{ t: 'Moto' }, { t: 'Placa' }, { t: 'Locatário' }, { t: 'Parcela', right: true }, { t: 'Próx. vencimento' }, { t: 'Pagas' }, { t: 'Vistoria' }, { t: 'Status' }, { t: '' }],
+        Tabela([{ t: 'Moto' }, { t: 'Placa' }, { t: 'Locatário' }, { t: 'Parcelas' }, { t: 'Vistoria' }, { t: 'Status' }], // LOCACAO_AJUSTES_V1: parcela, vencimento e pagas numa coluna só (sem rolagem)
           lista.map(function (m) {
             var pct = m.semanas ? Math.min(100, Math.round(100 * num(m.parcelas_pagas) / num(m.semanas))) : 0;
             var abrir = m.contrato_id ? function () { nav({ tela: 'contrato', id: m.contrato_id }); } : function () { nav({ tela: 'moto', id: m.moto_id }); };
@@ -381,13 +399,13 @@
               { td: 1, v: celulaMoto(m) },
               { td: 1, v: m.placa, st: { fontFamily: MONO, fontSize: 12.5 } },
               { td: 1, v: m.cliente_nome ? h('div', null, m.cliente_nome, h('div', { style: { marginTop: 3 } }, TagTipo(m.cliente_tipo))) : h('span', { style: { color: '#9ca3af' } }, '—') }, // LOCACAO_V4
-              { td: 1, v: m.valor_semanal ? fR(m.valor_semanal) : '—', right: true },
-              { td: 1, v: m.proximo_vencimento ? fDS(m.proximo_vencimento, true) : '—' },
-              { td: 1, st: { minWidth: 110 }, v: m.semanas && m.situacao !== 'aguardando_assinatura' ? h('div', null, h('div', { style: { fontSize: 12, color: '#374151' } }, fN(m.parcelas_pagas) + ' de ' + fN(m.semanas)),
-                h('div', { style: { height: 4, background: '#f3f4f6', borderRadius: 99, marginTop: 4, overflow: 'hidden' } }, h('div', { style: { height: '100%', width: pct + '%', background: ROXO } }))) : h('span', { style: { color: '#9ca3af' } }, '—') },
-              { td: 1, v: m.vistoria_label || '—', st: { fontSize: 12, color: m.vistoria_pendente ? '#92400e' : '#374151', fontWeight: m.vistoria_pendente ? 600 : 400 } },
+              { td: 1, st: { minWidth: 150 }, v: m.valor_semanal ? h('div', null,
+                h('div', { style: { fontSize: 13, fontWeight: 600 } }, fR(m.valor_semanal), m.semanas && m.situacao !== 'aguardando_assinatura' ? h('span', { style: { fontWeight: 400, color: '#6b7280', fontSize: 12 } }, ' · ' + fN(m.parcelas_pagas) + ' de ' + fN(m.semanas)) : null),
+                m.semanas && m.situacao !== 'aguardando_assinatura' ? h('div', { style: { height: 4, background: '#f3f4f6', borderRadius: 99, margin: '4px 0', overflow: 'hidden', maxWidth: 140 } }, h('div', { style: { height: '100%', width: pct + '%', background: ROXO } })) : null,
+                m.proximo_vencimento ? h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, 'próx. ' + fDS(m.proximo_vencimento, true)) : null) : h('span', { style: { color: '#9ca3af' } }, '—') },
+              { td: 1, v: m.vistoria_label || '—', st: { fontSize: 12, color: m.vistoria_pendente ? '#92400e' : '#374151', fontWeight: m.vistoria_pendente ? 600 : 400, whiteSpace: 'normal', maxWidth: 170 } },
               { td: 1, v: pillMoto(m) },
-              { td: 1, right: true, v: h('button', { type: 'button', onClick: function (e) { e.stopPropagation(); abrir(); }, className: 'hover:underline', style: { color: ROXO, fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer', fontSize: 13 } }, m.contrato_id ? (m.situacao === 'aguardando_assinatura' ? 'Ver contrato' : 'Pagamentos') : 'Ver moto') }
+              // LOCACAO_AJUSTES_V1: a linha inteira abre o contrato ou a moto
             ], abrir);
           }))));
   }
@@ -846,7 +864,7 @@
       if (x.tipoR === 'aprovado') return passos(2, 2, 'Falta criar o contrato', '#166534');
       var k = x.contrato;
       if (x.tipoR === 'ex') return passos(4, -1, 'Ex-locatário · ' + String(k.situacao_label || k.status).toLowerCase(), '#6b7280');
-      if (k.status === 'aguardando_assinatura') return passos(2, 2, k.etapa === 'vistoria' ? 'Contrato criado · falta a vistoria de entrega' : 'Contrato aguardando assinatura', '#1e40af');
+      if (k.status === 'aguardando_assinatura') return passos(2, 2, k.etapa === 'vistoria' || k.etapa === 'laudo' ? 'Contrato criado · faltam as fotos da moto' : 'Contrato aguardando assinatura', '#1e40af');
       if (!k.retirada_em) return passos(3, 3, 'Contrato ativo · entrega da moto não registrada', '#92400e');
       return passos(4, -1, 'Contrato ativo · moto com ele desde ' + fDC(k.retirada_em), '#374151');
     };
@@ -2257,7 +2275,7 @@
       var req = importar ? api('/contratos/importar', { method: 'POST', body: Object.assign(b, { pdf_assinado: pdf && pdf.conteudo, parcelas_pagas_ate: pagasAte || null }) }) : api('/contratos', { method: 'POST', body: b });
       req.then(function (r) {
         if (importar) toast('Contrato importado · ' + (r.parcelas_pagas ? r.parcelas_pagas + ' parcela' + (r.parcelas_pagas === 1 ? '' : 's') + ' marcada' + (r.parcelas_pagas === 1 ? '' : 's') + ' como paga' + (r.parcelas_pagas === 1 ? '' : 's') : 'parcelas geradas'), 'success');
-        else if (r.etapa === 'vistoria') toast('Contrato criado · próximo passo: vistoria de entrega na Base (a assinatura sai depois dela)', 'success'); // LOCACAO_FLUXO_V1
+        else if (r.etapa === 'vistoria' || r.etapa === 'laudo') toast('Contrato criado · próximo passo: fotos da moto (laudo de estado), sem precisar do locatário', 'success'); // LOCACAO_FLUXO_V2
         else toast(r.autentique && r.autentique.enviado ? 'Contrato gerado e enviado ao Autentique' : 'Contrato gerado' + (r.autentique && r.autentique.motivo ? ' · Autentique: ' + r.autentique.motivo : ''), r.autentique && r.autentique.enviado === false ? 'error' : 'success');
         props.aoMudar && props.aoMudar();
         nav({ tela: 'contrato', id: r.contrato_id }, true);
@@ -2942,7 +2960,7 @@
         { r: 'Em atraso', v: fR(k.atraso), s: k.atraso_contratos ? k.atraso_contratos + ' contrato' + (k.atraso_contratos > 1 ? 's' : '') + ' · encargos ' + fR(k.atraso_encargos) : 'ninguém atrasado', cor: k.atraso > 0 ? '#991b1b' : null },
         { r: 'Inadimplência', v: (k.inadimplencia_pct || 0) + '%', s: k.atraso_contratos + ' de ' + k.ativos + ' contratos ativos' }
       ]),
-      h('div', { className: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] items-start' },
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 16 } }, // LOCACAO_AJUSTES_V1: tabela em largura total (sem rolagem)
         h(Card, { pad: false, label: 'Locatários' },
           h('div', { style: { padding: '12px 16px', borderBottom: '1px solid #f3f4f6', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' } },
             Chips([
@@ -2979,7 +2997,7 @@
             h('div', { style: { flex: 1 } }),
             Btn({ variant: 'link', small: true, onClick: function () { setSel({}); }, children: 'Limpar seleção' })) :
             h('div', { style: { padding: '10px 16px', borderTop: '1px solid #f3f4f6', fontSize: 12, color: '#6b7280' } }, 'Clique no nome para abrir o financeiro da pessoa. Marque vários para cobrar ou dar baixa de uma vez.')),
-        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+        h('div', { className: 'grid gap-4 md:grid-cols-3 items-start' },
           h(Card, { pad: false, label: 'Caixa da semana' }, CardHead('Caixa da semana', null, 'recebido / previsto'),
             h('div', { style: { display: 'flex', gap: 6, alignItems: 'flex-end', padding: '16px 16px 8px', height: 150, boxSizing: 'border-box' } },
               (d.caixa || []).map(function (c) {
@@ -3278,7 +3296,8 @@
           c.importado ? 'Importado: assinado fora da Central.' : c.assinado_em ? h('span', null, (c.assinatura_manual_motivo ? 'Assinatura confirmada manualmente em ' : 'Assinado no Autentique em '), h('b', null, fDH(c.assinado_em))) : 'Ainda não assinado. Acompanhe a assinatura no quadro acima.'),
         c.tem_pdf_assinado ? Btn({ small: true, icon: 'filetext', onClick: function () { abrirPdf(api, '/contratos/' + c.id + '/pdf?assinado=1', toast); }, children: 'PDF assinado' })
           : c.tem_pdf ? Btn({ small: true, icon: 'filetext', onClick: function () { abrirPdf(api, '/contratos/' + c.id + '/pdf', toast); }, children: 'PDF do contrato' }) : null,
-        c.vistoria_entrega && c.vistoria_entrega.id ? Btn({ small: true, icon: 'camera', onClick: function () { abrirPdf(api, '/vistorias/' + c.vistoria_entrega.id + '/anexo-iv.pdf', toast); }, children: 'Anexo IV (entrega)' }) : null),
+        c.vistoria_laudo && c.vistoria_laudo.id ? Btn({ small: true, icon: 'camera', onClick: function () { abrirPdf(api, '/vistorias/' + c.vistoria_laudo.id + '/anexo-iv.pdf', toast); }, children: 'Fotos da moto (laudo)' }) : null, // LOCACAO_FLUXO_V2
+        c.vistoria_entrega && c.vistoria_entrega.id ? Btn({ small: true, icon: 'filetext', onClick: function () { abrirPdf(api, '/vistorias/' + c.vistoria_entrega.id + '/anexo-iv.pdf', toast); }, children: 'Termo de retirada' }) : null),
       ini && fim ? h('div', { style: { padding: '12px 16px' } },
         h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6b7280', marginBottom: 6, gap: 8, flexWrap: 'wrap' } },
           h('span', null, frac >= 1 ? 'Prazo concluído' : agora < ini ? 'Começa em ' + fD(ini) : (c.periodicidade === 'mensal' ? 'Mês ' + Math.max(1, Math.ceil(frac * (c.prazo_qtd || 1))) + ' de ' + (c.prazo_qtd || '—') : 'Semana ' + semanaAtual + ' de ' + (c.prazo_qtd || c.semanas || '—'))),
@@ -3307,7 +3326,11 @@
       h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 8, padding: '0 16px 16px' } },
         chip(!!mo.tem_seguro, mo.tem_seguro ? 'Seguro' : 'Sem seguro'), chip(!!mo.tem_rastreador, mo.tem_rastreador ? 'Rastreador' : 'Sem rastreador'),
         c.bloqueio_sinalizado_em ? chip(false, 'Bloqueio sinalizado ' + fDC(c.bloqueio_sinalizado_em), 'bl') : null,
-        c.vistoria_entrega ? chip(true, 'Vistoria de entrega ' + fDC(c.vistoria_entrega.criado_em), 've') : null),
+        c.vistoria_laudo ? chip(true, 'Laudo de estado ' + fDC(c.vistoria_laudo.criado_em), 'vl') : null, // LOCACAO_FLUXO_V2
+        c.vistoria_entrega ? chip(true, 'Vistoria de retirada ' + fDC(c.vistoria_entrega.criado_em), 've') : null),
+      c.vistoria_entrega && props.api ? h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', padding: '10px 16px', borderTop: '1px solid #f3f4f6', fontSize: 13 } }, // LOCACAO_FLUXO_V2: termo de retirada
+        h('b', null, 'Termo de retirada'), h('span', { style: { flex: 1 } }),
+        h(AcoesAnexoIV, { api: props.api, toast: props.toast, v: { id: c.vistoria_entrega.id, tipo: 'retirada', autentique_doc_id: c.vistoria_entrega.autentique_doc_id, assinado_em: c.vistoria_entrega.assinado_em, assinatura_status: c.vistoria_entrega.assinado_em ? 'assinado' : null, link_locatario: c.vistoria_entrega.link_locatario }, aoMudar: props.aoMudar })) : null,
       (function () { /* LOCACAO_ENTREGA_V1: a moto já está com o locatário? */
         var vivo = { em_dia: 1, atrasada: 1, em_retomada: 1, suspenso: 1 }[c.situacao];
         if (c.retirada_em) return h('div', { style: { display: 'flex', gap: 10, alignItems: 'center', padding: '10px 16px', borderTop: '1px solid #f3f4f6', background: '#f0fdf4', fontSize: 13, color: '#166534' } },
@@ -3423,7 +3446,7 @@
     var primeiraCobravel = parcelas.find(function (p) { return p.status === 'atrasada' || p.status === 'vence_hoje'; });
     var sit = c.situacao;
     var assinando = sit === 'aguardando_assinatura';
-    var emVistoria = assinando && c.etapa === 'vistoria'; // LOCACAO_FLUXO_V1: assinatura só depois da vistoria de entrega
+    var emVistoria = assinando && (c.etapa === 'laudo' || c.etapa === 'vistoria'); // LOCACAO_FLUXO_V2: assinatura só depois das fotos da moto (laudo)
     var ativo = sit === 'em_dia' || sit === 'atrasada';
     var retV3 = c.encargos && c.encargos.modelo === 'v3'; /* LOCACAO_V3: rescisão com atraso de MAIS de N dias (14.2 a) */
     var faltamRet = c.dias_retomada != null && c.dias_atraso != null ? c.dias_retomada + (retV3 ? 1 : 0) - c.dias_atraso : null;
@@ -3455,7 +3478,9 @@
           h(AcessoPortalBtn, { api: api, toast: toast, cliente: cli }),
           parcelas.length ? Btn({ variant: 'pri', icon: 'wallet', onClick: function () { nav({ tela: 'financeiro', id: c.id }); }, children: 'Abrir financeiro' }) : null)), // LOCACAO_REMODEL_V1: cobrança e baixa ficam no Financeiro
 
-      assinando ? h(EtapasLiberacao, { c: c, ocupado: ocupado, onPosicionar: function () { setModal('posicoes'); }, onVistoria: function () { setModal('vistoriaEntrega'); }, onCancelar: function () { setModal('cancelar'); } }) : null, // LOCACAO_FLUXO_V1
+      assinando || c.etapa === 'retirada' ? h(EtapasLiberacao, { c: c, api: api, ocupado: ocupado, onPosicionar: function () { setModal('posicoes'); }, onLaudo: function () { setModal('laudo'); }, // LOCACAO_FLUXO_V2
+        onUsarLaudo: function (v) { if (window.confirm('Usar a ' + String(v.tipo_label).toLowerCase() + ' de ' + fDC(v.criado_em) + ' como fotos da moto deste contrato?')) acao('laudo', '/contratos/' + c.id + '/usar-laudo', { vistoria_id: v.id }, 'Fotos da moto definidas').then(function (r) { if (r && r.assinatura && r.assinatura.conferir) setModal('posicoes'); }).catch(function () {}); },
+        onRetirada: function () { setModal('vistoriaEntrega'); }, onMarcarEntrega: function () { setModal('entrega'); }, onCancelar: function () { setModal('cancelar'); } }) : null,
       assinando && !emVistoria ? h('div', { style: { background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 14, padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' } },
         ico('clock', 18, { color: '#2563eb', marginTop: 1 }),
         h('div', { style: { flex: 1, minWidth: 240, color: '#1e40af', fontSize: 13.5 } },
@@ -3494,7 +3519,7 @@
       h('div', { className: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] items-start' },
         h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 } }, /* LOCACAO_REMODEL_V1: perfil — parcelas foram para o Financeiro */
           h(ContratoResumoCard, { api: api, toast: toast, c: c, k: k, parcelas: parcelas, abrirFinanceiro: function () { nav({ tela: 'financeiro', id: c.id }); } }),
-          h(MotoResumoCard, { mo: mo, c: c, abrirMoto: function () { nav({ tela: 'moto', id: mo.id }); }, onVistoria: function () { setModal('vistoriaEntrega'); }, onMarcarEntrega: function () { setModal('entrega'); } }), // LOCACAO_ENTREGA_V1
+          h(MotoResumoCard, { api: api, toast: toast, mo: mo, c: c, aoMudar: carregar, abrirMoto: function () { nav({ tela: 'moto', id: mo.id }); }, onVistoria: function () { setModal('vistoriaEntrega'); }, onMarcarEntrega: function () { setModal('entrega'); } }), // LOCACAO_ENTREGA_V1 · LOCACAO_FLUXO_V2
           assinando ? null : h(DemonstrativoCard, { contrato: c, cliente: cli }), // LOCACAO_V3 · LOCACAO_REMODEL_V1: na coluna do contrato
           h(OutrosContratosCard, { lista: (d.perfil && d.perfil.outros_contratos) || [], nav: nav })),
 
@@ -3533,7 +3558,8 @@
         texto: 'Use quando precisar retomar antes do limite automático de ' + c.dias_retomada + ' dias.', onClose: function () { setModal(null); }, onConfirm: function (m) { return acao('ret', '/contratos/' + c.id + '/iniciar-retomada', { motivo: m || null }, 'Retomada iniciada'); } }) : null,
       modal === 'devolucao' ? h(MotivoModal, { titulo: 'Registrar moto devolvida', label: 'Observação', botao: 'Registrar devolução', perigo: true,
         texto: 'O contrato é encerrado e a moto volta para Disponível. A vistoria de devolução fica pendente para a equipe.', onClose: function () { setModal(null); }, onConfirm: function (m) { return acao('dev', '/contratos/' + c.id + '/registrar-devolucao', { observacao: m || null }, 'Devolução registrada'); } }) : null,
-      modal === 'vistoriaEntrega' ? h(VistoriaAnexoIVModal, { api: api, toast: toast, moto: mo, contrato: c, tipo: 'retirada', onClose: function () { setModal(null); }, aoSalvar: function (r) { setModal(r && r.assinatura && r.assinatura.conferir ? 'posicoes' : null); carregar(); props.aoMudar && props.aoMudar(); } }) : null, // LOCACAO_FLUXO_V1 · AUTENTIQUE_CONFERIR_V1: já abre Posicionar assinaturas
+      modal === 'laudo' ? h(VistoriaAnexoIVModal, { api: api, toast: toast, moto: mo, contrato: c, tipo: 'laudo', onClose: function () { setModal(null); }, aoSalvar: function (r) { setModal(r && r.assinatura && r.assinatura.conferir ? 'posicoes' : null); carregar(); props.aoMudar && props.aoMudar(); } }) : null, // LOCACAO_FLUXO_V2
+      modal === 'vistoriaEntrega' ? h(VistoriaAnexoIVModal, { api: api, toast: toast, moto: mo, contrato: c, tipo: 'retirada', enviarTermo: !assinando, onClose: function () { setModal(null); }, aoSalvar: function (r) { setModal(r && r.assinatura && r.assinatura.conferir ? 'posicoes' : null); carregar(); props.aoMudar && props.aoMudar(); } }) : null, // LOCACAO_FLUXO_V1 · AUTENTIQUE_CONFERIR_V1: já abre Posicionar assinaturas
       modal === 'entrega' ? h(EntregaModal, { contrato: c, onClose: function () { setModal(null); }, onConfirm: function (b) { return acao('entrega', '/contratos/' + c.id + '/marcar-entrega', b, 'Entrega registrada'); } }) : null, // LOCACAO_ENTREGA_V1
       modal === 'posicoes' ? h(PosicionarAssinaturas, { api: api, toast: toast, contrato: c, onClose: function () { setModal(null); }, aoMudar: carregar, aoEnviar: function () { setModal(null); carregar(); props.aoMudar && props.aoMudar(); } }) : null, // AUTENTIQUE_POSICOES_V2
       modal === 'assinado' ? h(MotivoModal, { titulo: 'Marcar como assinado', label: 'Motivo', obrigatorio: true, botao: 'Marcar como assinado', hint: 'Fica no histórico. Use só se o Autentique não devolveu o status.',
@@ -4386,8 +4412,8 @@
             h('div', { style: { fontSize: 12.5, color: '#6b7280', marginTop: 2 } }, a.dono_email ? 'Assina pela conta dona da chave da API: ' + a.dono_email + '.' : 'Autentique não configurado (AUTENTIQUE_TOKEN): a conta que assina pela Tutts aparece aqui depois de configurar.'))),
         h('label', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', paddingTop: 12, borderTop: '1px solid #f3f4f6', cursor: 'pointer' } }, // LOCACAO_FLUXO_V1
           h('input', { type: 'checkbox', checked: a.vistoria_antes !== false, onChange: function (e) { setA('vistoria_antes', e.target.checked); }, style: { accentColor: ROXO, width: 16, height: 16, marginTop: 2 } }),
-          h('div', null, h('div', { style: { fontWeight: 700, fontSize: 13.5 } }, 'Exigir vistoria de entrega antes da assinatura (recomendado)'),
-            h('div', { style: { fontSize: 12.5, color: '#6b7280', marginTop: 2 } }, 'O contrato só vai para o Autentique depois da vistoria de entrega na Base, e o PDF já sai com o Anexo IV e as fotos. Desmarcado, o contrato é enviado logo ao ser criado.'))),
+          h('div', null, h('div', { style: { fontWeight: 700, fontSize: 13.5 } }, 'Exigir as fotos da moto (laudo) antes de enviar o contrato (recomendado)'),
+            h('div', { style: { fontSize: 12.5, color: '#6b7280', marginTop: 2 } }, 'A equipe fotografa a moto (sem o locatário) e o contrato sai com o Anexo IV preenchido. A vistoria de retirada, com o locatário, é feita depois da assinatura. Desmarcado, o contrato pode ir sem fotos.'))),
         h('label', { style: { display: 'flex', gap: 10, alignItems: 'flex-start', paddingTop: 12, borderTop: '1px solid #f3f4f6', cursor: 'pointer' } }, // AUTENTIQUE_CONFERIR_V1
           h('input', { type: 'checkbox', checked: a.conferir_posicoes !== false, onChange: function (e) { setA('conferir_posicoes', e.target.checked); }, style: { accentColor: ROXO, width: 16, height: 16, marginTop: 2 } }),
           h('div', null, h('div', { style: { fontWeight: 700, fontSize: 13.5 } }, 'Conferir a posição das assinaturas antes de enviar (recomendado)'),
@@ -4889,24 +4915,30 @@
   function svgMini(d, sw) { return h('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: sw || 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' }, d.map(function (x, i) { return h(x[0], Object.assign({ key: i }, x[1])); })); }
   var MINI_OK = [['path', { d: 'm5 12 5 5 9-10' }]];
   var MINI_LOCK = [['rect', { x: 4, y: 11, width: 16, height: 10, rx: 2 }], ['path', { d: 'M8 11V7a4 4 0 0 1 8 0v4' }]];
-  function EtapasLiberacao(props) {
+  function EtapasLiberacao(props) { /* LOCACAO_FLUXO_V2: criado → fotos da moto (laudo) → assinatura → retirada na Base */
     var c = props.c || {};
     var lista = c.etapas && c.etapas.length ? c.etapas : [
       { id: 'criado', label: 'Contrato criado', em: c.criado_em, estado: 'ok' },
-      { id: 'vistoria', label: 'Vistoria de entrega na Base', estado: c.etapa === 'vistoria' ? 'atual' : 'ok' },
-      { id: 'assinatura', label: 'Assinatura', estado: c.etapa === 'vistoria' ? 'bloq' : 'atual' },
-      { id: 'liberada', label: 'Moto liberada', estado: 'bloq' }];
+      { id: 'laudo', label: 'Fotos da moto (laudo)', estado: c.etapa === 'laudo' ? 'atual' : 'ok' },
+      { id: 'assinatura', label: 'Assinatura', estado: c.etapa === 'laudo' ? 'bloq' : c.etapa === 'assinatura' ? 'atual' : 'ok' },
+      { id: 'retirada', label: 'Retirada na Base', estado: c.etapa === 'retirada' ? 'atual' : c.etapa === 'liberada' ? 'ok' : 'bloq' }];
+    var _op = useState(null), ops = _op[0], setOps = _op[1];
+    var emLaudo = c.etapa === 'laudo';
+    useEffect(function () {
+      if (!emLaudo || !props.api) return;
+      props.api('/contratos/' + c.id + '/laudo-opcoes').then(function (r) { setOps(r); }).catch(function () { setOps(null); });
+    }, [emLaudo, c.id]);
     var DESC = {
       criado: function (st) { return st.em ? fDHc(st.em) + (st.por ? ' · por ' + String(st.por).split(' ')[0] : '') : 'Contrato gerado na Central.'; },
-      vistoria: function (st) { return st.estado === 'atual' ? 'Anexo IV: 6 fotos, km, combustível, checklist e avarias, com o locatário presente.' : st.dispensada ? 'Não exigida para este contrato.' : (st.em ? 'Registrada em ' + fDHc(st.em) + '. O PDF leva o Anexo IV com as fotos.' : 'Registrada.'); },
-      assinatura: function (st) { return st.estado === 'bloq' ? 'Depois da vistoria você confere onde vão as assinaturas e envia. O PDF já leva o Anexo IV com as fotos.' : st.estado === 'atual' ? (c.autentique_doc_id ? 'Enviada ao Autentique. Acompanhe abaixo quem já assinou.' : 'Contrato pronto. Confira onde vão as assinaturas e envie ao Autentique.') : 'Assinado em ' + fDC(st.em) + '.'; }, // AUTENTIQUE_CONFERIR_V1
+      laudo: function (st) { return st.estado === 'atual' ? 'A equipe fotografa a moto, sem o locatário: 6 fotos, km, combustível, checklist e avarias. Vai no contrato (Anexo IV).' : st.dispensada ? 'Não exigidas para este contrato.' : st.em ? 'Registradas em ' + fDHc(st.em) + (c.vistoria_laudo && c.vistoria_laudo.tipo !== 'laudo' ? ' (reaproveitada: ' + String(c.vistoria_laudo.tipo_label || '').toLowerCase() + ')' : '') + '. Estão no Anexo IV do contrato.' : 'Registradas.'; },
+      assinatura: function (st) { return st.estado === 'bloq' ? 'Depois das fotos você confere onde vão as assinaturas e envia ao Autentique.' : st.estado === 'atual' ? (c.autentique_doc_id ? 'Enviada ao Autentique. Acompanhe abaixo quem já assinou.' : 'Contrato pronto. Confira onde vão as assinaturas e envie ao Autentique.') : 'Assinado em ' + fDC(st.em) + '.'; },
+      retirada: function (st) { return st.estado === 'ok' ? 'Moto entregue em ' + fDC(c.retirada_em || st.em) + '.' : st.estado === 'atual' ? 'O locatário vem à Base: vistoria de retirada com ele presente e o termo vai para assinatura no Autentique.' : 'Depois da assinatura, na Base, com o locatário presente.'; },
       liberada: function () { return 'Contrato ativo, parcelas geradas.'; }
     };
-    var emVist = c.etapa === 'vistoria';
     return h(Card, { style: { display: 'flex', flexDirection: 'column', gap: 12 }, label: 'Etapas até liberar a moto' },
       h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' } },
         h('div', { style: { fontWeight: 700, fontSize: 14, flex: 1 } }, 'Até liberar a moto'),
-        emVist ? Btn({ small: true, variant: 'perigo', disabled: !!props.ocupado, onClick: props.onCancelar, children: 'Cancelar contrato' }) : null),
+        emLaudo ? Btn({ small: true, variant: 'perigo', disabled: !!props.ocupado, onClick: props.onCancelar, children: 'Cancelar contrato' }) : null),
       h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4', style: { gap: 10 } },
         lista.map(function (st, i) {
           var ok = st.estado === 'ok', atual = st.estado === 'atual';
@@ -4915,17 +4947,23 @@
               h('span', { style: { width: 26, height: 26, borderRadius: 99, flex: 'none', display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 12, color: '#fff', background: ok ? '#22c55e' : atual ? ROXO : '#d1d5db' } }, ok ? svgMini(MINI_OK, 2.6) : atual ? String(i + 1) : svgMini(MINI_LOCK)),
               h('b', { style: { color: ok ? '#166534' : atual ? ROXO_ESC : '#9ca3af', fontSize: 13.5 } }, st.label)),
             h('div', { style: { fontSize: 12, color: '#6b7280', lineHeight: 1.45 } }, (DESC[st.id] || function () { return ''; })(st)),
-            st.id === 'vistoria' && atual ? Btn({ variant: 'pri', icon: 'camera', disabled: !!props.ocupado, onClick: props.onVistoria, style: { marginTop: 4, width: '100%' }, children: 'Registrar vistoria de entrega' }) : null,
-            st.id === 'assinatura' && atual && !c.autentique_doc_id && props.onPosicionar ? Btn({ variant: 'pri', icon: 'pencil', disabled: !!props.ocupado, onClick: props.onPosicionar, style: { marginTop: 4, width: '100%' }, children: 'Posicionar e enviar' }) : null); // AUTENTIQUE_CONFERIR_V1
+            st.id === 'laudo' && atual ? Btn({ variant: 'pri', icon: 'camera', disabled: !!props.ocupado, onClick: props.onLaudo, style: { marginTop: 4, width: '100%' }, children: 'Registrar fotos da moto' }) : null,
+            st.id === 'laudo' && atual && ops && ops.vistorias && ops.vistorias.length ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 4, marginTop: 2 } },
+              h('span', { style: { fontSize: 11.5, color: '#6b7280' } }, 'Ou reaproveite uma vistoria de até ' + ops.dias + ' dias:'),
+              ops.vistorias.slice(0, 3).map(function (v) { return Btn({ key: v.id, small: true, icon: 'refresh', disabled: !!props.ocupado, onClick: function () { props.onUsarLaudo && props.onUsarLaudo(v); }, style: { width: '100%' }, children: 'Usar ' + String(v.tipo_label).toLowerCase() + ' de ' + fDC(v.criado_em) }); })) : null,
+            st.id === 'assinatura' && atual && !c.autentique_doc_id && props.onPosicionar ? Btn({ variant: 'pri', icon: 'pencil', disabled: !!props.ocupado, onClick: props.onPosicionar, style: { marginTop: 4, width: '100%' }, children: 'Posicionar e enviar' }) : null, // AUTENTIQUE_CONFERIR_V1
+            st.id === 'retirada' && atual && props.onRetirada ? Btn({ variant: 'pri', icon: 'camera', disabled: !!props.ocupado, onClick: props.onRetirada, style: { marginTop: 4, width: '100%' }, children: 'Fazer vistoria de retirada' }) : null,
+            st.id === 'retirada' && atual && props.onMarcarEntrega ? Btn({ small: true, variant: 'link', onClick: props.onMarcarEntrega, children: 'Já está com ele (sem vistoria)' }) : null);
         })),
-      emVist ? h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'O locatário vê no app "Próximo passo: vistoria de entrega na Base" com o endereço. Se a vistoria apontar avaria pré-existente, ela entra no Anexo IV e fica registrada para a devolução.') : null);
+      emLaudo ? h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'O locatário não precisa estar presente. No app ele vê "O contrato está sendo preparado" até o contrato ir para assinatura.') : null);
   }
 
   // LOCACAO_FLUXO_V1: depois da vistoria de entrega o contrato sai para assinatura — avisa o resultado
-  function toastVistoriaAssinatura(toast, r) {
+  function toastVistoriaAssinatura(toast, r, tipo) {
     var a = r && r.assinatura;
-    if (!a) return toast('Vistoria registrada · Termo Anexo IV pronto', 'success');
-    if (a.conferir) return toast('Vistoria registrada · confira a posição das assinaturas e envie ao Autentique', 'success'); // AUTENTIQUE_CONFERIR_V1
+    var rot = tipo === 'laudo' ? 'Fotos da moto registradas' : 'Vistoria registrada'; // LOCACAO_FLUXO_V2
+    if (!a) return toast(rot + ' · termo Anexo IV pronto', 'success');
+    if (a.conferir) return toast(rot + ' · confira a posição das assinaturas e envie ao Autentique', 'success'); // AUTENTIQUE_CONFERIR_V1
     if (a.enviado) return toast('Vistoria registrada · contrato com o Anexo IV enviado para assinatura' + (a.whatsapp && a.whatsapp.enviado ? ' · locatário avisado no WhatsApp' : ''), 'success');
     toast('Vistoria registrada, mas a assinatura não saiu' + (a.motivo ? ': ' + a.motivo : '') + '. Use "Enviar ao Autentique" no contrato.', 'error');
   }
@@ -4936,6 +4974,7 @@
     useEffect(function () { api('/config').then(setCfg).catch(function () { setCfg({}); }); }, []);
     var itens = itensChecklist(cfg);
     var _t = useState(props.tipo || (ct ? 'devolucao' : 'retirada')), tipo = _t[0], setTipo = _t[1];
+    var ehLaudo = tipo === 'laudo'; // LOCACAO_FLUXO_V2: fotos da moto pela equipe, sem o locatário
     var _k = useState(mo.hodometro != null ? String(mo.hodometro) : ''), km = _k[0], setKm = _k[1];
     var _c = useState(null), comb = _c[0], setComb = _c[1];
     var _ck = useState({}), ck = _ck[0], setCk = _ck[1];
@@ -4959,7 +4998,7 @@
     if (!comb) faltas.push('combustível');
     if (!checklistOk) faltas.push('checklist completo (avaria pede observação)');
     if (precisaAv && !semAv && !avOk.length) faltas.push('avarias pré-existentes ou “não foram identificadas”');
-    if (!decl) faltas.push('declaração do locatário');
+    if (!decl && !ehLaudo) faltas.push('declaração do locatário');
     var salvar = function () {
       setSalv(true);
       var checklist = itens.map(function (it, i) { var x = ck[i] || {}; return { item: it, situacao: x.situacao || 'ok', obs: String(x.obs || '').trim() || null }; });
@@ -4969,7 +5008,18 @@
         avarias: semAv ? [] : avOk.map(function (a) { return { local: a.local || null, descricao: a.descricao.trim(), foto: a.foto || null }; }), sem_avarias: !!semAv && !avOk.length, declaracao_aceita: !!decl,
         avaria: temAvaria, observacoes: resumoObs || null,
         fotos: POS_V3.filter(function (p) { return fotos[p[0]]; }).map(function (p) { return { posicao: p[0], foto: fotos[p[0]].foto, capturada_em: fotos[p[0]].capturada_em }; }) } })
-        .then(function (r) { toastVistoriaAssinatura(toast, r); props.aoSalvar && props.aoSalvar(r); }) // LOCACAO_FLUXO_V1
+        .then(function (r) {
+          toastVistoriaAssinatura(toast, r, tipo);
+          if (props.enviarTermo && tipo === 'retirada' && r && r.id) { /* LOCACAO_FLUXO_V2: termo de retirada direto para o Autentique */
+            api('/vistorias/' + r.id + '/enviar-assinatura', { method: 'POST', body: {} }).then(function (x) {
+              if (x && x.enviado) { toast('Termo de retirada enviado ao Autentique' + (x.whatsapp && x.whatsapp.enviado ? ' · link no WhatsApp do locatário' : ''), 'success'); if (x.link_locatario && !(x.whatsapp && x.whatsapp.enviado)) copiar(x.link_locatario, toast); }
+              else toast('Termo não enviado' + (x && x.motivo ? ': ' + x.motivo : '') + '. Envie pelo card da moto.', 'error');
+              props.aoSalvar && props.aoSalvar(r);
+            }).catch(function (e) { toast(e.message, 'error'); props.aoSalvar && props.aoSalvar(r); });
+            return;
+          }
+          props.aoSalvar && props.aoSalvar(r);
+        }) // LOCACAO_FLUXO_V1 · V2
         .catch(function (e) { toast(e.message, 'error'); }).then(function () { setSalv(false); }); // AUTENTIQUE_CONFERIR_V1: o catch estava preso no comentário
     };
     var secao = function (n, titulo, direita, corpo, sub) {
@@ -4977,10 +5027,10 @@
         h('div', { style: { padding: '10px 14px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } }, h('b', { style: { fontSize: 14 } }, n + '. ' + titulo), sub ? h('span', { style: { fontSize: 12, color: '#6b7280' } }, sub) : null, h('div', { style: { flex: 1 } }), direita || null),
         h('div', { style: { padding: 14 } }, corpo));
     };
-    var tiposV = [['retirada', 'Entrega'], ['devolucao', 'Devolução'], ['periodica', 'Mensal na Base'], ['revisao', 'Revisão']];
-    return h(Modal, { titulo: 'Termo de vistoria · Anexo IV', onClose: props.onClose, largura: 1040,
+    var tiposV = ehLaudo ? [['laudo', 'Fotos da moto (laudo)']] : [['retirada', 'Retirada'], ['devolucao', 'Devolução'], ['periodica', 'Mensal na Base'], ['revisao', 'Revisão']]; // LOCACAO_FLUXO_V2
+    return h(Modal, { titulo: ehLaudo ? 'Fotos da moto · laudo de estado (Anexo IV)' : 'Termo de vistoria · Anexo IV', onClose: props.onClose, largura: 1040,
       rodape: [h('span', { key: 'f', style: { fontSize: 12.5, color: faltas.length ? '#92400e' : '#166534', marginRight: 'auto', alignSelf: 'center', maxWidth: 560 } }, faltas.length ? 'Falta: ' + faltas.join(' · ') + '.' : 'Tudo certo para gerar o termo.'),
-        Btn({ key: 'c', onClick: props.onClose, children: 'Cancelar' }), Btn({ key: 's', variant: 'pri', icon: 'check', disabled: faltas.length > 0 || salv, onClick: salvar, children: salv ? 'Registrando...' : 'Registrar vistoria e gerar termo' })] },
+        Btn({ key: 'c', onClick: props.onClose, children: 'Cancelar' }), Btn({ key: 's', variant: 'pri', icon: 'check', disabled: faltas.length > 0 || salv, onClick: salvar, children: salv ? 'Registrando...' : ehLaudo ? 'Registrar fotos e gerar o contrato' : 'Registrar vistoria e gerar termo' })] },
       h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
         h('div', { style: { display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' } },
           h('div', { style: { fontSize: 13, color: '#6b7280', flex: 1, minWidth: 220 } }, [ct && ct.numero ? 'Contrato ' + ct.numero : null, ct && ct.cliente_nome, ct && ct.plano_label].filter(Boolean).join(' · ') || 'Sem contrato ativo'),
@@ -5027,6 +5077,7 @@
                 f ? h('span', { style: { position: 'absolute', left: 6, bottom: 6, fontSize: 10.5, color: '#fff', background: 'rgba(17,24,39,.6)', borderRadius: 4, padding: '1px 5px' } }, fDHc(f.capturada_em)) : null),
               h('span', { style: { fontSize: 12, fontWeight: 600, color: f ? '#374151' : p[2] ? ROXO : '#6b7280' } }, p[1]));
           }))),
+        ehLaudo ? Aviso('roxo', 'Laudo de estado: sem o locatário', 'Estas fotos vão no contrato como registro de como a moto está. Na retirada, o locatário confere a moto na Base e assina o termo de vistoria de retirada.', 'info') :
         h('section', { style: { border: '1px solid #e9d5f9', background: '#faf7fd', borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 } },
           h('b', { style: { fontSize: 14 } }, 'Declaração do locatário'),
           h('div', { style: { fontSize: 13, color: '#374151', lineHeight: 1.55 } }, 'Declaro que vistoriei pessoalmente a moto, que todas as avarias e condições existentes foram registradas acima e nas fotos, e que a recebo ', h('b', null, 'NO ESTADO EM QUE SE ENCONTRA'), '. Comprometo-me a devolvê-la no mesmo estado, ressalvado o desgaste natural do uso regular. Qualquer avaria não registrada neste Termo será considerada ocorrida durante a locação (Cl. 1.2.1 e 1.2.2).'),
@@ -5056,8 +5107,17 @@
         .catch(function (e) { toast(e.message, 'error'); }).then(function () { setEnv(false); });
     };
     var assinavel = v.tipo === 'retirada' || v.tipo === 'devolucao';
+    var consultar = function () { /* LOCACAO_FLUXO_V2 */
+      setEnv(true);
+      api('/vistorias/' + v.id + '/consultar-assinatura', { method: 'POST', body: {} }).then(function (r) { toast(r.assinado ? 'Termo assinado' : 'Ainda não assinado', r.assinado ? 'success' : 'info'); props.aoMudar && props.aoMudar(); })
+        .catch(function (e) { toast(e.message, 'error'); }).then(function () { setEnv(false); });
+    };
     return h('span', { style: { display: 'inline-flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' } },
       h('button', { type: 'button', className: 'hover:underline', onClick: function () { abrirPdf(api, '/vistorias/' + v.id + '/anexo-iv.pdf', toast); }, style: { color: ROXO, fontWeight: 600, fontSize: 12.5, cursor: 'pointer', display: 'inline-flex', gap: 4, alignItems: 'center' } }, ico('filetext', 13), 'Anexo IV (PDF)'),
+      assinavel && v.autentique_doc_id && !v.assinado_em ? h('span', { style: { display: 'inline-flex', gap: 10 } }, /* LOCACAO_FLUXO_V2: enviado, falta assinar */
+        h('span', { style: { fontSize: 12.5, color: '#1e40af', fontWeight: 600 } }, 'Termo no Autentique'),
+        v.link_locatario ? h('button', { type: 'button', className: 'hover:underline', onClick: function () { copiar(v.link_locatario, toast); }, style: { color: ROXO, fontWeight: 600, fontSize: 12.5, cursor: 'pointer' } }, 'Copiar link') : null,
+        h('button', { type: 'button', className: 'hover:underline', disabled: env, onClick: consultar, style: { color: '#374151', fontWeight: 600, fontSize: 12.5, cursor: 'pointer' } }, env ? '...' : 'Consultar')) :
       assinavel ? (v.assinatura_status === 'assinado' || v.assinado_em ? h('span', { style: { fontSize: 12.5, color: '#166534', fontWeight: 600 } }, 'Termo assinado' + (v.assinado_em ? ' · ' + fDC(v.assinado_em) : ''))
         : h('button', { type: 'button', className: 'hover:underline', disabled: env, onClick: enviar, style: { color: '#374151', fontWeight: 600, fontSize: 12.5, cursor: 'pointer', display: 'inline-flex', gap: 4, alignItems: 'center' } }, ico('pencil', 13), env ? 'Enviando...' : (v.autentique_doc_id ? 'Reenviar para assinatura' : 'Enviar para assinatura'))) : null);
   }

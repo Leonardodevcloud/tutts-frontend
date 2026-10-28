@@ -316,6 +316,12 @@
         h('span', { style: { width: 44, height: 44, borderRadius: 12, background: '#fff', color: ROXO_ESC, display: 'grid', placeItems: 'center', flex: 'none', border: '1px solid #e9d5f9' } }, ico('calendar', 20)),
         h('div', { style: { flex: 1, minWidth: 0 } }, h('b', { style: { display: 'block' } }, 'Vistoria mensal na Base'), h('div', { style: { fontSize: 13, color: '#374151' } }, fDS(ag.data_hora) + ' às ' + fHM(ag.data_hora) + (ag.local ? ' · ' + ag.local : '')),
           h('div', { style: { fontSize: 12, color: '#92400e', marginTop: 2 } }, 'Leve a moto. Se faltar sem justificar, a tarifa é R$ 100,00 (Cl. 9.4.1).'))) : null,
+      pend && pend.na_base ? h('section', { className: 'mm-card', style: { background: '#faf7fd', borderColor: '#e9d5f9' } }, /* LOCACAO_FLUXO_V2: retirada é na Base com a equipe */
+        h('div', { style: { display: 'flex', gap: 12, alignItems: 'center' } },
+          h('span', { style: { width: 44, height: 44, borderRadius: 12, background: '#fff', color: ROXO_ESC, display: 'grid', placeItems: 'center', flex: 'none', border: '1px solid #e9d5f9' } }, ico('pin', 20)),
+          h('div', { style: { flex: 1, minWidth: 0 } }, h('b', { style: { display: 'block' } }, 'Retire sua moto na Base'),
+            h('div', { style: { fontSize: 12.5, color: '#374151' } }, pend.base ? (pend.base.nome || 'Base Tutts') + (pend.base.endereco ? ' · ' + pend.base.endereco : '') : 'Combine o horário com a Tutts'))),
+        h('div', { style: { fontSize: 12.5, color: '#6b7280', lineHeight: 1.5 } }, 'Lá a equipe faz a vistoria de retirada com você: vocês conferem a moto juntos e o termo chega para você assinar no Autentique.')) :
       pend ? h('section', { className: 'mm-card' },
         h('div', { style: { display: 'flex', gap: 14, alignItems: 'center' } },
           h(Anel, { valor: Math.max(0, dias), rotulo: dias === 1 ? 'dia' : 'dias', frac: Math.max(0.08, Math.min(1, (dias || 0) / 30)), cor: dias != null && dias <= 1 ? '#d97706' : ROXO }),
@@ -323,7 +329,7 @@
             h('b', null, dias != null && dias < 0 ? (pend.tipo_label || 'Vistoria') + ' atrasada' : (pend.tipo_label || 'Vistoria') + (dias === 0 ? ' vence hoje' : ' em ' + dias + ' dia' + (dias === 1 ? '' : 's'))),
             h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'até ' + fDS(pend.prazo) + ' · 6 fotos + km + checklist'),
             h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 4, marginTop: 8 } }, POSICOES.map(function (x) { return h('span', { key: x[0], title: x[1], style: { height: 22, borderRadius: 6, background: '#f3f4f6', color: '#9ca3af', display: 'grid', placeItems: 'center' } }, ico('camera', 12)); })))),
-        h('button', { type: 'button', className: 'mm-btn pri', style: { height: 44 }, onClick: function () { p.ir('vistoria', { tipo: pend.tipo }); } }, ico('camera', 18), 'Fazer vistoria agora'),
+        h('div', { style: { fontSize: 12.5, color: '#374151', background: '#faf7fd', borderRadius: 10, padding: '10px 12px', lineHeight: 1.45 } }, 'Leve a moto na Base: a equipe da Tutts faz a vistoria com você.' + (r.vistoria_agendada ? '' : ' Fale com a Tutts para agendar.')), /* LOCACAO_AJUSTES_V1: só a equipe registra vistoria */
         mo.tem_foto ? null : h('div', { style: { fontSize: 12, color: '#6b7280', textAlign: 'center' } }, 'A foto de frente vira a imagem da sua moto aqui.')) : null,
       (function () { /* LOCACAO_APP_CRLV_V1: CRLV-e a um toque */
         var crlv = (r.documentos_moto || []).find(function (x) { return x.id === 'crlv'; });
@@ -501,7 +507,8 @@
       h('h1', { className: 'mm-h1' }, 'Vistorias'),
       pend ? h('section', { className: 'mm-card', style: { background: '#fffbeb', borderColor: '#fde68a' } },
         h('div', { style: { display: 'flex', gap: 8, color: '#92400e' } }, ico('clock', 18), h('div', null, h('b', null, pend.label || ((pend.tipo_label || 'Vistoria') + ' pendente até ' + fDS(pend.prazo))), h('div', { style: { fontSize: 12.5, marginTop: 2 } }, '6 fotos da moto + quilometragem. Leva uns 2 minutos.'))),
-        h('button', { type: 'button', className: 'mm-btn pri', style: { height: 44 }, onClick: function () { p.ir('vistoria', { tipo: pend.tipo }); } }, ico('camera', 18), 'Fazer vistoria agora')) : null,
+        pend.na_base ? h('div', { style: { fontSize: 12.5, color: '#92400e' } }, 'A vistoria de retirada é feita na Base, com a equipe' + (pend.base && pend.base.endereco ? ' · ' + pend.base.endereco : '') + '.') /* LOCACAO_FLUXO_V2 */
+          : h('div', { style: { fontSize: 12.5, color: '#92400e' } }, 'Leve a moto na Base: a equipe da Tutts faz a vistoria com você.')) : null, /* LOCACAO_AJUSTES_V1 */
       h('section', { className: 'mm-card', style: { gap: 0 } },
         vist.length === 0 ? h('span', { className: 'mm-sub' }, 'Nenhuma vistoria ainda.') :
         vist.map(function (v, i) {
@@ -509,7 +516,7 @@
             h('div', null, h('div', { style: { fontWeight: 600 } }, (v.tipo_label || v.tipo) + (v.km != null ? ' · ' + num(v.km).toLocaleString('pt-BR') + ' km' : '')), h('div', { style: { fontSize: 12, color: '#6b7280' } }, fDC(v.criado_em) + ' · ' + (v.qtd_fotos || 0) + ' fotos')),
             Pill(v.status_label || ROT_VIST[v.status] || v.status, TOM_VIST[v.status] || 'cinza'));
         })),
-      pend ? null : h('button', { type: 'button', className: 'mm-btn sec', onClick: function () { p.ir('vistoria', { tipo: 'revisao' }); } }, ico('camera', 18), 'Registrar vistoria'));
+      h('p', { className: 'mm-sub', style: { textAlign: 'center', fontSize: 12.5 } }, 'As vistorias são feitas pela equipe da Tutts na Base. Aqui você vê as fotos e os termos.')); /* LOCACAO_AJUSTES_V1 */
   }
 
   // ═════ LOCACAO_V3: contrato real · Meu contrato, vistoria Anexo IV ═════
@@ -734,6 +741,8 @@
         v.combustivel || (v.checklist && v.checklist.length) ? h('div', { style: { fontSize: 13, color: '#374151' } }, [v.combustivel ? 'Combustível ' + v.combustivel : null, v.checklist && v.checklist.length ? v.checklist.filter(function (x) { return x.situacao !== 'avaria'; }).length + ' itens OK · ' + v.checklist.filter(function (x) { return x.situacao === 'avaria'; }).length + ' com avaria' : null].filter(Boolean).join(' · ')) : null, // LOCACAO_V3
         (v.checklist || []).filter(function (x) { return x.situacao === 'avaria'; }).map(function (x, i) { return h('div', { key: 'ck' + i, style: { fontSize: 12.5, color: '#991b1b' } }, h('b', null, x.item + ': '), x.obs || 'avaria'); }),
         (v.avarias || []).map(function (a, i) { return h('div', { key: 'av' + i, style: { fontSize: 12.5, color: '#374151' } }, (i + 1) + '. ' + [a.local, a.descricao].filter(Boolean).join(' · ')); }),
+        v.assinar_link ? h('a', { href: v.assinar_link, target: '_blank', rel: 'noopener noreferrer', className: 'mm-btn pri', style: { height: 44, textDecoration: 'none' } }, ico('pencil', 16), 'Assinar o termo no Autentique') : null, /* LOCACAO_FLUXO_V2 */
+        v.assinado_em ? h('div', { style: { fontSize: 12.5, color: '#166534', fontWeight: 600 } }, 'Termo assinado em ' + fD(v.assinado_em)) : null,
         v.tem_anexo_pdf !== false && (v.checklist || v.tem_anexo_pdf) ? h('button', { type: 'button', className: 'mm-btn sec', style: { height: 42, fontSize: 14 }, onClick: function () { baixarPdf(p.api, '/vistorias/' + v.id + '/anexo-iv.pdf', 'anexo-iv-vistoria-' + v.id + '.pdf', p.toast); } }, ico('download', 16), 'Baixar termo · Anexo IV (PDF)') : null,
         h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 } }, (v.fotos || []).map(function (f) {
           var lab = POS_LABEL[f.posicao] || f.posicao;
@@ -945,7 +954,7 @@
         Pill('Reservada', 'ambar')),
       h('section', { className: 'mm-card', style: { gap: 8 } },
         h('b', null, 'Depois de assinar'),
-        [as.etapa === 'assinatura' ? 'A moto é liberada para você retirar na Base (a vistoria de entrega já está no Anexo IV).' : 'Você faz a vistoria de retirada com fotos, aqui no app.', 'As parcelas e o PIX aparecem em Pagamentos.', 'O contrato assinado fica em Meu contrato para baixar.'].map(function (t, i) {
+        ['Você retira a moto na Base: a equipe faz a vistoria de retirada com você e o termo chega para assinar.', /* LOCACAO_FLUXO_V2 */ 'As parcelas e o PIX aparecem em Pagamentos.', 'O contrato assinado fica em Meu contrato para baixar.'].map(function (t, i) {
           return h('div', { key: i, style: { display: 'flex', gap: 8, color: '#374151', fontSize: 12.5 } }, h('span', { style: { color: ROXO, fontWeight: 700 } }, (i + 1) + '.'), t);
         })),
       h('p', { style: { margin: 0, textAlign: 'center', fontSize: 11.5, color: '#9ca3af', display: 'flex', gap: 6, justifyContent: 'center', alignItems: 'center' } }, ico('lock', 13), 'Assinatura eletrônica com validade jurídica pelo Autentique'));
