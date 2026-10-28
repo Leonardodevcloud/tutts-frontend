@@ -143,6 +143,136 @@
 
   // ───────── componentes de UI ─────────
   var CARD = { background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 14 };
+  // ───────────────────────── LOCACAO_RASCUNHO_V1: celular + rascunho no servidor ─────────────────────────
+  /* CSS do módulo no celular: tabelas viram cartões (rótulo de cada coluna vem do cabeçalho), modais em tela cheia,
+     rodapé dos modais sempre visível, botões do topo largos. Injetado uma vez. */
+  (function () {
+    if (typeof document === 'undefined' || document.getElementById('loc-css-mobile')) return;
+    var css = [
+      '.loc-modal-foot{position:sticky;bottom:-16px;background:#fff;border-bottom-left-radius:14px;border-bottom-right-radius:14px;z-index:2}',
+      '.loc-guia{display:grid;gap:16px;align-items:start;grid-template-columns:260px minmax(0,1fr)}',
+      '.loc-guia-nav{position:sticky;top:12px}',
+      '@media (max-width:900px){.loc-guia{grid-template-columns:minmax(0,1fr)}.loc-guia-nav{position:static;flex-direction:row!important;overflow-x:auto;flex-wrap:nowrap}.loc-guia-nav button{white-space:nowrap;flex:none}}',
+      '.loc-guia-oculta{display:none!important}',
+      '@media (max-width:767px){.loc-root .grid-cols-1>*{grid-column:auto!important}}',
+      '@media print{.loc-guia{grid-template-columns:minmax(0,1fr)}.loc-guia-nav,[role=tablist],header,.loc-noprint{display:none!important}.loc-guia-oculta{display:flex!important}.loc-root .loc-pag>div:first-child{display:block}}',
+      '@media (max-width:640px){',
+      ' .loc-root .loc-pag{padding:14px 12px!important;gap:14px!important}',
+      ' .loc-root .loc-sub{display:none}',
+      ' .loc-root .loc-topo-btns{width:100%}',
+      ' .loc-root .loc-topo-btns>button{flex:1 1 auto}',
+      ' .loc-root table:not(.loc-notab){display:block;width:100%}',
+      ' .loc-root table:not(.loc-notab) thead{display:none}',
+      ' .loc-root table:not(.loc-notab) tbody{display:block;width:100%}',
+      ' .loc-root table:not(.loc-notab) tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 14px;padding:12px 14px!important;border-top:1px solid #f3f4f6}',
+      ' .loc-root table:not(.loc-notab) td{display:block;padding:0!important;white-space:normal!important;text-align:left!important;min-width:0;width:auto!important;overflow-wrap:anywhere}',
+      ' .loc-root table:not(.loc-notab) td:first-child{grid-column:1/-1}',
+      ' .loc-root table:not(.loc-notab) td[data-label]:not([data-label=""])::before{content:attr(data-label);display:block;font-size:11px;font-weight:600;color:#6b7280;margin-bottom:2px}',
+      ' .loc-root table:not(.loc-notab) td:empty{display:none}',
+      ' .loc-modal{padding:0!important;align-items:stretch!important}',
+      ' .loc-modal-card{max-width:100%!important;min-height:100%;border-radius:0!important;border:0!important;display:flex;flex-direction:column}',
+      ' .loc-modal-body{padding:14px!important;flex:1}',
+      ' .loc-modal-head{position:sticky;top:0;background:#fff;z-index:3;padding:12px 14px!important}',
+      ' .loc-modal-foot{bottom:0;border-radius:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom))!important;box-shadow:0 -6px 16px -12px rgba(17,24,39,.35)}',
+      ' .loc-modal-foot>button{flex:1 1 auto}',
+      '}'
+    ].join('\n');
+    var st = document.createElement('style'); st.id = 'loc-css-mobile'; st.textContent = css;
+    (document.head || document.documentElement).appendChild(st);
+  })();
+  /* Rótulos das colunas nas células (para o modo cartão no celular) */
+  function rotularTabelas(raiz) {
+    if (!raiz) return;
+    var tabs = raiz.querySelectorAll('table:not(.loc-notab)');
+    for (var t = 0; t < tabs.length; t++) {
+      var ths = tabs[t].querySelectorAll('thead th');
+      if (!ths.length) continue;
+      var rot = []; for (var i = 0; i < ths.length; i++) rot.push((ths[i].textContent || '').trim());
+      var trs = tabs[t].querySelectorAll('tbody tr');
+      for (var r = 0; r < trs.length; r++) {
+        var tds = trs[r].children;
+        if (tds.length !== rot.length) continue;
+        for (var c = 0; c < tds.length; c++) if (tds[c].getAttribute('data-label') !== rot[c]) tds[c].setAttribute('data-label', rot[c]);
+      }
+    }
+  }
+  function useRotuloTabelas() {
+    var ref = useRef(null);
+    useEffect(function () {
+      var el = ref.current; if (!el || typeof MutationObserver === 'undefined') return;
+      var pend = null;
+      var rodar = function () { pend = null; try { rotularTabelas(el); } catch (e) { /* ok */ } };
+      rodar();
+      var mo = new MutationObserver(function () { if (!pend) pend = setTimeout(rodar, 60); });
+      mo.observe(el, { childList: true, subtree: true });
+      return function () { mo.disconnect(); if (pend) clearTimeout(pend); };
+    }, []);
+    return ref;
+  }
+
+  /* Rascunho no servidor: o que foi preenchido não se perde se fechar a tela, a internet cair ou trocar do
+     computador para o celular. Dados vão com 0,8 s de pausa; fotos vão na hora, uma por uma. */
+  function useRascunho(api, chave) {
+    var _i = useState({ carregado: !chave, rascunho: null }), info = _i[0], setInfo = _i[1];
+    var _st = useState(null), status = _st[0], setStatus = _st[1]; // null | salvando | {em} | erro
+    var timer = useRef(null), pend = useRef(null), vivo = useRef(true);
+    useEffect(function () {
+      vivo.current = true;
+      if (!chave) return;
+      api('/rascunhos/' + encodeURIComponent(chave)).then(function (r) { if (vivo.current) setInfo({ carregado: true, rascunho: r && r.rascunho }); })
+        .catch(function () { if (vivo.current) setInfo({ carregado: true, rascunho: null }); });
+      return function () {
+        vivo.current = false;
+        if (timer.current) { clearTimeout(timer.current); timer.current = null; }
+        if (pend.current) { var d = pend.current; pend.current = null; api('/rascunhos/' + encodeURIComponent(chave), { method: 'PUT', body: { dados: d } }).catch(function () {}); }
+      };
+    }, [chave]);
+    var enviar = function () {
+      timer.current = null;
+      var d = pend.current; pend.current = null; if (!d) return;
+      setStatus('salvando');
+      api('/rascunhos/' + encodeURIComponent(chave), { method: 'PUT', body: { dados: d } })
+        .then(function (r) { if (vivo.current) setStatus({ em: r && r.atualizado_em }); })
+        .catch(function () { if (vivo.current) { setStatus('erro'); pend.current = pend.current || d; timer.current = setTimeout(enviar, 8000); } });
+    };
+    return {
+      carregado: info.carregado, rascunho: info.rascunho, status: status,
+      dados: function (d) { if (!chave) return; pend.current = d; if (timer.current) clearTimeout(timer.current); timer.current = setTimeout(enviar, 800); },
+      foto: function (slot, val) {
+        if (!chave) return Promise.resolve();
+        setStatus('salvando');
+        return api('/rascunhos/' + encodeURIComponent(chave) + '/fotos/' + slot, { method: 'PUT', body: val ? { foto: val.foto, capturada_em: val.capturada_em } : { foto: null } })
+          .then(function (r) { if (vivo.current) setStatus({ em: r && r.atualizado_em }); })
+          .catch(function () { if (vivo.current) setStatus('erro'); });
+      },
+      limpar: function () {
+        if (!chave) return Promise.resolve();
+        if (timer.current) { clearTimeout(timer.current); timer.current = null; }
+        pend.current = null; setStatus(null);
+        return api('/rascunhos/' + encodeURIComponent(chave), { method: 'DELETE' }).catch(function () {});
+      }
+    };
+  }
+  function hhmm(v) { var d = v ? new Date(v) : null; return d && !isNaN(d) ? String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') : ''; }
+  function RascunhoStatus(props) {
+    var s = props.status;
+    if (!s) return null;
+    var erro = s === 'erro';
+    return h('span', { role: 'status', style: { display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: erro ? '#92400e' : '#6b7280', whiteSpace: 'nowrap' } },
+      ico(erro ? 'alert' : s === 'salvando' ? 'cloud' : 'check', 13),
+      erro ? 'Sem conexão: tento salvar de novo' : s === 'salvando' ? 'Salvando rascunho...' : 'Rascunho salvo ' + hhmm(s.em));
+  }
+  function RascunhoBanner(props) { /* aparece quando a tela abriu com um rascunho */
+    var r = props.rascunho;
+    if (!r) return null;
+    var d = r.atualizado_em ? new Date(r.atualizado_em) : null;
+    var quando = d && !isNaN(d) ? String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' às ' + hhmm(d) : '';
+    return h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', padding: '10px 12px', border: '1px solid #bfdbfe', background: '#eff6ff', borderRadius: 12, color: '#1e40af', fontSize: 13 } },
+      ico('save', 16),
+      h('div', { style: { flex: '1 1 220px', minWidth: 0 } }, h('b', null, 'Continuando de onde parou. '), 'Rascunho salvo ' + quando + (r.atualizado_por ? ' por ' + r.atualizado_por : '') + '.'),
+      props.onDescartar ? h('button', { type: 'button', className: 'hover:underline', onClick: props.onDescartar, style: { color: '#1e40af', fontWeight: 600, fontSize: 12.5, cursor: 'pointer' } }, 'Começar do zero') : null);
+  }
+
   function Card(props) {
     return h('section', { style: Object.assign({}, CARD, props.pad === false ? { overflow: 'hidden' } : { padding: 16 }, props.style || {}), 'aria-label': props.label || null }, props.children);
   }
@@ -251,14 +381,14 @@
       document.addEventListener('keydown', fn);
       return function () { document.removeEventListener('keydown', fn); };
     }, [props.onClose]);
-    return h('div', { role: 'dialog', 'aria-modal': 'true', 'aria-label': props.titulo, onMouseDown: function (e) { if (e.target === e.currentTarget && props.onClose) props.onClose(); },
+    return h('div', { role: 'dialog', 'aria-modal': 'true', 'aria-label': props.titulo, className: 'loc-modal', onMouseDown: function (e) { if (e.target === e.currentTarget && props.onClose && !props.semFecharFora) props.onClose(); }, /* LOCACAO_RASCUNHO_V1: formulário grande não fecha clicando fora */
       style: { position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(17,24,39,.45)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '6vh 16px 16px', overflowY: 'auto' } },
-      h('div', { style: Object.assign({}, CARD, { width: '100%', maxWidth: props.largura || 560, boxShadow: '0 20px 50px -20px rgba(17,24,39,.35)' }) },
-        h('div', { style: { padding: '16px 20px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 10 } },
+      h('div', { className: 'loc-modal-card', style: Object.assign({}, CARD, { width: '100%', maxWidth: props.largura || 560, boxShadow: '0 20px 50px -20px rgba(17,24,39,.35)' }) },
+        h('div', { className: 'loc-modal-head', style: { padding: '16px 20px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 10, borderTopLeftRadius: 14, borderTopRightRadius: 14, background: '#fff' } },
           h('h2', { style: { margin: 0, fontFamily: SORA, fontSize: 17, fontWeight: 700, flex: 1 } }, props.titulo),
           h('button', { type: 'button', onClick: props.onClose, 'aria-label': 'Fechar', className: 'hover:bg-gray-100', style: { width: 32, height: 32, borderRadius: 8, display: 'grid', placeItems: 'center', color: '#6b7280', cursor: 'pointer' } }, ico('x', 16))),
-        h('div', { style: { padding: 20 } }, props.children),
-        props.rodape ? h('div', { style: { padding: '12px 20px', borderTop: '1px solid #f3f4f6', display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' } }, props.rodape) : null));
+        h('div', { className: 'loc-modal-body', style: { padding: 20 } }, props.children),
+        props.rodape ? h('div', { className: 'loc-modal-foot', style: { padding: '12px 20px', borderTop: '1px solid #f3f4f6', display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' } }, props.rodape) : null));
   }
   function Aviso(tom, titulo, texto, icone) {
     var T = TONS[tom] || TONS.cinza, borda = { vermelho: '#fecaca', ambar: '#fde68a', azul: '#bfdbfe', verde: '#bbf7d0', roxo: '#e9d5f9', cinza: '#e5e7eb' }[tom] || '#e5e7eb';
@@ -842,7 +972,7 @@
     var PASSOS = ['Cadastro', 'Aprovado', 'Contrato', 'Moto entregue'];
     var passos = function (feitos, atual, legenda, corLeg, ruim) {
       return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 4 } },
-        h('div', { style: { display: 'flex', alignItems: 'center', gap: 4 } }, PASSOS.map(function (nome, i) {
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', rowGap: 4 } }, PASSOS.map(function (nome, i) { /* LOCACAO_RASCUNHO_V1: quebra no celular */
           var ok = i < feitos, cur = i === atual;
           var cor = ruim && cur ? '#dc2626' : ok ? ROXO : cur ? '#a855f7' : '#d1d5db';
           return h(React.Fragment, { key: i },
@@ -1646,6 +1776,35 @@
         erro ? Aviso('vermelho', 'Não dá para excluir agora', erro, 'alert') : null));
   }
 
+  /* LOCACAO_RASCUNHO_V1: excluir contrato de vez (contratos de teste), confirmando com o número */
+  function ExcluirContratoModal(props) {
+    var c = props.c || {}, parcelas = props.parcelas || [];
+    var _t = useState(''), txt = _t[0], setTxt = _t[1];
+    var _s = useState(false), s = _s[0], setS = _s[1];
+    var _e = useState(null), erro = _e[0], setErro = _e[1];
+    var pagas = parcelas.filter(function (p) { return p.status === 'paga'; }).length;
+    var ok = txt.trim().toUpperCase() === String(c.numero || '').toUpperCase();
+    var confirmar = function () {
+      setS(true); setErro(null);
+      props.api('/contratos/' + c.id + '/permanente', { method: 'DELETE', body: { confirmacao: txt.trim() } }).then(function (r) { setS(false); props.onFeito(r); })
+        .catch(function (e) { setS(false); setErro(e.message || 'Não deu para excluir'); });
+    };
+    return h(Modal, { titulo: 'Excluir contrato de vez', onClose: props.onClose, largura: 520,
+      rodape: [Btn({ key: 'c', onClick: props.onClose, children: 'Voltar' }), Btn({ key: 'o', variant: 'perigoCheio', icon: 'trash', disabled: s || !ok, onClick: confirmar, children: s ? 'Excluindo...' : 'Excluir ' + (c.numero || 'contrato') })] },
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13.5, color: '#374151', lineHeight: 1.5 } },
+        h('div', { style: { background: '#f9fafb', border: '1px solid #f3f4f6', borderRadius: 10, padding: '10px 12px' } },
+          h('div', { style: { fontWeight: 700, color: '#111827', fontFamily: MONO } }, c.numero), h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, [c.cliente_nome || props.cliNome, c.plano_label, c.situacao_label].filter(Boolean).join(' · '))),
+        h('ul', { style: { margin: 0, paddingLeft: 18, listStyle: 'disc', display: 'flex', flexDirection: 'column', gap: 4 } },
+          h('li', null, 'Apaga o contrato e tudo que é dele: ' + parcelas.length + ' parcela(s), cobranças avulsas, vistorias e fotos, ocorrências, avisos e histórico.'),
+          h('li', null, 'PIX em aberto são cancelados no Stark. A moto fica livre para outro contrato.'),
+          h('li', null, 'O cadastro do locatário continua (volta para Aprovado se não tiver outro contrato).'),
+          h('li', null, h('b', null, 'Não tem como desfazer.'), ' Use só para contrato de teste ou criado por erro. Para contrato real, use Encerrar.')),
+        pagas ? Aviso('ambar', pagas + ' parcela' + (pagas > 1 ? 's' : '') + ' paga' + (pagas > 1 ? 's' : ''), 'Os pagamentos registrados deste contrato também somem. Dinheiro que entrou de verdade não volta sozinho.') : null,
+        c.assinado_em && !c.importado ? Aviso('ambar', null, 'O documento assinado continua no Autentique. Se precisar, cancele por lá.') : null,
+        h(Field, { label: 'Para confirmar, digite ' + c.numero }, Input({ value: txt, autoFocus: true, autoComplete: 'off', placeholder: c.numero, onChange: function (e) { setTxt(e.target.value); setErro(null); }, onKeyDown: function (e) { if (e.key === 'Enter' && ok && !s) confirmar(); } })),
+        erro ? Aviso('vermelho', 'Não deu para excluir', erro, 'alert') : null));
+  }
+
   /* LOCACAO_PRECAD_EXCLUIR_V1: excluir pré-cadastro (qualquer status); se já virou locatário, exclui o locatário junto */
   function ExcluirPrecadastroModal(props) {
     var it = props.item || {};
@@ -2212,6 +2371,10 @@
     var _rm = useState(null), repMedio = _rm[0], setRepMedio = _rm[1]; // LOCACAO_V4
     var _s = useState(false), salvando = _s[0], setSalvando = _s[1];
     var set = function (k, v) { setF(function (x) { var n = Object.assign({}, x); n[k] = v; if (k === 'plano' && v === 'conquista') n.manutencao = 'locatario'; return n; }); };
+    /* LOCACAO_RASCUNHO_V1: o formulário fica salvo enquanto preenche (volta preenchido se sair da tela) */
+    var rs = useRascunho(api, props.importar ? null : 'novo:' + (props.cliente_id ? 'cli' + props.cliente_id : 'geral'));
+    var fInicial = useRef(f), pularEfeito = useRef(false), restNC = useRef(false), baseNC = useRef(null);
+    var _vbn = useState(false), verBannerNC = _vbn[0], setVerBannerNC = _vbn[1];
     var carregar = useCallback(function () {
       setErro(null);
       Promise.all([api('/clientes?sem_contrato=1'), api('/motos'), api('/config').catch(function () { return {}; })]).then(function (r) {
@@ -2222,15 +2385,40 @@
       }).catch(function (e) { setErro(e.message); });
     }, [api]);
     useEffect(carregar, [carregar]);
+    useEffect(function () { /* LOCACAO_RASCUNHO_V1: restaura quando clientes e motos chegam */
+      if (!rs.carregado || !clientes || !motos || restNC.current) return;
+      restNC.current = true;
+      var d = rs.rascunho && rs.rascunho.dados;
+      if (d && !props.importar) {
+        var nf = Object.assign({}, f, d.f || {});
+        var nc = d.cliId && !props.cliente_id && clientes.some(function (c) { return String(c.id) === String(d.cliId); }) ? String(d.cliId) : cliId;
+        var nm = d.motoId && motos.some(function (m) { return String(m.id) === String(d.motoId); }) ? String(d.motoId) : '';
+        pularEfeito.current = true; setTimeout(function () { pularEfeito.current = false; }, 400);
+        setF(nf); setCliId(nc); setMotoId(nm); setVerBannerNC(true);
+        baseNC.current = JSON.stringify({ f: nf, cliId: nc, motoId: nm });
+      } else baseNC.current = JSON.stringify({ f: f, cliId: cliId, motoId: motoId });
+    }, [rs.carregado, clientes, motos]);
+    useEffect(function () {
+      if (!restNC.current || baseNC.current == null || importar) return;
+      var j = JSON.stringify({ f: f, cliId: cliId, motoId: motoId }); if (j === baseNC.current) return;
+      rs.dados(JSON.parse(j));
+    }, [f, cliId, motoId]);
+    var descartarNC = function () {
+      rs.limpar(); setVerBannerNC(false);
+      var nf = Object.assign({}, fInicial.current, { base: f.base, area_km: f.area_km, area_mun: f.area_mun });
+      var nc = props.cliente_id ? String(props.cliente_id) : '';
+      setF(nf); setCliId(nc); setMotoId(''); baseNC.current = JSON.stringify({ f: nf, cliId: nc, motoId: '' });
+    };
     var cli = (clientes || []).find(function (c) { return String(c.id) === cliId; });
     var moto = (motos || []).find(function (m) { return String(m.id) === motoId; });
     useEffect(function () {
+      if (pularEfeito.current) return; // LOCACAO_RASCUNHO_V1: não sobrescreve o que veio do rascunho
       if (cli && !leitura) { /* LOCACAO_VENC_MENSAL_V1: o vencimento escolhido no cadastro vira o padrão do contrato */
         if (cli.venc_periodicidade === 'mensal') { set('periodicidade', 'mensal'); if (cli.venc_dia_mes) set('dia_mes', String(cli.venc_dia_mes)); }
         else if (cli.venc_periodicidade === 'semanal' && cli.dia_vencimento) { set('periodicidade', 'semanal'); set('dia_semana', String(cli.dia_vencimento)); setF(function (x) { return x.prazo === '24' ? Object.assign({}, x, { prazo: '104' }) : x; }); }
       }
       if (cli && !f.dia_semana && cli.dia_vencimento) set('dia_semana', String(cli.dia_vencimento)); if (cli && cli.tipo !== 'tutts' && f.desconto) set('desconto', false); }, [cliId, clientes]);
-    useEffect(function () { if (moto && kmPdf.current == null) set('km', moto.hodometro != null ? String(moto.hodometro) : ''); }, [motoId]); /* LOCACAO_IMPORTAR_LEITURA_V1: km do contrato manda */
+    useEffect(function () { if (pularEfeito.current) return; if (moto && kmPdf.current == null) set('km', moto.hodometro != null ? String(moto.hodometro) : ''); }, [motoId]); /* LOCACAO_IMPORTAR_LEITURA_V1: km do contrato manda */
     useEffect(function () { setRepMedio(null); if (cli && cli.tipo === 'tutts') api('/clientes/' + cli.id + '/repasse-medio').then(setRepMedio).catch(function () { setRepMedio(null); }); }, [cliId, clientes]); // LOCACAO_V4
     useEffect(function () { var d = parseData(f.inicio); if (d && !f.dia_mes) set('dia_mes', String(Math.min(28, d.getDate()))); }, [f.inicio]);
     var bases = (cfg && cfg.bases) || [];
@@ -2268,12 +2456,13 @@
     var docs = (sim && sim.documentos) || [
       { id: 'contrato', titulo: 'Contrato + Demonstrativo (Quadro-Resumo)', incluso: true }, { id: 'anexo_i', titulo: 'Anexo I · Tarifário', incluso: true },
       { id: 'anexo_ii', titulo: 'Anexo II · Opção de Compra', incluso: f.plano === 'conquista' }, { id: 'anexo_iii', titulo: 'Anexo III · Autorização de desconto', incluso: !!(f.desconto && cli && cli.tipo === 'tutts') },
-      { id: 'anexo_iv', titulo: 'Anexo IV · Termo de vistoria e fotos', incluso: false, sub: 'gerado da vistoria de entrega' }];
+      { id: 'anexo_iv', titulo: 'Anexo IV · Laudo de estado (fotos da moto)', incluso: false, sub: 'entra depois das fotos' }];
     var gerar = function () {
       setSalvando(true);
       var b = body();
       var req = importar ? api('/contratos/importar', { method: 'POST', body: Object.assign(b, { pdf_assinado: pdf && pdf.conteudo, parcelas_pagas_ate: pagasAte || null }) }) : api('/contratos', { method: 'POST', body: b });
       req.then(function (r) {
+        if (!importar) rs.limpar(); // LOCACAO_RASCUNHO_V1
         if (importar) toast('Contrato importado · ' + (r.parcelas_pagas ? r.parcelas_pagas + ' parcela' + (r.parcelas_pagas === 1 ? '' : 's') + ' marcada' + (r.parcelas_pagas === 1 ? '' : 's') + ' como paga' + (r.parcelas_pagas === 1 ? '' : 's') : 'parcelas geradas'), 'success');
         else if (r.etapa === 'vistoria' || r.etapa === 'laudo') toast('Contrato criado · próximo passo: fotos da moto (laudo de estado), sem precisar do locatário', 'success'); // LOCACAO_FLUXO_V2
         else toast(r.autentique && r.autentique.enviado ? 'Contrato gerado e enviado ao Autentique' : 'Contrato gerado' + (r.autentique && r.autentique.motivo ? ' · Autentique: ' + r.autentique.motivo : ''), r.autentique && r.autentique.enviado === false ? 'error' : 'success');
@@ -2469,9 +2658,10 @@
             h('div', { style: { padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 } },
               h('div', { style: { fontSize: 12, fontWeight: 700, color: '#6b7280', letterSpacing: '.04em', textTransform: 'uppercase' } }, importar ? 'Documentos' : 'Documentos para assinatura'),
               docs.map(function (dc) { return h('div', { key: dc.id, style: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 12.5, color: dc.incluso ? '#111827' : '#9ca3af' } }, h('span', { style: { color: dc.incluso ? '#16a34a' : '#d1d5db' } }, ico(dc.incluso ? 'check' : 'circle', 14)), h('span', { style: { flex: 1 } }, dc.titulo), dc.sub ? h('span', { style: { fontSize: 11.5 } }, dc.sub) : null); }),
-              Btn({ variant: 'pri', icon: importar ? 'upload' : 'filetext', onClick: gerar, disabled: !completo || salvando, style: { width: '100%', height: 44 }, children: salvando ? (importar ? 'Importando...' : 'Gerando contrato...') : importar ? 'Importar contrato assinado' : 'Gerar contrato e enviar ao Autentique' }),
+              Btn({ variant: 'pri', icon: importar ? 'upload' : 'filetext', onClick: gerar, disabled: !completo || salvando, style: { width: '100%', height: 44 }, children: salvando ? (importar ? 'Importando...' : 'Gerando contrato...') : importar ? 'Importar contrato assinado' : 'Gerar contrato' }),
+              importar ? null : h('div', { style: { display: 'flex', justifyContent: 'center', minHeight: 16 } }, h(RascunhoStatus, { status: rs.status })), /* LOCACAO_RASCUNHO_V1 */
               importar ? null : Btn({ icon: 'eye', disabled: !basico || !moto, onClick: function () { abrirPdfPost(api, '/contratos/previa-pdf', body(), toast); }, style: { width: '100%' }, children: 'Pré-visualizar PDF' }),
-              h('div', { style: { fontSize: 12, color: '#6b7280', lineHeight: 1.5 } }, importar ? 'O contrato fica Ativo na hora e a moto, Alugada.' : h(React.Fragment, null, 'A moto fica ', h('b', null, 'Reservada'), ' até a assinatura. As parcelas só nascem quando o Autentique devolver o contrato assinado.'))));
+              h('div', { style: { fontSize: 12, color: '#6b7280', lineHeight: 1.5 } }, importar ? 'O contrato fica Ativo na hora e a moto, Alugada.' : h(React.Fragment, null, 'Próximo passo: fotos da moto (laudo), feitas pela equipe. A moto fica ', h('b', null, 'Reservada'), ' até a assinatura e as parcelas só nascem quando o contrato voltar assinado.'))));
     var colPrevia = h('div', { style: { position: 'sticky', top: 84, display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 } },
       h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } }, Segmented([['contrato', 'Contrato'], ['resumo', 'Resumo']], abaPrev, setAbaPrev, 'Prévia')),
       abaPrev === 'resumo' || !leitura ? resumoCard
@@ -2484,6 +2674,7 @@
           h('h2', { style: { margin: 0, fontFamily: SORA, fontSize: 22, fontWeight: 700 } }, importar ? 'Importar contrato já assinado' : 'Novo contrato'),
           h('p', { style: { margin: '4px 0 0', color: '#6b7280', fontSize: 13.5 } }, importar ? 'Para contratos assinados fora da Central: comece pelo PDF, a gente preenche o resto e as parcelas já pagas entram como pagas.' : 'Montado a partir do Demonstrativo de Contrato (Quadro-Resumo) · Tutts Aluguel ou Plano Conquista')),
         Segmented([[false, 'Novo contrato'], [true, 'Importar já assinado']], importar, function (v) { setImportar(v); if (!v) { setLeitura(null); setPdf(null); kmPdf.current = null; setFoco(null); } }, 'Modo')),
+      !importar && verBannerNC ? h(RascunhoBanner, { rascunho: rs.rascunho, onDescartar: descartarNC }) : null, /* LOCACAO_RASCUNHO_V1 */
       importar ? inputContrato : null, /* LOCACAO_IMPORTAR_LEITURA_V1 */
       importar && leitura ? h('div', { style: { position: 'sticky', bottom: 12, zIndex: 20, order: 99, display: 'flex', justifyContent: 'flex-end' } }, /* LOCACAO_IMPORTAR_BOTAO_V2: sempre à vista */
         h('div', { style: { display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: '#ffffff', border: '1px solid #e9d5f9', borderRadius: 14, padding: '10px 12px', boxShadow: '0 8px 24px rgba(58,21,86,.16)' } },
@@ -3281,7 +3472,7 @@
   function ContratoResumoCard(props) {
     var api = props.api, toast = props.toast, c = props.c || {}, k = props.k || {}, parcelas = props.parcelas || [];
     var assinado = !!c.assinado_em || c.importado;
-    var pill = c.importado ? Pill('Importado', 'cinza', true) : c.assinado_em ? Pill('Assinado', 'verde', true) : c.situacao === 'aguardando_assinatura' ? Pill('Aguardando assinatura', 'azul', true) : pillSit(c);
+    var pill = c.importado ? Pill('Importado', 'cinza', true) : c.assinado_em ? Pill('Contrato assinado', 'verde', true) : c.situacao === 'aguardando_assinatura' ? pillSit(c) : pillSit(c); // LOCACAO_RASCUNHO_V1: cada documento tem a própria situação no quadro Documentos
     var ini = parseData(c.data_inicio), fim = parseData(c.termino || c.ultimo_vencimento), agora = new Date();
     var frac = ini && fim && fim > ini ? Math.max(0, Math.min(1, (agora - ini) / (fim - ini))) : 0;
     var semanaAtual = ini ? Math.max(1, Math.ceil((agora - ini) / (7 * 864e5))) : null;
@@ -3290,14 +3481,7 @@
     var temFin = parcelas.length > 0;
     return h(Card, { pad: false, label: 'Contrato' },
       CardHead('Contrato ' + c.numero + (c.plano_label ? ' · ' + c.plano_label : ''), pill),
-      h('div', { style: { padding: '12px 16px', display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', borderBottom: '1px solid #f3f4f6' } },
-        h('span', { style: { color: assinado ? '#16a34a' : '#2563eb', display: 'inline-flex' } }, ico(assinado ? 'check' : 'clock', 17)),
-        h('div', { style: { flex: '1 1 240px', fontSize: 13, color: '#374151' } },
-          c.importado ? 'Importado: assinado fora da Central.' : c.assinado_em ? h('span', null, (c.assinatura_manual_motivo ? 'Assinatura confirmada manualmente em ' : 'Assinado no Autentique em '), h('b', null, fDH(c.assinado_em))) : 'Ainda não assinado. Acompanhe a assinatura no quadro acima.'),
-        c.tem_pdf_assinado ? Btn({ small: true, icon: 'filetext', onClick: function () { abrirPdf(api, '/contratos/' + c.id + '/pdf?assinado=1', toast); }, children: 'PDF assinado' })
-          : c.tem_pdf ? Btn({ small: true, icon: 'filetext', onClick: function () { abrirPdf(api, '/contratos/' + c.id + '/pdf', toast); }, children: 'PDF do contrato' }) : null,
-        c.vistoria_laudo && c.vistoria_laudo.id ? Btn({ small: true, icon: 'camera', onClick: function () { abrirPdf(api, '/vistorias/' + c.vistoria_laudo.id + '/anexo-iv.pdf', toast); }, children: 'Fotos da moto (laudo)' }) : null, // LOCACAO_FLUXO_V2
-        c.vistoria_entrega && c.vistoria_entrega.id ? Btn({ small: true, icon: 'filetext', onClick: function () { abrirPdf(api, '/vistorias/' + c.vistoria_entrega.id + '/anexo-iv.pdf', toast); }, children: 'Termo de retirada' }) : null),
+      h(DocumentosContrato, { api: api, toast: toast, c: c, aoMudar: props.aoMudar, onVistoria: props.onVistoria }), // LOCACAO_RASCUNHO_V1
       ini && fim ? h('div', { style: { padding: '12px 16px' } },
         h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6b7280', marginBottom: 6, gap: 8, flexWrap: 'wrap' } },
           h('span', null, frac >= 1 ? 'Prazo concluído' : agora < ini ? 'Começa em ' + fD(ini) : (c.periodicidade === 'mensal' ? 'Mês ' + Math.max(1, Math.ceil(frac * (c.prazo_qtd || 1))) + ' de ' + (c.prazo_qtd || '—') : 'Semana ' + semanaAtual + ' de ' + (c.prazo_qtd || c.semanas || '—'))),
@@ -3310,6 +3494,71 @@
         h('span', { style: { fontSize: 13, color: '#374151' } }, 'Pagas ' + fN(k.pagas) + ' de ' + fN(k.total_parcelas)),
         h('span', { style: { flex: 1 } }),
         h('span', { style: { fontSize: 13, fontWeight: 700, color: ROXO } }, 'Ver no Financeiro →')) : null);
+  }
+
+  /* LOCACAO_RASCUNHO_V1: documentos do contrato, cada um com a própria situação de assinatura */
+  function DocumentosContrato(props) {
+    var api = props.api, toast = props.toast, c = props.c || {};
+    var _o = useState(null), ocup = _o[0], setOcup = _o[1];
+    var laudo = c.vistoria_laudo && c.vistoria_laudo.id ? c.vistoria_laudo : null;
+    var ent = c.vistoria_entrega && c.vistoria_entrega.id ? c.vistoria_entrega : null;
+    var mesmo = laudo && ent && laudo.id === ent.id;
+    var contratoAssinado = !!c.assinado_em || !!c.importado;
+    var linkBtn = function (txt, fn, cor, key) { return h('button', { key: key || txt, type: 'button', className: 'hover:underline', disabled: !!ocup, onClick: fn, style: { color: cor || ROXO, fontWeight: 600, fontSize: 12.5, cursor: ocup ? 'wait' : 'pointer', whiteSpace: 'nowrap' } }, txt); };
+    var pdf = function (url) { return linkBtn('Ver PDF', function () { abrirPdf(api, url, toast); }, null, 'pdf'); };
+    var chamar = function (id, url, ok) {
+      setOcup(id);
+      return api(url, { method: 'POST', body: {} }).then(function (r) { ok(r); props.aoMudar && props.aoMudar(); })
+        .catch(function (e) { toast(e.message, 'error'); }).then(function () { setOcup(null); });
+    };
+    var linha = function (key, icone, titulo, sub, pill, acoes) {
+      return h('li', { key: key, style: { display: 'flex', flexWrap: 'wrap', gap: '8px 12px', alignItems: 'center', padding: '11px 16px', borderTop: '1px solid #f3f4f6' } },
+        h('span', { style: { width: 30, height: 30, borderRadius: 8, background: '#faf7fd', color: ROXO, display: 'grid', placeItems: 'center', flex: 'none' } }, ico(icone, 15)),
+        h('div', { style: { flex: '1 1 200px', minWidth: 0 } },
+          h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' } }, h('b', { style: { fontSize: 13.5 } }, titulo), pill),
+          sub ? h('div', { style: { fontSize: 12.5, color: '#6b7280', marginTop: 2, lineHeight: 1.45 } }, sub) : null),
+        acoes && acoes.length ? h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center' } }, acoes) : null);
+    };
+    // 1. Contrato
+    var etapaLaudo = c.status === 'aguardando_assinatura' && (c.etapa === 'laudo' || c.etapa === 'vistoria');
+    var lc = c.importado ? linha('ct', 'filetext', 'Contrato', 'Assinado fora da Central (importado).', Pill('Importado', 'cinza', true), c.tem_pdf_assinado ? [pdf('/contratos/' + c.id + '/pdf?assinado=1')] : [])
+      : c.assinado_em ? linha('ct', 'filetext', 'Contrato', (c.assinatura_manual_motivo ? 'Assinatura confirmada manualmente em ' : 'Assinado no Autentique em ') + fDH(c.assinado_em) + '.', Pill('Assinado', 'verde', true), [c.tem_pdf_assinado ? pdf('/contratos/' + c.id + '/pdf?assinado=1') : c.tem_pdf ? pdf('/contratos/' + c.id + '/pdf') : null].filter(Boolean))
+      : c.status === 'aguardando_assinatura' ? linha('ct', 'filetext', 'Contrato',
+          etapaLaudo ? 'Ainda não enviado: faltam as fotos da moto (laudo).' : c.autentique_doc_id ? 'No Autentique, esperando a assinatura. Acompanhe no quadro acima.' : 'Pronto para posicionar as assinaturas e enviar.',
+          etapaLaudo || !c.autentique_doc_id ? Pill('Não enviado', 'ambar', true) : Pill('Aguardando assinatura', 'azul', true), c.tem_pdf ? [pdf('/contratos/' + c.id + '/pdf')] : [])
+      : linha('ct', 'filetext', 'Contrato', 'Não foi assinado.', Pill(c.situacao_label || c.status, 'cinza', true), c.tem_pdf ? [pdf('/contratos/' + c.id + '/pdf')] : []);
+    // 2. Fotos da moto (laudo)
+    var ll = laudo ? linha('ld', 'camera', mesmo ? 'Vistoria usada como laudo' : 'Fotos da moto (laudo de estado)',
+        (mesmo ? 'Vistoria de ' + fDC(laudo.criado_em) + ' (fluxo antigo) incluída no contrato como Anexo IV.' : 'Registradas em ' + fDC(laudo.criado_em) + ' pela equipe. Vão dentro do contrato como Anexo IV, não têm assinatura separada.'),
+        contratoAssinado ? Pill('Assinado com o contrato', 'verde', true) : Pill('Vai no contrato', 'cinza', true), [pdf('/vistorias/' + laudo.id + '/anexo-iv.pdf')])
+      : c.importado ? null
+      : linha('ld', 'camera', 'Fotos da moto (laudo de estado)', etapaLaudo ? 'Falta registrar: é o próximo passo (quadro acima).' : 'Este contrato não tem laudo registrado.', Pill(etapaLaudo ? 'Falta registrar' : 'Sem laudo', etapaLaudo ? 'ambar' : 'cinza', true), []);
+    // 3. Termo de vistoria de retirada
+    var lt;
+    if (ent) {
+      var assin = !!ent.assinado_em, noAut = !!ent.autentique_doc_id && !assin;
+      lt = linha('tr', 'pencil', 'Termo de vistoria de retirada',
+        assin ? 'Assinado pelo locatário em ' + fDH(ent.assinado_em) + '.' : noAut ? 'No Autentique, esperando o locatário assinar. O link também aparece no app dele.' : 'Vistoria feita em ' + fDC(ent.criado_em) + ', mas o termo ainda não foi para assinatura.',
+        assin ? Pill('Assinado', 'verde', true) : noAut ? Pill('Aguardando assinatura', 'azul', true) : Pill('Não enviado', 'ambar', true),
+        [pdf('/vistorias/' + ent.id + '/anexo-iv.pdf'),
+          noAut && ent.link_locatario ? linkBtn('Copiar link', function () { copiar(ent.link_locatario, toast); }, null, 'cp') : null,
+          noAut ? linkBtn(ocup === 'cons' ? 'Consultando...' : 'Consultar', function () { chamar('cons', '/vistorias/' + ent.id + '/consultar-assinatura', function (r) { toast(r && r.assinado ? 'Termo assinado' : 'Ainda não assinado', r && r.assinado ? 'success' : 'info'); }); }, '#374151', 'cs') : null,
+          !assin ? h('span', { key: 'env' }, Btn({ small: true, variant: noAut ? 'sec' : 'pri', icon: 'pencil', disabled: !!ocup, onClick: function () {
+            chamar('env', '/vistorias/' + ent.id + '/enviar-assinatura', function (r) {
+              if (r && r.enviado) { toast('Termo enviado ao Autentique' + (r.whatsapp && r.whatsapp.enviado ? ' · link no WhatsApp do locatário' : ''), 'success'); if (r.link_locatario && !(r.whatsapp && r.whatsapp.enviado)) copiar(r.link_locatario, toast); }
+              else toast('Não enviado' + (r && r.motivo ? ': ' + r.motivo : ''), 'error');
+            }); }, children: ocup === 'env' ? 'Enviando...' : noAut ? 'Reenviar' : 'Enviar para assinatura' })) : null].filter(Boolean));
+    } else if (c.retirada_em) {
+      lt = linha('tr', 'pencil', 'Termo de vistoria de retirada', 'Sem vistoria: moto entregue em ' + fD(c.retirada_em) + ' (' + ({ importado: 'contrato importado', manual: 'marcado pela equipe' }[c.retirada_origem] || 'sem termo') + '). Se quiser o termo, faça a vistoria pela moto.', Pill('Sem termo', 'cinza', true), []);
+    } else if (contratoAssinado && { em_dia: 1, atrasada: 1, em_retomada: 1, suspenso: 1 }[c.situacao]) {
+      lt = linha('tr', 'pencil', 'Termo de vistoria de retirada', 'Feito na Base, com o locatário, quando ele vier buscar a moto. Depois vai para assinatura no Autentique.', Pill('Falta fazer', 'ambar', true),
+        props.onVistoria ? [h('span', { key: 'fz' }, Btn({ small: true, variant: 'pri', icon: 'camera', onClick: props.onVistoria, children: 'Fazer vistoria de retirada' }))] : []);
+    } else if (c.status === 'aguardando_assinatura') {
+      lt = linha('tr', 'pencil', 'Termo de vistoria de retirada', 'Vem depois do contrato assinado, na retirada da moto na Base.', Pill('Depois da assinatura', 'cinza', true), []);
+    }
+    return h('section', { 'aria-label': 'Documentos do contrato', style: { borderBottom: '1px solid #f3f4f6' } },
+      h('div', { style: { padding: '10px 16px 4px', fontSize: 11.5, fontWeight: 700, color: '#6b7280', letterSpacing: '.04em', textTransform: 'uppercase' } }, 'Documentos'),
+      h('ul', { style: { listStyle: 'none', margin: 0, padding: 0 } }, [lc, ll, lt].filter(Boolean)));
   }
 
   function MotoResumoCard(props) {
@@ -3328,9 +3577,7 @@
         c.bloqueio_sinalizado_em ? chip(false, 'Bloqueio sinalizado ' + fDC(c.bloqueio_sinalizado_em), 'bl') : null,
         c.vistoria_laudo ? chip(true, 'Laudo de estado ' + fDC(c.vistoria_laudo.criado_em), 'vl') : null, // LOCACAO_FLUXO_V2
         c.vistoria_entrega ? chip(true, 'Vistoria de retirada ' + fDC(c.vistoria_entrega.criado_em), 've') : null),
-      c.vistoria_entrega && props.api ? h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', padding: '10px 16px', borderTop: '1px solid #f3f4f6', fontSize: 13 } }, // LOCACAO_FLUXO_V2: termo de retirada
-        h('b', null, 'Termo de retirada'), h('span', { style: { flex: 1 } }),
-        h(AcoesAnexoIV, { api: props.api, toast: props.toast, v: { id: c.vistoria_entrega.id, tipo: 'retirada', autentique_doc_id: c.vistoria_entrega.autentique_doc_id, assinado_em: c.vistoria_entrega.assinado_em, assinatura_status: c.vistoria_entrega.assinado_em ? 'assinado' : null, link_locatario: c.vistoria_entrega.link_locatario }, aoMudar: props.aoMudar })) : null,
+      /* LOCACAO_RASCUNHO_V1: o termo de retirada (status, enviar, link) fica no quadro Documentos do card do contrato */
       (function () { /* LOCACAO_ENTREGA_V1: a moto já está com o locatário? */
         var vivo = { em_dia: 1, atrasada: 1, em_retomada: 1, suspenso: 1 }[c.situacao];
         if (c.retirada_em) return h('div', { style: { display: 'flex', gap: 10, alignItems: 'center', padding: '10px 16px', borderTop: '1px solid #f3f4f6', background: '#f0fdf4', fontSize: 13, color: '#166534' } },
@@ -3518,7 +3765,7 @@
       c.plano === 'conquista' && !assinando ? h(OpcaoCompraCard, { api: api, toast: toast, contrato: c, k: k, aoMudar: function () { carregar(); props.aoMudar && props.aoMudar(); } }) : null,
       h('div', { className: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] items-start' },
         h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 } }, /* LOCACAO_REMODEL_V1: perfil — parcelas foram para o Financeiro */
-          h(ContratoResumoCard, { api: api, toast: toast, c: c, k: k, parcelas: parcelas, abrirFinanceiro: function () { nav({ tela: 'financeiro', id: c.id }); } }),
+          h(ContratoResumoCard, { api: api, toast: toast, c: c, k: k, parcelas: parcelas, aoMudar: carregar, onVistoria: function () { setModal('vistoriaEntrega'); }, abrirFinanceiro: function () { nav({ tela: 'financeiro', id: c.id }); } }), // LOCACAO_RASCUNHO_V1: documentos
           h(MotoResumoCard, { api: api, toast: toast, mo: mo, c: c, aoMudar: carregar, abrirMoto: function () { nav({ tela: 'moto', id: mo.id }); }, onVistoria: function () { setModal('vistoriaEntrega'); }, onMarcarEntrega: function () { setModal('entrega'); } }), // LOCACAO_ENTREGA_V1 · LOCACAO_FLUXO_V2
           assinando ? null : h(DemonstrativoCard, { contrato: c, cliente: cli }), // LOCACAO_V3 · LOCACAO_REMODEL_V1: na coluna do contrato
           h(OutrosContratosCard, { lista: (d.perfil && d.perfil.outros_contratos) || [], nav: nav })),
@@ -3541,7 +3788,9 @@
               (ativo || suspenso) && c.reajuste_proximo ? h('div', { style: { fontSize: 12.5, color: '#374151', display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #f3f4f6', paddingTop: 10 } }, h('span', null, 'Reajuste IPCA em ', h('b', null, fD(c.reajuste_proximo))), Btn({ small: true, disabled: !!ocupado, onClick: function () { setModal('reajuste'); }, children: 'Aplicar' })) : null,
               (ativo || suspenso) && parcelas.length ? h('div', { style: { fontSize: 12.5, color: '#6b7280', borderTop: '1px solid #f3f4f6', paddingTop: 10 } }, 'Cobrança, baixa, antecipação e desconto em repasses ficam no ', h('button', { type: 'button', onClick: function () { nav({ tela: 'financeiro', id: c.id }); }, className: 'hover:underline', style: { color: ROXO, fontWeight: 600, cursor: 'pointer' } }, 'Financeiro'), '.') : null, // LOCACAO_REMODEL_V1
               !ativo && sit !== 'em_retomada' && sit !== 'quitado' && !assinando && !suspenso ? h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'Nenhuma ação disponível para este contrato.') : null,
-              assinando ? h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'As ações de cobrança e retomada liberam depois da assinatura.') : null)),
+              assinando ? h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'As ações de cobrança e retomada liberam depois da assinatura.') : null,
+              h('div', { style: { borderTop: '1px solid #f3f4f6', paddingTop: 10, display: 'flex', justifyContent: 'center' } }, /* LOCACAO_RASCUNHO_V1 */
+                h('button', { type: 'button', className: 'hover:underline', onClick: function () { setModal('excluirContrato'); }, style: { color: '#991b1b', fontWeight: 600, fontSize: 12.5, cursor: 'pointer', display: 'inline-flex', gap: 6, alignItems: 'center' } }, ico('trash', 13), 'Excluir contrato de vez (teste ou erro)')))),
           h(DadosLocatarioCard, { api: api, toast: toast, cli: cli, perfil: d.perfil || {} }), // LOCACAO_REMODEL_V1
           h(Card, { pad: false }, CardHead('Histórico', null, 'contrato, moto e cadastro'),
             h('div', { style: { padding: '12px 16px', maxHeight: 420, overflowY: 'auto' } },
@@ -3554,6 +3803,8 @@
                     h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, fDHc(l.criado_em) + ' · ' + (l.usuario_nome || 'sistema'))));
               }))))),
 
+      modal === 'excluirContrato' ? h(ExcluirContratoModal, { api: api, c: c, cliNome: cli && cli.nome, parcelas: parcelas, onClose: function () { setModal(null); }, // LOCACAO_RASCUNHO_V1
+        onFeito: function (r) { setModal(null); toast('Contrato ' + r.numero + ' excluído' + (r.pix_cancelados ? ' · ' + r.pix_cancelados + ' PIX cancelado(s)' : ''), 'success'); props.aoMudar && props.aoMudar(); nav({ tela: 'lista', tab: 'contratos' }); } }) : null,
       modal === 'retomada' ? h(MotivoModal, { titulo: 'Iniciar retomada', label: 'Motivo', hint: 'Contrato e moto vão para Em retomada e uma ocorrência é aberta.', botao: 'Iniciar retomada', perigo: true,
         texto: 'Use quando precisar retomar antes do limite automático de ' + c.dias_retomada + ' dias.', onClose: function () { setModal(null); }, onConfirm: function (m) { return acao('ret', '/contratos/' + c.id + '/iniciar-retomada', { motivo: m || null }, 'Retomada iniciada'); } }) : null,
       modal === 'devolucao' ? h(MotivoModal, { titulo: 'Registrar moto devolvida', label: 'Observação', botao: 'Registrar devolução', perigo: true,
@@ -4983,7 +5234,40 @@
     var _f = useState({}), fotos = _f[0], setFotos = _f[1];
     var _dc = useState(false), decl = _dc[0], setDecl = _dc[1];
     var _s = useState(false), salv = _s[0], setSalv = _s[1];
-    var pegar = function (pos, file) { if (!file) return; var quando = new Date().toISOString(); lerArquivo(file, 1280, 0.8).then(function (u) { setFotos(function (f) { var x = Object.assign({}, f); x[pos] = { foto: u, capturada_em: quando }; return x; }); }).catch(function (e) { toast(e.message, 'error'); }); };
+    /* LOCACAO_RASCUNHO_V1: tudo que foi preenchido fica salvo no servidor (continua no celular / depois de fechar) */
+    var rs = useRascunho(api, 'vist:' + (ct && ct.id ? 'c' + ct.id : 'm' + mo.id) + ':' + (props.tipo || 'livre'));
+    var restaurado = useRef(false), baseJson = useRef(null);
+    var _rb = useState(false), verBanner = _rb[0], setVerBanner = _rb[1];
+    var snap = function () { return JSON.stringify({ tipo: tipo, km: km, comb: comb, ck: ck, avarias: avarias, semAv: semAv, decl: decl }); };
+    useEffect(function () {
+      if (!rs.carregado || restaurado.current) return;
+      restaurado.current = true;
+      var r = rs.rascunho;
+      if (r) {
+        var d = r.dados || {};
+        if (d.tipo && !props.tipo) setTipo(d.tipo);
+        if (d.km != null) setKm(String(d.km));
+        if (d.comb !== undefined) setComb(d.comb);
+        if (d.ck) setCk(d.ck);
+        if (Array.isArray(d.avarias)) setAvarias(d.avarias);
+        if (d.semAv != null) setSemAv(!!d.semAv);
+        if (d.decl != null) setDecl(!!d.decl);
+        if (r.fotos && typeof r.fotos === 'object') setFotos(r.fotos);
+        setVerBanner(true);
+        baseJson.current = JSON.stringify({ tipo: d.tipo && !props.tipo ? d.tipo : tipo, km: d.km != null ? String(d.km) : km, comb: d.comb !== undefined ? d.comb : comb, ck: d.ck || ck, avarias: Array.isArray(d.avarias) ? d.avarias : avarias, semAv: d.semAv != null ? !!d.semAv : semAv, decl: d.decl != null ? !!d.decl : decl });
+      } else baseJson.current = snap();
+    }, [rs.carregado]);
+    useEffect(function () {
+      if (!restaurado.current || baseJson.current == null) return;
+      var j = snap(); if (j === baseJson.current) return;
+      rs.dados(JSON.parse(j));
+    }, [tipo, km, comb, ck, avarias, semAv, decl]);
+    var descartar = function () {
+      rs.limpar(); setVerBanner(false);
+      setKm(mo.hodometro != null ? String(mo.hodometro) : ''); setComb(null); setCk({}); setAvarias([]); setSemAv(false); setDecl(false); setFotos({});
+      baseJson.current = JSON.stringify({ tipo: tipo, km: mo.hodometro != null ? String(mo.hodometro) : '', comb: null, ck: {}, avarias: [], semAv: false, decl: false });
+    };
+    var pegar = function (pos, file) { if (!file) return; var quando = new Date().toISOString(); lerArquivo(file, 1280, 0.8).then(function (u) { var val = { foto: u, capturada_em: quando }; setFotos(function (f) { var x = Object.assign({}, f); x[pos] = val; return x; }); rs.foto(pos, val); }).catch(function (e) { toast(e.message, 'error'); }); };
     var setItem = function (i, campo, v) { setCk(function (x) { var n = Object.assign({}, x); n[i] = Object.assign({ situacao: null, obs: '' }, n[i] || {}); n[i][campo] = v; return n; }); };
     var nOk = itens.filter(function (_, i) { return ck[i] && ck[i].situacao === 'ok'; }).length;
     var nAv = itens.filter(function (_, i) { return ck[i] && ck[i].situacao === 'avaria'; }).length;
@@ -5009,6 +5293,7 @@
         avaria: temAvaria, observacoes: resumoObs || null,
         fotos: POS_V3.filter(function (p) { return fotos[p[0]]; }).map(function (p) { return { posicao: p[0], foto: fotos[p[0]].foto, capturada_em: fotos[p[0]].capturada_em }; }) } })
         .then(function (r) {
+          rs.limpar(); // LOCACAO_RASCUNHO_V1
           toastVistoriaAssinatura(toast, r, tipo);
           if (props.enviarTermo && tipo === 'retirada' && r && r.id) { /* LOCACAO_FLUXO_V2: termo de retirada direto para o Autentique */
             api('/vistorias/' + r.id + '/enviar-assinatura', { method: 'POST', body: {} }).then(function (x) {
@@ -5028,10 +5313,13 @@
         h('div', { style: { padding: 14 } }, corpo));
     };
     var tiposV = ehLaudo ? [['laudo', 'Fotos da moto (laudo)']] : [['retirada', 'Retirada'], ['devolucao', 'Devolução'], ['periodica', 'Mensal na Base'], ['revisao', 'Revisão']]; // LOCACAO_FLUXO_V2
-    return h(Modal, { titulo: ehLaudo ? 'Fotos da moto · laudo de estado (Anexo IV)' : 'Termo de vistoria · Anexo IV', onClose: props.onClose, largura: 1040,
-      rodape: [h('span', { key: 'f', style: { fontSize: 12.5, color: faltas.length ? '#92400e' : '#166534', marginRight: 'auto', alignSelf: 'center', maxWidth: 560 } }, faltas.length ? 'Falta: ' + faltas.join(' · ') + '.' : 'Tudo certo para gerar o termo.'),
-        Btn({ key: 'c', onClick: props.onClose, children: 'Cancelar' }), Btn({ key: 's', variant: 'pri', icon: 'check', disabled: faltas.length > 0 || salv, onClick: salvar, children: salv ? 'Registrando...' : ehLaudo ? 'Registrar fotos e gerar o contrato' : 'Registrar vistoria e gerar termo' })] },
+    return h(Modal, { titulo: ehLaudo ? 'Fotos da moto · laudo de estado (Anexo IV)' : 'Termo de vistoria · Anexo IV', onClose: props.onClose, largura: 1040, semFecharFora: true,
+      rodape: [h('div', { key: 'f', style: { flex: '1 1 280px', alignSelf: 'center', display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 } },
+          h('span', { style: { fontSize: 12.5, color: faltas.length ? '#92400e' : '#166534' } }, faltas.length ? 'Falta: ' + faltas.join(' · ') + '.' : 'Tudo certo para gerar o termo.'),
+          h(RascunhoStatus, { status: rs.status })),
+        Btn({ key: 'c', onClick: props.onClose, title: 'O que já foi preenchido fica salvo como rascunho', children: 'Fechar' }), Btn({ key: 's', variant: 'pri', icon: 'check', disabled: faltas.length > 0 || salv, onClick: salvar, children: salv ? 'Registrando...' : ehLaudo ? 'Registrar fotos e gerar o contrato' : 'Registrar vistoria e gerar termo' })] },
       h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+        verBanner ? h(RascunhoBanner, { rascunho: rs.rascunho, onDescartar: descartar }) : null,
         h('div', { style: { display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' } },
           h('div', { style: { fontSize: 13, color: '#6b7280', flex: 1, minWidth: 220 } }, [ct && ct.numero ? 'Contrato ' + ct.numero : null, ct && ct.cliente_nome, ct && ct.plano_label].filter(Boolean).join(' · ') || 'Sem contrato ativo'),
           Segmented(tiposV, tipo, setTipo, 'Tipo de vistoria')),
@@ -5137,8 +5425,180 @@
   }
 
 
+  // ───────────────────────── LOCACAO_RASCUNHO_V1: guia passo a passo do ADM ─────────────────────────
+  /* Conteúdo em dados: cada seção tem passos (onde clicar + o que fazer), dicas e atalho para a aba. */
+  var GUIA = [
+    { id: 'visao', t: 'Visão geral', ir: null, intro: 'O caminho completo de uma locação na Central, do cadastro da moto até o fim do contrato. Siga as seções na ordem na primeira vez; depois use como consulta.',
+      passos: [
+        ['Configurar uma vez', 'Locadora, bases, encargos, régua de cobrança e assinatura (seção 1).'],
+        ['Cadastrar a moto', 'Com o CRLV-e e os documentos (seção 2).'],
+        ['Cadastrar o locatário', 'Motoboy da Central ou pessoa de fora pelo link, revisar e aprovar (seção 3).'],
+        ['Criar o contrato', 'Plano, prazo, valor e a moto (seção 4).'],
+        ['Fotos da moto (laudo)', 'A equipe fotografa a moto sozinha; vai no contrato como Anexo IV (seção 5).'],
+        ['Posicionar e enviar', 'Conferir onde vão as assinaturas e mandar ao Autentique (seção 6).'],
+        ['Retirada na Base', 'Depois de assinado: vistoria de retirada com o locatário e termo assinado (seção 7).'],
+        ['Dia a dia', 'Financeiro, vistoria mensal, ocorrências, atraso e fim do contrato (seções 8 a 12).']
+      ],
+      dicas: ['Quem registra vistoria é sempre a equipe na Central. O motoboy não tira foto pelo app: ele só vê as fotos e assina os termos.', 'O quadro "Até liberar a moto", no perfil do contrato, mostra sempre o próximo passo com o botão certo.', 'Dá para fazer tudo pelo celular: abra a Central no navegador do celular, entre em Locação e siga as mesmas telas. As fotos abrem a câmera direto.', 'Novo contrato e fotos da moto ficam salvos como rascunho enquanto você preenche. Se fechar, cair a internet ou começar no computador e terminar no celular, ao abrir de novo continua de onde parou.'] },
+
+    { id: 'config', t: '1. Configurações (uma vez)', ir: 'config', intro: 'Aba Configurações. Faça antes do primeiro contrato e revise quando mudar alguma regra. Sempre clique em Salvar configurações.',
+      passos: [
+        ['Locadora e bases', 'Razão social, CNPJ e endereço da Tutts (saem no contrato) e as Bases onde a moto é retirada e vistoriada. Marque a base padrão.'],
+        ['Encargos e retomada', 'Multa, juros ao mês, correção IPCA, dias para rescisão/retomada e dias para bloqueio no rastreador.'],
+        ['Régua de cobrança', 'Quando o PIX sai e em quais dias o WhatsApp avisa antes e depois do vencimento.'],
+        ['Tarifário (Anexo I)', 'Valores das tarifas (recolhimento, socorro, vistoria faltada etc.). Saem no contrato.'],
+        ['Assinatura', 'Locatário assina pelo app (recomendado); Tutts assina automaticamente; deixe marcadas "Exigir as fotos da moto (laudo) antes de enviar o contrato" e "Conferir a posição das assinaturas antes de enviar".'],
+        ['Integrações', 'Confira se Stark Bank (PIX) e Autentique aparecem como configurados. Use "Testar PIX": cria e cancela um PIX de R$ 1,00.']
+      ],
+      dicas: ['Mudanças valem para os próximos contratos; os já assinados seguem como foram.'] },
+
+    { id: 'moto', t: '2. Cadastrar a moto', ir: 'motos', intro: 'Aba Motos › Cadastrar moto.',
+      passos: [
+        ['Importar o CRLV-e', 'Clique para escolher o PDF do CRLV-e (o baixado do app, não print). A Central lê placa, chassi, Renavam, modelo, ano e cor. Confira os campos em amarelo.'],
+        ['Completar o cadastro', 'Condição (0 km, seminova ou usada), quilometragem, se tem seguro e rastreador, valores de aquisição.'],
+        ['Salvar', 'O CRLV-e importado vai sozinho para Documentos da moto. Se salvar de novo, ele é atualizado, não duplica.'],
+        ['Documentos da moto', 'No detalhe da moto, em Documentos da moto › Enviar: licenciamento, IPVA e seguro com vencimento. A Central avisa 30 dias antes de vencer. O CRLV-e e o seguro aparecem no app do locatário.'],
+        ['Fotos e laudo (opcional)', 'Fotos soltas ou laudos em PDF da moto, para arquivo interno.']
+      ],
+      dicas: ['A moto só aparece para contrato quando está Disponível.', 'Se o PDF não abrir na janela, use "Abrir em outra aba".'] },
+
+    { id: 'cadastro', t: '3. Cadastrar o locatário', ir: 'cadastros', intro: 'Aba Cadastros. Duas portas de entrada:',
+      passos: [
+        ['Motoboy que já está na Central', 'Botão "Motoboy da Central": busque pelo código ou nome. Os dados vêm da Central; complete o que faltar.'],
+        ['Pessoa de fora', 'Botão "Pessoa de fora · gerar link": gere o link e mande no WhatsApp. Ela preenche dados e envia CNH, selfie e comprovante. Enquanto não preenche, aparece em "Links aguardando".'],
+        ['Revisar', 'Filtro "Para revisar" › clique na pessoa. Resolva as pendências: "Preencher dados", "Editar dados" ou "Pedir documentos" (manda link para reenviar).'],
+        ['Aprovar', 'Escolha o tipo (Motoboy Tutts ou Externo) e o vencimento (semanal com o dia, ou mensal) e clique em "Aprovar cadastro". Alertas vermelhos bloqueiam a aprovação.']
+      ],
+      dicas: ['A coluna Etapa mostra o caminho: Cadastro › Aprovado › Contrato › Moto entregue.', 'Contrato já assinado no papel? Na revisão use "Importar contrato assinado" (seção 12).'] },
+
+    { id: 'contrato', t: '4. Criar o contrato', ir: 'cadastros', intro: 'Em Cadastros, na linha da pessoa aprovada, clique em "Criar contrato" (ou Contratos › Novo contrato).',
+      passos: [
+        ['Dados do contrato', 'Plano (Tutts Aluguel ou Plano Conquista), periodicidade, prazo, valor da parcela, data de início e a moto disponível. Confira a prévia do demonstrativo.'],
+        ['Gerar', 'O contrato é criado e fica "Aguardando fotos da moto". A moto fica Reservada.'],
+        ['Se parar no meio', 'O formulário fica salvo como rascunho (aparece "Rascunho salvo hh:mm" no rodapé). Ao abrir Novo contrato de novo, ele volta preenchido. "Começar do zero" apaga o rascunho.'],
+        ['Abrir o perfil', 'Contratos › clique no nome. O quadro "Até liberar a moto" mostra o passo atual.']
+      ],
+      dicas: ['Errou algo antes de enviar para assinatura? "Cancelar contrato" no quadro e crie de novo.'] },
+
+    { id: 'laudo', t: '5. Fotos da moto (laudo de estado)', ir: 'contratos', intro: 'Feito pela equipe, SEM o locatário. Registra como a moto está antes da entrega e vai no contrato como Anexo IV.',
+      passos: [
+        ['Abrir (de preferência no celular)', 'Perfil do contrato › quadro "Até liberar a moto" › "Registrar fotos da moto". No celular a tela ocupa tudo e o botão de registrar fica fixo embaixo.'],
+        ['Preencher', 'Quilometragem e combustível; checklist (use "Marcar os demais como OK" e marque Avaria só onde tiver, com observação); avarias pré-existentes ou "Não foram identificadas avarias".'],
+        ['Fotos obrigatórias', 'Frente, traseira, lateral esquerda, lateral direita, painel/hodômetro e motor/chassi. Toque no quadro e a câmera abre. Fotos de avaria são opcionais.'],
+        ['Rascunho', 'Cada foto e cada campo são salvos na hora. Pode fechar, trocar de aparelho ou perder o sinal: ao abrir de novo, as fotos e o checklist continuam lá.'],
+        ['Registrar', '"Registrar fotos e gerar o contrato". A tela de posicionar assinaturas já abre (seção 6).'],
+        ['Reaproveitar', 'Se a moto teve vistoria nos últimos 15 dias (ex.: devolução do locatário anterior), use "Usar … de dd/mm" no mesmo quadro, sem tirar fotos de novo.']
+      ],
+      dicas: ['No contrato, o anexo sai como "Laudo de estado da moto": o locatário não responde pelo que está registrado ali e confere tudo na retirada.'] },
+
+    { id: 'assinatura', t: '6. Posicionar e enviar para assinatura', ir: 'contratos', intro: 'Abre sozinho depois das fotos. Também pelo botão "Posicionar e enviar".',
+      passos: [
+        ['Conferir as caixas', 'Laranja = locatário, roxo = Tutts. Arraste para mover, puxe o canto para o tamanho. "+ Assinatura" / "+ Rubrica" para acrescentar; "Rubrica em todas as páginas" por signatário.'],
+        ['Salvar como padrão (opcional)', 'Se ajustou, "Salvar como padrão" faz os próximos contratos já saírem assim.'],
+        ['Enviar', '"Salvar e enviar para assinatura". A Tutts assina automaticamente e o locatário recebe aviso no WhatsApp.'],
+        ['Locatário assina', 'Pelo app da Central: cartão "Seu contrato está pronto" › Revisar e assinar.'],
+        ['Acompanhar', 'No quadro azul do perfil: linha do tempo (enviado, Tutts assinou, aviso, abriu, assinou), "Copiar link", "Reenviar aviso no WhatsApp" e "Consultar assinatura".']
+      ],
+      dicas: ['Quando o contrato volta assinado, as parcelas são criadas e o contrato vira Ativo.', '"Marcar como assinado" só em exceção (Autentique não devolveu o status) e pede motivo.'] },
+
+    { id: 'retirada', t: '7. Retirada na Base (vistoria com o locatário)', ir: 'contratos', intro: 'Depois do contrato assinado, o locatário vem buscar a moto. No app ele vê "Retire sua moto na Base" com o endereço.',
+      passos: [
+        ['Abrir', 'Perfil do contrato › quadro "Até liberar a moto" › "Fazer vistoria de retirada" (ou no card Moto).'],
+        ['Conferir junto com ele', 'Mesmos campos do laudo: km, combustível, checklist, avarias e as 6 fotos. Registre qualquer diferença em relação ao laudo.'],
+        ['Declaração', 'Leia a declaração para o locatário e marque "O locatário leu e está de acordo".'],
+        ['Registrar', 'O Termo de Vistoria de Retirada é gerado, vai ao Autentique, a Tutts assina e o link chega no WhatsApp dele. A moto fica registrada como entregue.'],
+        ['Assinatura do termo', 'No card do contrato, quadro Documentos: a linha "Termo de vistoria de retirada" mostra se está assinado. Se não foi enviado, "Enviar para assinatura"; se está esperando, "Copiar link" (mande você, se o WhatsApp não foi) e "Consultar". No app ele também tem o botão "Assinar o termo no Autentique".']
+      ],
+      dicas: ['Moto que já estava com o locatário antes da Central (contrato antigo): use "Já está com ele (sem vistoria)" e informe a data.', 'A vistoria mensal passa a contar a partir da entrega.', 'Quadro Documentos (card do contrato): cada documento tem a própria situação. Contrato assinado não quer dizer termo de retirada assinado: confira as duas linhas.'] },
+
+    { id: 'financeiro', t: '8. Financeiro do dia a dia', ir: 'financeiro', intro: 'Aba Financeiro: semana com as setas, números (recebido, falta, vence hoje, atraso, inadimplência) e a lista de quem falta pagar.',
+      passos: [
+        ['Ver quem falta', 'Filtro "Pendentes". "Em atraso", "Vence hoje" e "Pagaram na semana" para conferir.'],
+        ['Cobrar', '"Cobrar" na linha manda o PIX no WhatsApp. "Cobrar atrasados" cobra todos de uma vez. Marque vários para "Cobrar no WhatsApp".'],
+        ['Dar baixa', '"Baixa" quando recebeu por fora: escolha Com encargos ou Sem encargos (dispensa juros e multa, fica no histórico), data e observação. Marque várias para baixa em lote.'],
+        ['Antecipar', 'Clique no nome › marque as parcelas a vencer › "Antecipar com PIX". Desconto opcional; "Gerar PIX e mandar no WhatsApp" (baixa sozinha quando cair) ou "Já recebi, dar baixa agora".'],
+        ['Cobrança avulsa', 'No financeiro da pessoa: "Lançar cobrança avulsa" (ocorrência, tarifa do Anexo I).'],
+        ['Desconto em repasses', 'Só Motoboy Tutts, com o Anexo III: liga no financeiro da pessoa; a parcela é abatida do repasse semanal.'],
+        ['Exportar', '"Exportar planilha" baixa a lista da semana em CSV.']
+      ],
+      dicas: ['O PIX sai sozinho no vencimento e a baixa é automática quando o Stark confirma.'] },
+
+    { id: 'mensal', t: '9. Vistoria mensal', ir: 'motos', intro: 'Uma vez por mês, na Base, contando da entrega da moto. O Painel mostra "Vistoria vence dd/mm" ou "atrasada".',
+      passos: [
+        ['Agendar', 'Motos › moto › Vistorias › "Agendar mensal": data e hora. O locatário é avisado com a antecedência configurada.'],
+        ['Registrar', 'No dia: Motos › moto › "Registrar vistoria (Anexo IV)" › tipo "Mensal na Base", com fotos, km e checklist.'],
+        ['Faltou', 'Se o locatário não comparecer sem justificar, registre a falta: a tarifa do Anexo I é cobrada.']
+      ],
+      dicas: [] },
+
+    { id: 'ocorrencias', t: '10. Ocorrências e avisos', ir: 'motos', intro: 'Motos › moto › abas Ocorrências e Avisos.',
+      passos: [
+        ['Avisos do locatário', 'Problemas que ele manda pelo app (pneu, pane, batida, roubo). Responda e resolva em Avisos.'],
+        ['Nova ocorrência', 'Manutenção, multa, sinistro: "Nova ocorrência", com quem paga. Se for o locatário, vira cobrança na parcela ou avulsa.'],
+        ['Documentos vencendo', 'O Painel › Hoje lista CNH, licenciamento, IPVA e seguro perto de vencer, com "Avisar locatário".']
+      ],
+      dicas: [] },
+
+    { id: 'atraso', t: '11. Atraso, retomada e devolução', ir: 'contratos', intro: 'A régua avisa e o PIX é reenviado sozinho. Acompanhe pelo Painel › Hoje e pelo Financeiro.',
+      passos: [
+        ['Bloqueio', 'Depois dos dias configurados, a Central sinaliza o bloqueio no rastreador (aparece no perfil e no Painel).'],
+        ['Retomada', 'Perfil do contrato › Ações do contrato › "Iniciar retomada" (antes do limite automático, se precisar).'],
+        ['Moto devolvida', '"Registrar moto devolvida": o contrato encerra e a moto volta para Disponível.'],
+        ['Vistoria de devolução', 'Motos › moto › "Registrar vistoria (Anexo IV)" › Devolução. O termo pode ir para assinatura no Autentique e é comparado com a retirada.'],
+        ['Encerrar ou suspender', 'Furto/roubo sem culpa ou congelamento: "Encerrar ou suspender". Para voltar: "Moto recuperada · reativar" ou "Encerrar congelamento".']
+      ],
+      dicas: [] },
+
+    { id: 'fim', t: '12. Fim do contrato e casos especiais', ir: 'contratos', intro: '',
+      passos: [
+        ['Quitado', 'Todas as parcelas pagas: contrato Quitado. No Plano Conquista, siga o quadro Opção de compra (notificação, pagamento, vistoria final, ATPV-e, transferência) e marque "transferência concluída".'],
+        ['Renovação', 'Tutts Aluguel em dia renova sozinho por igual período no fim do prazo (fica no histórico).'],
+        ['Contrato assinado fora da Central', 'Cadastros › revisão › "Importar contrato assinado" (ou Contratos › Importar contrato assinado): envie o PDF, informe até quando as parcelas já foram pagas. A moto já entra como entregue.'],
+        ['Reajuste IPCA', 'Quando chegar a data, o perfil mostra "Reajuste IPCA em dd/mm" com o botão para aplicar.'],
+        ['Excluir contrato de teste', 'Perfil do contrato › Ações do contrato › "Excluir contrato de vez". Digite o número do contrato para confirmar. Apaga parcelas, vistorias, cobranças e histórico do contrato, cancela PIX em aberto e libera a moto. Não tem como desfazer: use só para teste ou erro.']
+      ],
+      dicas: ['Ficou em dúvida em qualquer tela? O histórico do perfil e o extrato do financeiro mostram quem fez o quê e quando.'] }
+  ];
+
+  function GuiaView(props) {
+    var nav = props.nav;
+    var _s = useState('visao'), sec = _s[0], setSec = _s[1];
+        var ir = function (id) { setSec(id); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { /* ok */ } };
+    var NOME_ABA = { config: 'Configurações', motos: 'Motos', cadastros: 'Cadastros', contratos: 'Contratos', financeiro: 'Financeiro' };
+    return h('div', { className: 'loc-guia' },
+      h('nav', { 'aria-label': 'Seções do guia', className: 'loc-guia-nav', style: Object.assign({}, CARD, { padding: 8, display: 'flex', flexDirection: 'column', gap: 2 }) },
+        GUIA.map(function (g) {
+          var on = g.id === sec;
+          return h('button', { key: g.id, type: 'button', 'aria-current': on ? 'true' : null, onClick: function () { ir(g.id); },
+            style: { textAlign: 'left', padding: '9px 12px', borderRadius: 10, fontSize: 13.5, cursor: 'pointer', background: on ? '#f3e8fb' : 'transparent', color: on ? ROXO_ESC : '#374151', fontWeight: on ? 700 : 500 } }, g.t);
+        }),
+        h('div', { style: { borderTop: '1px solid #f3f4f6', marginTop: 6, padding: '8px 12px', flex: 'none' } }, Btn({ small: true, variant: 'link', icon: 'download', onClick: function () { try { window.print(); } catch (e) { /* ok */ } }, children: 'Imprimir o guia todo' }))),
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 } }, GUIA.map(function (g, gi) {
+        var on = g.id === sec;
+        return h('article', { key: g.id, className: on ? null : 'loc-guia-oculta', style: Object.assign({}, CARD, { padding: 20, display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0, breakInside: 'avoid-page' }) },
+          h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' } },
+            h('div', { style: { flex: '1 1 260px', minWidth: 0 } },
+              h('h2', { style: { margin: 0, fontFamily: SORA, fontSize: 20, fontWeight: 700 } }, g.t),
+              g.intro ? h('p', { style: { margin: '6px 0 0', fontSize: 14, color: '#4b5563', lineHeight: 1.55 } }, g.intro) : null),
+            g.ir ? h('span', { className: 'loc-noprint' }, Btn({ icon: 'arrowright', onClick: function () { nav({ tela: 'lista', tab: g.ir }); }, children: 'Ir para ' + NOME_ABA[g.ir] })) : null),
+          h('ol', { style: { listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 } },
+            g.passos.map(function (p, i) {
+              return h('li', { key: i, style: { display: 'flex', gap: 12, padding: '12px 14px', border: '1px solid #e5e7eb', borderRadius: 12, background: '#fff' } },
+                h('span', { 'aria-hidden': 'true', style: { width: 26, height: 26, borderRadius: 99, background: ROXO, color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 12.5, flex: 'none' } }, i + 1),
+                h('div', { style: { minWidth: 0 } }, h('b', { style: { fontSize: 14 } }, p[0]), h('div', { style: { fontSize: 13.5, color: '#374151', marginTop: 3, lineHeight: 1.55 } }, p[1])));
+            })),
+          g.dicas && g.dicas.length ? h('div', { style: { background: '#faf7fd', border: '1px solid #e9d5f9', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6 } },
+            h('b', { style: { fontSize: 13, color: ROXO_ESC } }, 'Importante'),
+            g.dicas.map(function (d, i) { return h('div', { key: i, style: { fontSize: 13, color: '#374151', lineHeight: 1.5 } }, '• ' + d); })) : null,
+          h('div', { className: 'loc-noprint', style: { display: 'flex', justifyContent: 'space-between', gap: 8, borderTop: '1px solid #f3f4f6', paddingTop: 14 } },
+            gi > 0 ? Btn({ icon: 'arrowleft', onClick: function () { ir(GUIA[gi - 1].id); }, children: 'Anterior' }) : h('span'),
+            gi < GUIA.length - 1 ? Btn({ variant: 'pri', icon: 'arrowright', onClick: function () { ir(GUIA[gi + 1].id); }, children: 'Próximo passo' }) : null));
+      })));
+  }
+
+
   // ───────────────────────── Componente principal ─────────────────────────
-  var ABAS = [['painel', 'Painel / Frota', 'chart'], ['cadastros', 'Cadastros', 'users'], ['contratos', 'Contratos', 'filetext'], ['financeiro', 'Financeiro', 'wallet'], ['motos', 'Motos', 'bike'], ['vistorias', 'Vistorias', 'camera'], ['config', 'Configurações', 'settings']]; // LOCACAO_REMODEL_V1
+  var ABAS = [['painel', 'Painel / Frota', 'chart'], ['cadastros', 'Cadastros', 'users'], ['contratos', 'Contratos', 'filetext'], ['financeiro', 'Financeiro', 'wallet'], ['motos', 'Motos', 'bike'], ['vistorias', 'Vistorias', 'camera'], ['config', 'Configurações', 'settings'], ['guia', 'Guia', 'help']]; // LOCACAO_REMODEL_V1 · LOCACAO_RASCUNHO_V1: guia
   var SUBTITULO = {
     painel: 'Do convite ao entregador até a quitação · pré-cadastro, contrato no Autentique e cobrança automática',
     cadastros: 'Todo mundo que pediu ou tem moto: do pré-cadastro ao contrato. Clique na pessoa para abrir o perfil.', // LOCACAO_REMODEL_V1
@@ -5146,7 +5606,8 @@
     motos: 'Cadastro da frota, fotos e laudos · status automático pelo contrato',
     contratos: 'Tutts Aluguel e Plano Conquista · perfil do locatário, assinatura, moto, encerramento e opção de compra',
     vistorias: 'Fotos da moto na retirada, nas revisões e na devolução',
-    config: 'Encargos, régua, tarifário (Anexo I), locadora, IPCA, modelo de contrato e termo LGPD'
+    config: 'Encargos, régua, tarifário (Anexo I), locadora, IPCA, modelo de contrato e termo LGPD',
+    guia: 'Passo a passo do que a equipe faz, da moto nova ao fim do contrato. Use na primeira vez e sempre que tiver dúvida.'
   };
 
   window.ModuloLocacaoComponent = function (props) {
@@ -5164,6 +5625,7 @@
     var _pe = useState(null), painelErro = _pe[0], setPainelErro = _pe[1];
     var _cv = useState(false), convite = _cv[0], setConvite = _cv[1];
     var _cm = useState(false), centralModal = _cm[0], setCentralModal = _cm[1]; // LOCACAO_V4
+    var raizRef = useRotuloTabelas(); // LOCACAO_RASCUNHO_V1
 
     var api = useCallback(function (path, opts) {
       opts = opts || {};
@@ -5215,10 +5677,11 @@
     else if (view.tab === 'financeiro') conteudo = h(FinanceiroView, comum); // LOCACAO_REMODEL_V1
     else if (view.tab === 'vistorias') conteudo = h(VistoriasView, comum);
     else if (view.tab === 'config') conteudo = h(ConfigView, comum);
+    else if (view.tab === 'guia') conteudo = h(GuiaView, comum); // LOCACAO_RASCUNHO_V1
     else conteudo = h(PainelView, Object.assign({ painel: painel, erro: painelErro, recarregar: carregarPainel }, comum));
 
     var emLista = view.tela === 'lista';
-    var tituloPag = { painel: 'Locação de motos', cadastros: 'Cadastros', motos: 'Motos', contratos: 'Contratos', financeiro: 'Financeiro', vistorias: 'Vistorias', config: 'Configurações' }[view.tab];
+    var tituloPag = { painel: 'Locação de motos', cadastros: 'Cadastros', motos: 'Motos', contratos: 'Contratos', financeiro: 'Financeiro', vistorias: 'Vistorias', config: 'Configurações', guia: 'Guia da locação' }[view.tab];
     var botoesTopo = emLista && view.tab === 'painel' ? [
       Btn({ key: 'cv', icon: 'link', onClick: function () { setConvite(true); }, children: 'Gerar link de convite' }),
       Btn({ key: 'mo', icon: 'plus', onClick: function () { nav({ tela: 'moto', id: null }); }, children: 'Cadastrar moto' }),
@@ -5227,16 +5690,16 @@
       : emLista && view.tab === 'motos' ? [Btn({ key: 'mo', variant: 'pri', icon: 'plus', onClick: function () { nav({ tela: 'moto', id: null }); }, children: 'Cadastrar moto' })]
       : emLista && view.tab === 'contratos' ? [Btn({ key: 'imp', icon: 'upload', onClick: function () { nav({ tela: 'novoContrato', importar: true }); }, children: 'Importar contrato assinado' }), Btn({ key: 'nc', variant: 'pri', icon: 'plus', onClick: function () { nav({ tela: 'novoContrato' }); }, children: 'Novo contrato' })] : null; // LOCACAO_V3
 
-    return h('div', { className: 'min-h-screen', style: { background: '#f9fafb', fontFamily: 'Inter, system-ui, sans-serif', color: '#111827' } },
+    return h('div', { ref: raizRef, className: 'min-h-screen loc-root', style: { background: '#f9fafb', fontFamily: 'Inter, system-ui, sans-serif', color: '#111827' } },
       props.i ? h(Toast, props.i) : null,
       props.n && LoadingOverlay ? h(LoadingOverlay) : null,
       HeaderCompacto ? h(HeaderCompacto, { usuario: usuario, moduloAtivo: Ee, socialProfile: props.socialProfile, isLoading: props.f, lastUpdate: props.E, onRefresh: props.ul, onLogout: function () { o && o(null); }, onGoHome: function () { he && he('home'); }, onNavigate: props.navegarSidebar }) : null,
-      h('div', { className: 'max-w-7xl mx-auto px-4 py-6 sm:px-6', style: { display: 'flex', flexDirection: 'column', gap: 18 } },
+      h('div', { className: 'max-w-7xl mx-auto px-4 py-6 sm:px-6 loc-pag', style: { display: 'flex', flexDirection: 'column', gap: 18 } },
         emLista ? h('div', { style: { display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16 } },
           h('div', { style: { minWidth: 0 } },
             h('h1', { style: { margin: 0, fontFamily: SORA, fontSize: 24, fontWeight: 700, lineHeight: 1.25 } }, tituloPag),
-            h('p', { style: { margin: '4px 0 0', color: '#6b7280', fontSize: 13.5 } }, SUBTITULO[view.tab])),
-          botoesTopo ? h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } }, botoesTopo) : null) : null,
+            h('p', { className: 'loc-sub', style: { margin: '4px 0 0', color: '#6b7280', fontSize: 13.5 } }, SUBTITULO[view.tab])),
+          botoesTopo ? h('div', { className: 'loc-topo-btns', style: { display: 'flex', gap: 8, flexWrap: 'wrap' } }, botoesTopo) : null) : null,
         h('div', { role: 'tablist', 'aria-label': 'Seções da locação', style: { display: 'flex', gap: 4, borderBottom: '1px solid #e5e7eb', overflowX: 'auto', order: emLista ? 0 : -1 } },
           ABAS.map(function (a) {
             var on = abaAtiva === a[0];
