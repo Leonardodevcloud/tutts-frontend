@@ -55,11 +55,16 @@
     longe:  { bg: '#bbf7d0', fg: '#166534' }, // DIARIA_ENCERROU_LONGE_V1
     ausente:{ bg: '#faf7fd', fg: '#991b1b' }, // DIARIA_DISPONIBILIDADE_V1
     fila:   { bg: '#eff6ff', fg: '#770fa8' }, // DIARIA_FILA_AGORA_V1: voltou e está aguardando corrida
+    // DIARIA_VEREDITO_FIM_V1: turno ainda rolando — só o que está acontecendo, sem veredito
+    rodando:  { bg: '#f3f4f6', fg: '#374151' },
+    parado:   { bg: '#fffbeb', fg: '#92400e' },
+    sem_ainda:{ bg: '#f3f4f6', fg: '#6b7280' },
   };
   function hojeBahia() { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bahia' }); }
   function dataBR(iso) { const p = String(iso || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso; }
   function nomeDe(it) { return it.nome_profissional || ('Cód. ' + it.cod_profissional); }
   function valorEscolhido(it, escolha) {
+    if (it.decisao === 'aguardar') return { regra: 'aguardar', valor: 0 }; // DIARIA_VEREDITO_FIM_V1
     if (it.decisao === 'pagar') return { regra: 'pagar', valor: it.valor_entrada };
     const e2 = escolha || it.sugerido;
     if (e2 === 'integral') return { regra: 'integral', valor: it.valor_entrada };
@@ -186,6 +191,7 @@
       if (c && ['lancado', 'lancando', 'pago_fora', 'a_lancar'].indexOf(c.status) >= 0) return null;
       if (dados.fechado) return null;
       if (it.situacao === 'aberta') return null; // ainda rodando: entra na rodada / no fechamento
+      if (it.decisao === 'aguardar') return null; // DIARIA_VEREDITO_FIM_V1: turno não acabou
       return btn(it.decisao === 'pagar' ? 'Lançar' : 'Lançar decisão', () => lancarUm(it));
     };
     React.useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
@@ -287,7 +293,11 @@
                 e('div', { style: { width: (Number(job.progresso) || 3) + '%', height: '100%', background: '#770fa8', transition: 'width .4s' } })))
           : e('button', { onClick: atualizar, className: 'h-10 px-4 rounded-lg border border-purple-600 text-purple-700 text-sm font-semibold hover:bg-purple-50 inline-flex items-center gap-2' },
               e(Ico, { d: ['M21 12a9 9 0 1 1-2.6-6.4', 'M21 3v6h-6'] }), 'Atualizar dados agora'),
-        e('span', { className: 'text-xs text-gray-600' }, dados.dados_de_txt ? ('Dados do BI de ' + dados.dados_de_txt) : 'Sem importação do BI nesse dia ainda'))
+        e('span', { className: 'text-xs text-gray-600' }, dados.dados_de_txt ? ('Dados do BI de ' + dados.dados_de_txt) : 'Sem importação do BI nesse dia ainda'),
+        dados.eh_hoje && e('span', { className: 'text-xs', style: { color: dados.tela_min !== null && dados.tela_min !== undefined && dados.tela_min <= 20 ? '#166534' : '#92400e' } }, /* DIARIA_VEREDITO_FIM_V1 */
+          dados.tela_min !== null && dados.tela_min !== undefined && dados.tela_min <= 20
+            ? 'Corridas ao vivo pela tela do MAP · lida às ' + dados.tela_de
+            : 'Tela do MAP sem leitura recente' + (dados.tela_de ? ' (última às ' + dados.tela_de + ')' : '') + ' — vale só o BI'))
     );
 
     // DIARIA_MAPP_V1: faixa do pagamento na Mapp
@@ -407,10 +417,17 @@
     const ausentes = decidir.filter((x) => x.situacao === 'ausente').length;
     const total = comValor.reduce((s, x) => s + Number(x.valor || 0), 0);
     const qtdPagos = comValor.filter((x) => x.valor > 0).length;
+    // DIARIA_VEREDITO_FIM_V1: turno rolando — sem veredito até a saída
+    const rolando = !!dados.em_andamento;
+    const parados = itens.filter((x) => x.situacao === 'parado');
+    const semAinda = itens.filter((x) => x.situacao === 'sem_ainda');
+    const previsto = itens.reduce((s, x) => s + Number(x.valor_entrada || 0), 0);
     const lista = itens.filter((x) => filtro === 'todos'
       || (filtro === 'decidir' && x.decisao === 'decidir')
       || (filtro === 'aberta' && x.situacao === 'aberta')
-      || (filtro === 'prontos' && x.decisao === 'pagar' && x.situacao !== 'aberta'));
+      || (filtro === 'prontos' && x.decisao === 'pagar' && x.situacao !== 'aberta')
+      || (filtro === 'parado' && x.situacao === 'parado')
+      || (filtro === 'sem_ainda' && x.situacao === 'sem_ainda'));
     const pilula = (val, txt) => e('button', {
       key: val, onClick: () => setFiltro(val), 'aria-pressed': filtro === val,
       className: 'h-8 px-3 rounded-full text-xs ' + (filtro === val ? 'border border-purple-600 bg-purple-50 text-purple-800 font-semibold' : 'border border-gray-200 bg-white text-gray-600')
@@ -430,6 +447,14 @@
       cabecalho,
       faixaMapp,
       !dados.diaria_ativa && e('div', { className: 'bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800' }, 'A diária está desligada nesta central — o fechamento mostra só os registros que existirem nesse dia.'),
+      rolando && e('div', { role: 'status', className: 'bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800 leading-relaxed' }, /* DIARIA_VEREDITO_FIM_V1 */
+        e('b', null, 'Turno em andamento até ' + dados.turno_ate + '. '),
+        'Aqui você acompanha quem está em corrida, na fila ou parado. Quem rodou até o fim, parou cedo ou encerrou longe só é decidido depois da saída — aí a decisão e o fechamento liberam.'),
+      rolando ? e('div', { className: 'grid gap-3', style: { gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' } },
+        e(Card, { titulo: 'Em corrida agora', cor: '#2563eb', valor: abertos.length, sub: itens.filter((x) => x.situacao === 'fila').length + ' na fila · ' + itens.filter((x) => x.situacao === 'rodando').length + ' rodando' }),
+        e(Card, { titulo: 'Sem atividade', cor: '#f67602', valor: parados.length, sub: parados.length ? 'há mais de ' + dados.limiar_parou_cedo + ' min sem corrida nem fila' : 'ninguém parado' }),
+        e(Card, { titulo: 'Ainda sem corrida', cor: '#6b7280', valor: semAinda.length, sub: semAinda.length ? 'entraram e não pegaram corrida' : 'todos já rodaram' }),
+        e(Card, { escuro: true, titulo: 'Diárias previstas', valor: brl(previsto), sub: 'se todos rodarem até ' + dados.turno_ate })) :
       e('div', { className: 'grid gap-3', style: { gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' } },
         e(Card, { titulo: 'Prontos para pagar', cor: '#16a34a', valor: prontos.length, sub: brl(prontos.reduce((s, x) => s + x.valor_entrada, 0)) + (prontos.some((x) => x.situacao === 'longe') ? ' · ' + prontos.filter((x) => x.situacao === 'longe').length + ' encerraram longe' : '') }),
         e(Card, { titulo: 'Precisam de decisão', cor: '#f67602', valor: decidir.length, sub: decidir.length ? [cedo ? cedo + ' parou cedo' : null, ausentes ? ausentes + ' ausente no meio do dia' : null, (decidir.length - cedo - ausentes) ? (decidir.length - cedo - ausentes) + ' sem corrida' : null].filter(Boolean).join(' · ') : 'nenhuma' }),
@@ -438,13 +463,14 @@
       e('div', { className: 'bg-white border border-gray-200 rounded-xl overflow-hidden' },
         e('div', { className: 'px-4 py-3 border-b border-gray-100 flex flex-wrap items-center gap-2' },
           e('span', { className: 'font-bold text-gray-800 text-sm mr-1' }, 'Motoboys do dia'),
-          pilula('todos', 'Todos ' + itens.length), pilula('decidir', 'Precisam de decisão ' + decidir.length),
-          pilula('aberta', 'Em aberto ' + abertos.length), pilula('prontos', 'Prontos ' + prontos.length),
+          pilula('todos', 'Todos ' + itens.length),
+          rolando ? [pilula('aberta', 'Em corrida ' + abertos.length), pilula('parado', 'Sem atividade ' + parados.length), pilula('sem_ainda', 'Sem corrida ' + semAinda.length)] /* DIARIA_VEREDITO_FIM_V1 */
+            : [pilula('decidir', 'Precisam de decisão ' + decidir.length), pilula('aberta', 'Em aberto ' + abertos.length), pilula('prontos', 'Prontos ' + prontos.length)],
           e('span', { className: 'ml-auto text-xs text-gray-600 flex items-center gap-1.5' },
             '“Parou cedo” = última finalização mais de',
             e('input', { 'aria-label': 'Minutos antes da saída', type: 'number', min: 0, max: 600, defaultValue: dados.limiar_parou_cedo, key: 'lim' + dados.limiar_parou_cedo,
               onBlur: (ev) => salvarLimiar(ev.target.value), className: 'w-14 h-7 border border-gray-300 rounded text-center text-xs' }),
-            'min antes da ' + (dados.eh_hoje && dados.referencia && dados.referencia < dados.escala_padrao.slice(6) ? 'hora atual' : 'saída') + ' · volta à base a',
+            'min antes da saída · volta à base a', // DIARIA_VEREDITO_FIM_V1: só vale depois do fim do turno
             // DIARIA_ENCERROU_LONGE_V1: quem finalizou longe e não voltaria a tempo não é "parou cedo"
             e('input', { 'aria-label': 'Velocidade média de volta à base (km/h)', type: 'number', min: 5, max: 80, defaultValue: dados.velocidade_retorno, key: 'vel' + dados.velocidade_retorno,
               title: dados.base_tem_coordenada ? 'Distância: da última entrega até a base da central (linha reta × 1,3)' : 'A central não tem coordenada cadastrada — usa a km da própria entrega',
@@ -476,9 +502,10 @@
                       e('div', { className: 'font-semibold' }, it.corridas + (it.abertas ? ' + ' + it.abertas : '')),
                       e('div', { className: 'text-xs text-gray-500' }, it.abertas ? it.abertas + ' em execução' : (it.corridas ? 'finalizadas' : 'nenhuma corrida'))),
                     e('td', { className: 'px-4 py-3 tabular-nums' },
-                      e('div', { className: 'font-semibold' }, it.ultima_finalizacao || '—'),
-                      e('div', { className: 'text-xs', style: { color: it.situacao === 'cedo' ? '#92400e' : '#6b7280' } }, it.ultima_nota || ''),
-                      it.km_volta !== null && it.km_volta !== undefined && it.situacao !== 'aberta' && e('div', { className: 'text-xs', style: { color: it.situacao === 'longe' ? '#166534' : '#6b7280' } },
+                      e('div', { className: 'font-semibold' }, it.ultima_finalizacao || '—',
+                        it.ultima_fonte === 'tela' && e('span', { className: 'ml-1 text-[10px] font-semibold text-blue-700', title: 'O BI ainda não trouxe essa finalização: hora em que a OS saiu da tela do MAP' }, 'tela')), // DIARIA_VEREDITO_FIM_V1
+                      e('div', { className: 'text-xs', style: { color: it.situacao === 'cedo' || it.situacao === 'parado' ? '#92400e' : '#6b7280' } }, it.ultima_nota || ''),
+                      it.km_volta !== null && it.km_volta !== undefined && it.situacao !== 'aberta' && !it.em_andamento && e('div', { className: 'text-xs', style: { color: it.situacao === 'longe' ? '#166534' : '#6b7280' } },
                         '~' + Math.round(it.km_volta) + ' km da base' + (it.retorno_estimado ? ' · voltaria ~' + it.retorno_estimado : ''))),
                     e('td', { className: 'px-4 py-3' },
                       it.os_aberta
@@ -487,14 +514,19 @@
                         : e('span', { className: 'text-gray-400' }, '—')),
                     e('td', { className: 'px-4 py-3' },
                       e('span', { className: 'text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap', style: { background: sit.bg, color: sit.fg } }, it.rotulo),
+                      it.em_andamento && it.nota && e('div', { className: 'text-xs mt-1', style: { color: it.ausente_alerta ? '#991b1b' : '#6b7280' } }, it.nota), // DIARIA_VEREDITO_FIM_V1
                       // DIARIA_DISPONIBILIDADE_V1: quando ele ficou fora (sem fila e sem corrida)
                       Array.isArray(it.buracos) && it.buracos.length > 0 && e('div', { className: 'text-xs mt-1', style: { color: it.situacao === 'ausente' ? '#991b1b' : '#6b7280' } },
                         'fora ' + it.buracos.map((b) => b.de + '–' + b.ate).join(', '))),
                     e('td', { className: 'px-4 py-3 text-right tabular-nums' },
-                      e('div', { className: 'font-bold' }, brl(cv.valor)),
-                      e('div', { className: 'text-xs text-gray-500' }, it.decisao === 'pagar' ? it.nota : (cv.regra === 'proporcional' ? it.nota : (cv.regra === 'integral' ? 'integral' : 'não pago')))),
+                      it.decisao === 'aguardar'
+                        ? e('div', null, e('div', { className: 'font-bold text-gray-500' }, brl(it.valor_entrada)), e('div', { className: 'text-xs text-gray-500' }, 'previsto')) // DIARIA_VEREDITO_FIM_V1
+                        : e('div', null, e('div', { className: 'font-bold' }, brl(cv.valor)),
+                            e('div', { className: 'text-xs text-gray-500' }, it.decisao === 'pagar' ? it.nota : (cv.regra === 'proporcional' ? it.nota : (cv.regra === 'integral' ? 'integral' : 'não pago'))))),
                     e('td', { className: 'px-4 py-2.5' },
-                      it.decisao === 'pagar'
+                      it.decisao === 'aguardar' /* DIARIA_VEREDITO_FIM_V1 */
+                        ? e('span', { className: 'inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 whitespace-nowrap' }, e(Ico, { d: ['M12 6v6l4 2', 'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0'], size: 14 }), 'Veredito às ' + it.turno_ate)
+                      : it.decisao === 'pagar'
                         ? e('span', { className: 'inline-flex items-center gap-1.5 text-sm font-semibold', style: { color: it.situacao === 'aberta' ? '#1e40af' : '#166534' } },
                             e(Ico, { d: 'M20 6 9 17l-5-5' }), it.situacao === 'aberta' ? 'Pagar (ainda rodando)' : 'Pagar')
                         : e('div', { role: 'radiogroup', 'aria-label': 'Decisão da diária de ' + nomeDe(it), className: 'inline-flex border border-gray-300 rounded-lg overflow-hidden' },
@@ -507,14 +539,15 @@
         e('div', { className: 'flex-1 min-w-[280px]' },
           e('div', { className: 'font-bold text-gray-800 text-sm' }, 'Fechar o dia e mandar para o financeiro'),
           e('div', { className: 'text-xs text-gray-600 mt-0.5 leading-relaxed' },
+            rolando ? 'Libera às ' + dados.turno_ate + ', quando acabar o turno. Até lá não há veredito de quem parou cedo ou rodou até o fim.' : // DIARIA_VEREDITO_FIM_V1
             (decidir.length ? decidir.length + (decidir.length === 1 ? ' decisão usa' : ' decisões usam') + ' a sugestão marcada, a menos que você mude. ' : '')
             + (abertos.length ? abertos.length + ' com corrida em aberto entra' + (abertos.length === 1 ? '' : 'm') + ' pago' + (abertos.length === 1 ? '' : 's') + ' — ainda tem operação. ' : '')
             + 'O resumo fica gravado e não muda se o BI mudar depois.'
             + (pg && pg.ativo && pg.token_ok ? ' Com o pagamento na Mapp ligado, quem ainda não foi lançado é lançado na hora.' : ''))),
         e('button', {
-          onClick: () => fechar(total, qtdPagos), disabled: ocupado || !!job,
+          onClick: () => fechar(total, qtdPagos), disabled: ocupado || !!job || rolando, title: rolando ? 'Libera às ' + dados.turno_ate : null, // DIARIA_VEREDITO_FIM_V1
           className: 'h-11 px-5 rounded-lg bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white text-sm font-bold inline-flex items-center gap-2'
-        }, e(Ico, { d: ['M22 2 11 13', 'M22 2 15 22l-4-9-9-4z'] }), 'Fechar e enviar ao financeiro · ' + brl(total)))
+        }, e(Ico, { d: ['M22 2 11 13', 'M22 2 15 22l-4-9-9-4z'] }), rolando ? 'Fechar o dia (libera às ' + dados.turno_ate + ')' : 'Fechar e enviar ao financeiro · ' + brl(total)))
     );
   }
 
