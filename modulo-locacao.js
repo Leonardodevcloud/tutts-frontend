@@ -820,19 +820,35 @@
     var filtrada = pessoas.filter(function (x) { return deOrigem(x) && FIL[filtro](x); });
     var aguardAss = pessoas.filter(function (x) { return x.tipoR === 'contrato' && x.contrato.status === 'aguardando_assinatura'; }).length;
     var docsPend = pessoas.filter(function (x) { return x.pre && x.pre.status === 'aguardando_documentos'; }).length;
-    var barras = function (n, cor) { return h('span', { 'aria-hidden': 'true', style: { display: 'inline-flex', gap: 3, flex: 'none' } }, [0, 1, 2].map(function (i) { return h('span', { key: i, style: { width: 22, height: 4, borderRadius: 99, background: i < n ? cor : '#e5e7eb' } }); })); };
+    /* LOCACAO_ENTREGA_V1: etapa com nome de cada passo — Cadastro › Aprovado › Contrato › Moto entregue */
+    var PASSOS = ['Cadastro', 'Aprovado', 'Contrato', 'Moto entregue'];
+    var passos = function (feitos, atual, legenda, corLeg, ruim) {
+      return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 4 } },
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 4 } }, PASSOS.map(function (nome, i) {
+          var ok = i < feitos, cur = i === atual;
+          var cor = ruim && cur ? '#dc2626' : ok ? ROXO : cur ? '#a855f7' : '#d1d5db';
+          return h(React.Fragment, { key: i },
+            i ? h('span', { 'aria-hidden': 'true', style: { width: 10, height: 2, background: i <= feitos ? ROXO : '#e5e7eb' } }) : null,
+            h('span', { title: nome + (ok ? ' · feito' : cur ? ' · agora' : ' · falta'), style: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: ok || cur ? 700 : 500, color: ok ? ROXO_ESC : cur ? (ruim ? '#991b1b' : '#7e22ce') : '#9ca3af', whiteSpace: 'nowrap' } },
+              h('span', { style: { width: 14, height: 14, borderRadius: 99, display: 'grid', placeItems: 'center', background: ok ? cor : '#fff', border: '2px solid ' + cor, color: '#fff', flex: 'none' } }, ok ? h('svg', { width: 8, height: 8, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 4, 'aria-hidden': 'true' }, h('path', { d: 'M20 6 9 17l-5-5' })) : null),
+              nome));
+        })),
+        legenda ? h('div', { style: { fontSize: 12, fontWeight: 600, color: corLeg || '#374151' } }, legenda) : null);
+    };
     var etapaDe = function (x) {
       if (x.tipoR === 'pre') {
         var p = x.pre, falt = p.faltam || [];
         var bloq = (p.alertas || []).filter(function (a) { return a.nivel === 'bloqueia'; }).length;
         var txt = (p.status_label || ROT_PRE[p.status] || p.status) + (falt.length ? ' · faltam ' + falt.length + ' ite' + (falt.length > 1 ? 'ns' : 'm') : bloq ? ' · ' + bloq + ' bloqueio' + (bloq > 1 ? 's' : '') : '');
-        return h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 8 } }, barras(1, ROXO), h('span', { style: { fontSize: 12.5, fontWeight: 600, color: falt.length || bloq ? '#92400e' : '#374151' } }, txt));
+        return passos(0, 0, txt, falt.length || bloq ? '#92400e' : '#374151');
       }
-      if (x.tipoR === 'reprovado') return h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 8 } }, barras(1, '#dc2626'), h('span', { style: { fontSize: 12.5, fontWeight: 600, color: '#991b1b' } }, 'Reprovado'));
-      if (x.tipoR === 'aprovado') return h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 8 } }, barras(2, ROXO), h('span', { style: { fontSize: 12.5, fontWeight: 600, color: '#166534' } }, 'Aprovado · sem contrato'));
-      if (x.tipoR === 'ex') return h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 8 } }, barras(3, '#9ca3af'), h('span', { style: { fontSize: 12.5, fontWeight: 600, color: '#6b7280' } }, 'Ex-locatário · ' + String(x.contrato.situacao_label || x.contrato.status).toLowerCase()));
+      if (x.tipoR === 'reprovado') return passos(0, 0, 'Reprovado', '#991b1b', true);
+      if (x.tipoR === 'aprovado') return passos(2, 2, 'Falta criar o contrato', '#166534');
       var k = x.contrato;
-      return h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 8 } }, barras(3, k.status === 'aguardando_assinatura' ? '#a855f7' : ROXO), h('span', { style: { fontSize: 12.5, fontWeight: 600, color: k.status === 'aguardando_assinatura' ? '#1e40af' : '#374151' } }, k.status === 'aguardando_assinatura' ? 'Contrato · aguardando assinatura' : 'Contrato ativo'));
+      if (x.tipoR === 'ex') return passos(4, -1, 'Ex-locatário · ' + String(k.situacao_label || k.status).toLowerCase(), '#6b7280');
+      if (k.status === 'aguardando_assinatura') return passos(2, 2, k.etapa === 'vistoria' ? 'Contrato criado · falta a vistoria de entrega' : 'Contrato aguardando assinatura', '#1e40af');
+      if (!k.retirada_em) return passos(3, 3, 'Contrato ativo · entrega da moto não registrada', '#92400e');
+      return passos(4, -1, 'Contrato ativo · moto com ele desde ' + fDC(k.retirada_em), '#374151');
     };
     var abrir = function (x) {
       if (x.pre) return setSel(x.pre.id);
@@ -894,7 +910,7 @@
               { td: 1, right: true, v: acaoBtn(x) }
             ], function () { abrir(x); }, on ? { background: '#faf7fd', boxShadow: 'inset 3px 0 0 ' + ROXO } : null);
           })),
-        filtrada.length ? h('div', { style: { padding: '10px 16px', borderTop: '1px solid #f3f4f6', fontSize: 12, color: '#6b7280' } }, 'As três barrinhas são o caminho da pessoa: pré-cadastro → aprovado → contrato.') : null)),
+        filtrada.length ? h('div', { style: { padding: '10px 16px', borderTop: '1px solid #f3f4f6', fontSize: 12, color: '#6b7280' } }, 'Etapa: Cadastro › Aprovado › Contrato (assinado) › Moto entregue. A bolinha cheia é o que já foi feito; a lilás é onde a pessoa está agora.') : null)),
       sel ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 } }, h('div', { style: { display: 'flex', justifyContent: 'flex-end' } }, Btn({ variant: 'link', small: true, icon: 'x', onClick: function () { setSel(null); }, children: 'Fechar revisão' })), h(RevisaoPrecadastro, { key: sel, id: sel, api: api, toast: toast, nav: nav, item: lista.find(function (x) { return x.id === sel; }) || null, editar: props.editar && sel === props.selecionar, aoMudar: function () { carregar(); props.recarregarPainel && props.recarregarPainel(); },
           aoExcluir: function () { setSel(null); carregar(); props.recarregarPainel && props.recarregarPainel(); } /* LOCACAO_PRECAD_EXCLUIR_V1 */ }))
         : null),
@@ -3291,7 +3307,31 @@
       h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 8, padding: '0 16px 16px' } },
         chip(!!mo.tem_seguro, mo.tem_seguro ? 'Seguro' : 'Sem seguro'), chip(!!mo.tem_rastreador, mo.tem_rastreador ? 'Rastreador' : 'Sem rastreador'),
         c.bloqueio_sinalizado_em ? chip(false, 'Bloqueio sinalizado ' + fDC(c.bloqueio_sinalizado_em), 'bl') : null,
-        c.vistoria_entrega ? chip(true, 'Vistoria de entrega ' + fDC(c.vistoria_entrega.criado_em), 've') : null));
+        c.vistoria_entrega ? chip(true, 'Vistoria de entrega ' + fDC(c.vistoria_entrega.criado_em), 've') : null),
+      (function () { /* LOCACAO_ENTREGA_V1: a moto já está com o locatário? */
+        var vivo = { em_dia: 1, atrasada: 1, em_retomada: 1, suspenso: 1 }[c.situacao];
+        if (c.retirada_em) return h('div', { style: { display: 'flex', gap: 10, alignItems: 'center', padding: '10px 16px', borderTop: '1px solid #f3f4f6', background: '#f0fdf4', fontSize: 13, color: '#166534' } },
+          ico('check', 15), h('span', null, h('b', null, 'Moto entregue ao locatário em ' + fD(c.retirada_em)), ' · ' + ({ vistoria: 'com vistoria de retirada', importado: 'contrato importado (já estava com ele)', manual: 'marcado pela equipe' + (c.retirada_por ? ' (' + c.retirada_por + ')' : '') }[c.retirada_origem] || ''), c.retirada_obs ? ' · ' + c.retirada_obs : ''));
+        if (!vivo) return null;
+        return h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', padding: '12px 16px', borderTop: '1px solid #fde68a', background: '#fffbeb' } },
+          h('span', { style: { color: '#92400e', display: 'inline-flex' } }, ico('alert', 16)),
+          h('div', { style: { flex: '1 1 260px', fontSize: 13, color: '#92400e' } }, h('b', null, 'Entrega da moto não registrada. '), 'Faça a vistoria de retirada (Anexo IV) ou, se a moto já está com ele desde antes, só marque a entrega.'),
+          props.onVistoria ? Btn({ small: true, icon: 'camera', onClick: props.onVistoria, children: 'Fazer vistoria de retirada' }) : null,
+          props.onMarcarEntrega ? Btn({ small: true, variant: 'pri', icon: 'check', onClick: props.onMarcarEntrega, children: 'Já está com ele' }) : null);
+      })());
+  }
+
+  function EntregaModal(props) { /* LOCACAO_ENTREGA_V1 */
+    var c = props.contrato || {};
+    var _d = useState(c.assinado_em ? iso(parseData(c.assinado_em)) : (c.data_inicio || hojeISO())), data = _d[0], setData = _d[1];
+    var _o = useState(''), obs = _o[0], setObs = _o[1];
+    var _s = useState(false), s = _s[0], setS = _s[1];
+    return h(Modal, { titulo: 'Marcar moto como entregue', onClose: props.onClose, largura: 480,
+      rodape: [Btn({ key: 'c', onClick: props.onClose, children: 'Voltar' }), Btn({ key: 'o', variant: 'pri', icon: 'check', disabled: s || obs.trim().length < 3 || !data, onClick: function () { setS(true); Promise.resolve(props.onConfirm({ data: data, observacao: obs.trim() })).catch(function () {}).then(function () { setS(false); }); }, children: s ? 'Salvando...' : 'Marcar entrega' })] },
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+        h('div', { style: { fontSize: 13, color: '#374151', lineHeight: 1.5 } }, 'Use quando a moto já foi entregue sem vistoria de retirada na Central (contrato antigo, entrega antes do sistema). A partir dessa data passa a contar o prazo da vistoria mensal.'),
+        h(Field, { label: 'Data em que a moto foi entregue', req: true }, Input({ type: 'date', value: data, max: hojeISO(), onChange: function (e) { setData(e.target.value); } })),
+        h(Field, { label: 'Observação', req: true, hint: 'Fica no histórico. Ex.: moto com ele desde setembro, contrato assinado no papel.' }, TextArea({ rows: 3, value: obs, onChange: function (e) { setObs(e.target.value); } }))));
   }
 
   function DadosLocatarioCard(props) {
@@ -3454,7 +3494,7 @@
       h('div', { className: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] items-start' },
         h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 } }, /* LOCACAO_REMODEL_V1: perfil — parcelas foram para o Financeiro */
           h(ContratoResumoCard, { api: api, toast: toast, c: c, k: k, parcelas: parcelas, abrirFinanceiro: function () { nav({ tela: 'financeiro', id: c.id }); } }),
-          h(MotoResumoCard, { mo: mo, c: c, abrirMoto: function () { nav({ tela: 'moto', id: mo.id }); } }),
+          h(MotoResumoCard, { mo: mo, c: c, abrirMoto: function () { nav({ tela: 'moto', id: mo.id }); }, onVistoria: function () { setModal('vistoriaEntrega'); }, onMarcarEntrega: function () { setModal('entrega'); } }), // LOCACAO_ENTREGA_V1
           assinando ? null : h(DemonstrativoCard, { contrato: c, cliente: cli }), // LOCACAO_V3 · LOCACAO_REMODEL_V1: na coluna do contrato
           h(OutrosContratosCard, { lista: (d.perfil && d.perfil.outros_contratos) || [], nav: nav })),
 
@@ -3494,6 +3534,7 @@
       modal === 'devolucao' ? h(MotivoModal, { titulo: 'Registrar moto devolvida', label: 'Observação', botao: 'Registrar devolução', perigo: true,
         texto: 'O contrato é encerrado e a moto volta para Disponível. A vistoria de devolução fica pendente para a equipe.', onClose: function () { setModal(null); }, onConfirm: function (m) { return acao('dev', '/contratos/' + c.id + '/registrar-devolucao', { observacao: m || null }, 'Devolução registrada'); } }) : null,
       modal === 'vistoriaEntrega' ? h(VistoriaAnexoIVModal, { api: api, toast: toast, moto: mo, contrato: c, tipo: 'retirada', onClose: function () { setModal(null); }, aoSalvar: function (r) { setModal(r && r.assinatura && r.assinatura.conferir ? 'posicoes' : null); carregar(); props.aoMudar && props.aoMudar(); } }) : null, // LOCACAO_FLUXO_V1 · AUTENTIQUE_CONFERIR_V1: já abre Posicionar assinaturas
+      modal === 'entrega' ? h(EntregaModal, { contrato: c, onClose: function () { setModal(null); }, onConfirm: function (b) { return acao('entrega', '/contratos/' + c.id + '/marcar-entrega', b, 'Entrega registrada'); } }) : null, // LOCACAO_ENTREGA_V1
       modal === 'posicoes' ? h(PosicionarAssinaturas, { api: api, toast: toast, contrato: c, onClose: function () { setModal(null); }, aoMudar: carregar, aoEnviar: function () { setModal(null); carregar(); props.aoMudar && props.aoMudar(); } }) : null, // AUTENTIQUE_POSICOES_V2
       modal === 'assinado' ? h(MotivoModal, { titulo: 'Marcar como assinado', label: 'Motivo', obrigatorio: true, botao: 'Marcar como assinado', hint: 'Fica no histórico. Use só se o Autentique não devolveu o status.',
         texto: 'As ' + nParc + ' parcelas serão criadas a partir do 1º vencimento e o contrato vira Ativo.', onClose: function () { setModal(null); }, onConfirm: function (m) { return acao('ass', '/contratos/' + c.id + '/marcar-assinado', { motivo: m }, 'Contrato ativado'); } }) : null,
