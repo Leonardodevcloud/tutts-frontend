@@ -115,12 +115,63 @@
       e('span', { className: 'text-xs', style: escuro ? { opacity: .9 } : { color: '#374151' } }, sub));
   }
 
+  // ── DIARIA_HORA_EXTRA_V1: linha do tempo do dia do motoboy ──
+  const LT_COR = {
+    fila:    { bg: '#e9d5f9', fg: '#5d0b85', txt: 'Na fila' },
+    corrida: { bg: '#2563eb', fg: '#ffffff', txt: 'Em corrida' },
+    volta:   { bg: '#93c5fd', fg: '#1e3a8a', txt: 'Voltando à base' },
+    fora:    { bg: '#dc2626', fg: '#ffffff', txt: 'Fora (conta como ausência)' },
+    curto:   { bg: '#e5e7eb', fg: '#374151', txt: 'Intervalo curto (< 15 min, não conta)' },
+    parado:  { bg: '#fde68a', fg: '#92400e', txt: 'Sem atividade depois da última (parou cedo)' },
+    extra:   { bg: '#16a34a', fg: '#ffffff', txt: 'Corrida depois da saída (abate a ausência)' },
+  };
+  function minHm(hm) { const m = /^(\d{1,2}):(\d{2})/.exec(String(hm || '')); return m ? Number(m[1]) * 60 + Number(m[2]) : null; }
+  function durTxt(min) { const m = Math.max(0, Math.round(min)); const h = Math.floor(m / 60), r = m % 60; return h ? (r ? h + 'h' + String(r).padStart(2, '0') : h + 'h') : r + ' min'; }
+  function LinhaTempo({ it }) {
+    const l = it.linha;
+    if (!l || !l.pecas || !l.pecas.length) return e('div', { style: { fontSize: 12, color: '#6b7280' } }, 'Sem registros de fila ou corrida nesse dia.');
+    const ini = minHm(l.de), saida = minHm(l.saida), ate = minHm(l.ate);
+    const fimEsc = Math.max(saida || 0, ate || 0, ini + 60);
+    const tot = Math.max(1, fimEsc - ini);
+    const pct = (m) => Math.max(0, Math.min(100, ((m - ini) / tot) * 100));
+    const horas = [];
+    for (let h = Math.ceil(ini / 60) * 60; h <= fimEsc; h += 60) horas.push(h);
+    const tipos = Object.keys(LT_COR).filter((t) => l.pecas.some((p) => p.t === t));
+    const soma = (t) => l.pecas.filter((p) => p.t === t).reduce((s, p) => s + p.min, 0);
+    return e('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+      e('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '4px 20px', fontSize: 12, color: '#374151' } },
+        e('span', null, e('b', null, 'À disposição: '), durTxt(it.disponivel_min || 0)),
+        e('span', null, e('b', null, 'Fora no meio do dia: '), durTxt(it.ausente_meio_min || 0)),
+        it.extra_min > 0 && e('span', { style: { color: '#166534' } }, e('b', null, 'Depois da saída: '), '+' + durTxt(it.extra_min) + ' → ausência considerada ' + durTxt(it.ausente_liquido_min || 0)),
+        e('span', { style: { color: '#6b7280' } }, 'Escala até ' + l.saida + (it.em_andamento ? ' · linha até agora' : ''))),
+      e('div', { style: { position: 'relative', paddingTop: 2 } },
+        e('div', { role: 'img', 'aria-label': 'Linha do tempo de ' + nomeDe(it), style: { position: 'relative', height: 26, borderRadius: 6, background: '#f9fafb', border: '1px solid #e5e7eb', overflow: 'hidden' } },
+          l.pecas.map((p, i) => {
+            const a = minHm(p.de), b = minHm(p.ate); const c = LT_COR[p.t] || LT_COR.curto;
+            return e('div', { key: i, title: c.txt + ' · ' + p.de + '–' + p.ate + ' (' + durTxt(p.min) + ')' + (p.os ? ' · OS ' + p.os : ''),
+              style: { position: 'absolute', top: 0, bottom: 0, left: pct(a) + '%', width: Math.max(0.4, pct(b) - pct(a)) + '%', background: c.bg } });
+          }),
+          saida !== null && e('div', { title: 'Saída ' + l.saida, style: { position: 'absolute', top: -2, bottom: -2, left: pct(saida) + '%', width: 2, background: '#111827' } })),
+        e('div', { style: { position: 'relative', height: 16, marginTop: 2 } },
+          horas.map((h) => e('span', { key: h, style: { position: 'absolute', left: pct(h) + '%', transform: 'translateX(-50%)', fontSize: 10.5, color: '#6b7280' } }, String(Math.floor(h / 60)).padStart(2, '0') + 'h')),
+          saida !== null && e('span', { style: { position: 'absolute', left: pct(saida) + '%', transform: pct(saida) > 92 ? 'translateX(-100%)' : 'translateX(-50%)', top: 14, fontSize: 10.5, fontWeight: 700, color: '#111827', whiteSpace: 'nowrap' } }, 'saída ' + l.saida))),
+      e('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '4px 16px', marginTop: 10 } },
+        tipos.map((t) => e('span', { key: t, style: { display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#374151' } },
+          e('span', { style: { width: 10, height: 10, borderRadius: 2, background: LT_COR[t].bg, display: 'inline-block' } }), LT_COR[t].txt + ' · ' + durTxt(soma(t))))),
+      e('div', { style: { display: 'grid', gap: 4, gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))' } },
+        l.pecas.filter((p) => p.t !== 'curto').map((p, i) => e('div', { key: i, style: { fontSize: 12, display: 'flex', alignItems: 'center', gap: 8, fontVariantNumeric: 'tabular-nums' } },
+          e('span', { style: { width: 8, height: 8, borderRadius: 99, background: (LT_COR[p.t] || LT_COR.curto).bg, flex: 'none' } }),
+          e('span', { style: { fontWeight: 600, whiteSpace: 'nowrap' } }, p.de + '–' + p.ate),
+          e('span', { style: { color: '#4b5563' } }, (LT_COR[p.t] || LT_COR.curto).txt.split(' (')[0] + (p.os ? ' · OS ' + p.os : '') + ' · ' + durTxt(p.min))))));
+  }
+
   function FechamentoDiaria({ apiUrl, fetchAuth, showToast, centralId, dataInicial }) {
     const [data, setData] = React.useState(() => dataInicial || hojeBahia());
     const [dados, setDados] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
     const [decisoes, setDecisoes] = React.useState({});
     const [filtro, setFiltro] = React.useState('todos');
+    const [aberto, setAberto] = React.useState(null); // DIARIA_HORA_EXTRA_V1: linha do tempo aberta
     const [job, setJob] = React.useState(null); // {id, status, progresso}
     const [ocupado, setOcupado] = React.useState(false);
     const [mappOcupado, setMappOcupado] = React.useState(null); // DIARIA_MAPP_V1: cod em lançamento / 'rodar'
@@ -491,10 +542,15 @@
                 e('tbody', null, lista.map((it) => {
                   const cv = valorEscolhido(it, decisoes[it.cod_profissional]);
                   const sit = SIT[it.situacao] || SIT.fim;
-                  return e('tr', { key: it.cod_profissional, className: 'border-t border-gray-100 align-top', style: it.decisao === 'decidir' ? { background: '#f9fafb' } : null },
+                  const abertoAqui = aberto === it.cod_profissional; // DIARIA_HORA_EXTRA_V1
+                  const nCols = 8 + (pg && pg.ativo ? 1 : 0);
+                  return [e('tr', { key: it.cod_profissional, className: 'border-t border-gray-100 align-top', style: it.decisao === 'decidir' ? { background: '#f9fafb' } : null },
                     e('td', { className: 'px-4 py-3' },
                       e('div', { className: 'font-semibold text-gray-800' }, nomeDe(it)),
-                      e('div', { className: 'text-xs text-gray-500' }, 'cód. ' + it.cod_profissional + (it.da_escala ? ' · escala ' + it.escala : ''))),
+                      e('div', { className: 'text-xs text-gray-500' }, 'cód. ' + it.cod_profissional + (it.da_escala ? ' · escala ' + it.escala : '')),
+                      e('button', { type: 'button', onClick: () => setAberto(abertoAqui ? null : it.cod_profissional), 'aria-expanded': abertoAqui,
+                        className: 'mt-1 text-xs font-semibold text-purple-700 hover:underline inline-flex items-center gap-1' },
+                        e(Ico, { d: abertoAqui ? 'm18 15-6-6-6 6' : 'm6 9 6 6 6-6', size: 13 }), abertoAqui ? 'Fechar linha do tempo' : 'Linha do tempo')),
                     e('td', { className: 'px-4 py-3 tabular-nums' },
                       e('div', { className: 'font-semibold' }, it.entrada || '--:--'),
                       e('div', { className: 'text-xs', style: { color: it.minutos_atraso > 0 ? '#92400e' : '#6b7280' } }, it.minutos_atraso > 0 ? it.minutos_atraso + ' min de atraso' : 'no horário')),
@@ -533,7 +589,9 @@
                             escolhaBtn(it, 'integral', 'Integral', '#16a34a'),
                             (it.situacao === 'cedo' || it.situacao === 'ausente') && escolhaBtn(it, 'proporcional', 'Proporcional', '#770fa8'),
                             escolhaBtn(it, 'nao', 'Não pagar', '#991b1b'))),
-                    pg && pg.ativo && e('td', { className: 'px-4 py-2.5' }, e('div', { className: 'flex flex-col gap-1 items-start' }, e(MappPill, { c: credDe(it.cod_profissional) }), acoesMapp(it))));
+                    pg && pg.ativo && e('td', { className: 'px-4 py-2.5' }, e('div', { className: 'flex flex-col gap-1 items-start' }, e(MappPill, { c: credDe(it.cod_profissional) }), acoesMapp(it)))),
+                    abertoAqui && e('tr', { key: it.cod_profissional + '-lt', style: { background: '#fcfaff' } },
+                      e('td', { colSpan: nCols, className: 'px-4 pb-4 pt-1' }, e(LinhaTempo, { it })))];
                 }))))),
       itens.length > 0 && e('div', { className: 'bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-center gap-3' },
         e('div', { className: 'flex-1 min-w-[280px]' },
