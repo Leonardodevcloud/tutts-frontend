@@ -945,17 +945,19 @@
     var preDeCli = {};
     base.clientes.forEach(function (c) { if (c.precadastro_id) preDeCli[c.precadastro_id] = c; });
     var pessoas = [];
+    var provDoPre = {}; /* LOCACAO_PRE_CONTRATO_V1: locatário provisório = continua na linha do pré-cadastro, com o contrato preparado */
     base.clientes.forEach(function (c) {
       var ks = kPorCli[c.id] || [];
       var atual = ks.find(function (k) { return VIVOS[k.status]; }) || null;
+      if (c.provisorio) { if (c.precadastro_id) provDoPre[c.precadastro_id] = atual; return; }
       var tipoR = atual ? 'contrato' : ks.length ? 'ex' : 'aprovado';
       pessoas.push({ chave: 'c' + c.id, tipoR: tipoR, nome: c.nome, tipo: c.tipo, sub: (c.cod_profissional && c.tipo === 'tutts' ? 'cód. ' + c.cod_profissional : 'CPF ' + c.cpf_mascarado) + (c.whatsapp ? ' · ' + fTel(c.whatsapp) : ''),
         cliente: c, contrato: atual || ks[0] || null, pre: null, quando: c.criado_em });
     });
     lista.forEach(function (p) {
-      if (preDeCli[p.id]) return; // já virou cliente: a linha é a do cliente
+      if (preDeCli[p.id] && !preDeCli[p.id].provisorio) return; // já virou cliente: a linha é a do cliente
       if ((p.status === 'aprovado' || p.status === 'contrato_criado') && p.status_label === 'Locatário excluído') return;
-      pessoas.push({ chave: 'p' + p.id, tipoR: p.status === 'reprovado' ? 'reprovado' : 'pre', nome: p.nome, tipo: tipoDe(p), pre: p, cliente: null, contrato: null, quando: p.criado_em,
+      pessoas.push({ chave: 'p' + p.id, tipoR: p.status === 'reprovado' ? 'reprovado' : 'pre', nome: p.nome, tipo: tipoDe(p), pre: p, cliente: null, contrato: provDoPre[p.id] || null, quando: p.criado_em, /* LOCACAO_PRE_CONTRATO_V1: contrato preparado */
         sub: p.origem === 'central' ? 'da Central · cód. ' + (p.cod_profissional || '—') : [p.cpf_mascarado ? 'CPF ' + p.cpf_mascarado : null, p.whatsapp ? fTel(p.whatsapp) : null].filter(Boolean).join(' · ') });
     });
     var ORD = { pre: 0, aprovado: 1, contrato: 2, ex: 3, reprovado: 4 };
@@ -988,6 +990,7 @@
         var p = x.pre, falt = p.faltam || [];
         var bloq = (p.alertas || []).filter(function (a) { return a.nivel === 'bloqueia'; }).length;
         var txt = (p.status_label || ROT_PRE[p.status] || p.status) + (falt.length ? ' · faltam ' + falt.length + ' ite' + (falt.length > 1 ? 'ns' : 'm') : bloq ? ' · ' + bloq + ' bloqueio' + (bloq > 1 ? 's' : '') : '');
+        if (x.contrato) return passos(0, 0, txt + ' · contrato ' + x.contrato.numero + ' preparado (assina depois de aprovar)', '#1e40af'); /* LOCACAO_PRE_CONTRATO_V1 */
         return passos(0, 0, txt, falt.length || bloq ? '#92400e' : '#374151');
       }
       if (x.tipoR === 'reprovado') return passos(0, 0, 'Reprovado', '#991b1b', true);
@@ -1114,7 +1117,7 @@
         .then(function (r) { setSalvando(false); return r; }, function () { setSalvando(false); });
     };
     var aprovar = function () {
-      acao('/precadastros/' + p.id + '/aprovar', { tipo: tipo, periodicidade: perA, dia_vencimento: perA === 'mensal' ? null : Number(dia), dia_mes: perA === 'mensal' ? Number(diaMesA) : null, cod_profissional: tipo === 'tutts' ? String(cod).trim() : null }, 'Cadastro aprovado. Já dá para criar o contrato.');
+      acao('/precadastros/' + p.id + '/aprovar', { tipo: tipo, periodicidade: perA, dia_vencimento: perA === 'mensal' ? null : Number(dia), dia_mes: perA === 'mensal' ? Number(diaMesA) : null, cod_profissional: tipo === 'tutts' ? String(cod).trim() : null }, d.contrato_preparado ? 'Cadastro aprovado. O contrato ' + d.contrato_preparado.numero + ' já pode ir para assinatura.' : 'Cadastro aprovado. Já dá para criar o contrato.'); /* LOCACAO_PRE_CONTRATO_V1 */
     };
     var abrirDoc = function (doc) {
       setFoto({ titulo: DOCS[doc.tipo] || doc.tipo, src: null });
@@ -1204,6 +1207,19 @@
             central ? null : Btn({ onClick: function () { setModal('docs'); }, disabled: salvando, icon: 'upload', children: 'Pedir documentos' }),
             Btn({ variant: 'pri', icon: 'check', onClick: aprovar, disabled: !podeAprovar || salvando, title: bloqueia ? 'Resolva os alertas que bloqueiam a aprovação' : faltaCampo ? 'Defina tipo de cliente e dia de vencimento' : null, children: salvando ? 'Salvando...' : 'Aprovar cadastro' })),
           bloqueia ? h('div', { style: { fontSize: 12, color: '#991b1b', textAlign: 'right' } }, 'A aprovação fica bloqueada enquanto houver alerta vermelho.') : null,
+          /* LOCACAO_PRE_CONTRATO_V1: preparar o contrato antes de aprovar (a assinatura espera a aprovação) */
+          d.contrato_preparado ? h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', border: '1px solid #bfdbfe', background: '#eff6ff', borderRadius: 12, padding: '10px 12px' } },
+            h('div', { style: { flex: '1 1 240px', minWidth: 0, fontSize: 12.5, color: '#1e40af', lineHeight: 1.45 } }, h('b', null, 'Contrato ' + d.contrato_preparado.numero + ' já preparado. '), 'Ao aprovar o cadastro, ele libera para ir à assinatura.'),
+            Btn({ icon: 'filetext', onClick: function () { props.nav({ tela: 'contrato', id: d.contrato_preparado.id }); }, children: 'Abrir contrato' }))
+          : h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', border: '1px dashed #d8b4f0', background: '#faf7fd', borderRadius: 12, padding: '10px 12px' } },
+            h('div', { style: { flex: '1 1 240px', minWidth: 0, fontSize: 12.5, color: '#374151', lineHeight: 1.45 } }, h('b', { style: { color: ROXO_ESC } }, 'Quer adiantar o contrato? '), 'Gere o contrato e faça as fotos da moto enquanto o cadastro está em revisão. O envio para assinatura só libera depois de aprovar.'),
+            Btn({ icon: 'filetext', disabled: salvando, onClick: function () {
+              setSalvando(true);
+              api('/precadastros/' + p.id + '/cliente-provisorio', { method: 'POST', body: {} }).then(function (r) {
+                props.aoMudar && props.aoMudar();
+                props.nav({ tela: 'novoContrato', cliente_id: r.cliente_id });
+              }).catch(function (e) { toast(e.message, 'error'); setSalvando(false); });
+            }, children: 'Criar contrato antes de aprovar' })),
           /* LOCACAO_PRECAD_CONTRATO_V1: contrato já assinado fora da Central não espera os documentos */
           h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', border: '1px dashed #d8b4f0', background: '#faf7fd', borderRadius: 12, padding: '10px 12px' } },
             h('div', { style: { flex: '1 1 240px', minWidth: 0, fontSize: 12.5, color: '#374151', lineHeight: 1.45 } }, h('b', { style: { color: ROXO_ESC } }, 'Já assinou o contrato fora da Central? '), 'Importe o PDF assinado agora: o cadastro vira locatário sem esperar os documentos, e o contrato entra Ativo.'),
@@ -2375,10 +2391,26 @@
     var rs = useRascunho(api, props.importar ? null : 'novo:' + (props.cliente_id ? 'cli' + props.cliente_id : 'geral'));
     var fInicial = useRef(f), pularEfeito = useRef(false), restNC = useRef(false), baseNC = useRef(null);
     var _vbn = useState(false), verBannerNC = _vbn[0], setVerBannerNC = _vbn[1];
+    /* LOCACAO_PRE_CONTRATO_V1: contrato preparado a partir do pré-cadastro, antes da aprovação */
+    var _prs = useState([]), pres = _prs[0], setPres = _prs[1];
+    var _vin = useState(false), vinculando = _vin[0], setVinculando = _vin[1];
+    var escolherCli = function (v) {
+      if (String(v).indexOf('pre:') !== 0) { setCliId(v); return; }
+      var pid = String(v).slice(4);
+      setVinculando(true);
+      api('/precadastros/' + pid + '/cliente-provisorio', { method: 'POST', body: {} })
+        .then(function (r) {
+          return api('/clientes?sem_contrato=1&com_pre=1').then(function (l) {
+            setClientes(l.clientes || []); setPres(l.pre_cadastros || []); setCliId(String(r.cliente_id));
+            toast('Pré-cadastro vinculado ao contrato. A assinatura libera depois de aprovar o cadastro.', 'success');
+          });
+        })
+        .catch(function (e) { toast(e.message, 'error'); }).then(function () { setVinculando(false); });
+    };
     var carregar = useCallback(function () {
       setErro(null);
-      Promise.all([api('/clientes?sem_contrato=1'), api('/motos'), api('/config').catch(function () { return {}; })]).then(function (r) {
-        setClientes(r[0].clientes || []); setMotos((r[1].motos || []).filter(function (m) { return m.status === 'disponivel'; })); setTodasMotos(r[1].motos || []); setCfg(r[2] || {});
+      Promise.all([api('/clientes?sem_contrato=1&com_pre=1'), api('/motos'), api('/config').catch(function () { return {}; })]).then(function (r) { /* LOCACAO_PRE_CONTRATO_V1: + pré-cadastros em revisão */
+        setClientes(r[0].clientes || []); setPres(r[0].pre_cadastros || []); setMotos((r[1].motos || []).filter(function (m) { return m.status === 'disponivel'; })); setTodasMotos(r[1].motos || []); setCfg(r[2] || {});
         var loc = (r[2] && r[2].locadora) || {}, bases = (r[2] && r[2].bases) || [];
         var bp = bases.find(function (b) { return b.padrao; }) || bases[0];
         setF(function (x) { return Object.assign({}, x, { base: x.base || (bp ? String(bp.id != null ? bp.id : 0) : ''), area_km: x.area_km || String(loc.area_raio_km || 100), area_mun: x.area_mun || loc.area_municipio || 'Salvador/BA' }); });
@@ -2688,8 +2720,12 @@
             h('div', { style: { padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
               importar ? conferenciaCliMoto : null,
               h('div', { className: 'grid grid-cols-1 md:grid-cols-2', style: { gap: 12 } },
-                h(Field, { label: 'Locatário aprovado', req: true, hint: clientes.length ? null : 'Nenhum cliente aprovado sem contrato' },
-                  Select({ value: cliId, onChange: function (e) { setCliId(e.target.value); } }, [h('option', { key: '', value: '' }, clientes.length ? 'Escolha o locatário' : 'Sem clientes disponíveis')].concat(clientes.map(function (c) { return h('option', { key: c.id, value: String(c.id) }, c.nome + ' · ' + (c.tipo === 'tutts' ? 'Tutts' : 'Externo')); })))),
+                h(Field, { label: 'Locatário', req: true, hint: vinculando ? 'Vinculando o pré-cadastro...' : (clientes.length || pres.length ? 'Aprovado ou pré-cadastro em revisão' : 'Nenhum cadastro sem contrato') }, /* LOCACAO_PRE_CONTRATO_V1 */
+                  Select({ value: cliId, disabled: vinculando, onChange: function (e) { escolherCli(e.target.value); } }, [h('option', { key: '', value: '' }, clientes.length || pres.length ? 'Escolha o locatário' : 'Sem cadastros disponíveis')]
+                    .concat(clientes.filter(function (c) { return !c.provisorio; }).length ? [h('optgroup', { key: 'ap', label: 'Cadastro aprovado' }, clientes.filter(function (c) { return !c.provisorio; }).map(function (c) { return h('option', { key: c.id, value: String(c.id) }, c.nome + ' · ' + (c.tipo === 'tutts' ? 'Tutts' : 'Externo')); }))] : [])
+                    .concat(!importar && (clientes.some(function (c) { return c.provisorio; }) || pres.length) ? [h('optgroup', { key: 'pr', label: 'Pré-cadastro (ainda sem aprovar)' },
+                      clientes.filter(function (c) { return c.provisorio; }).map(function (c) { return h('option', { key: c.id, value: String(c.id) }, c.nome + ' · em revisão'); })
+                        .concat(pres.map(function (p) { return h('option', { key: 'pre' + p.pre_id, value: 'pre:' + p.pre_id, disabled: !p.cpf_ok }, p.nome + ' · ' + (p.status_label || 'em revisão') + (p.cpf_ok ? '' : ' (sem CPF válido)')); })))] : []))),
                 h(Field, { label: 'Moto disponível', req: true, hint: motos.length ? null : 'Nenhuma moto disponível' },
                   Select({ value: motoId, onChange: function (e) { setMotoId(e.target.value); } }, [h('option', { key: '', value: '' }, motos.length ? 'Escolha a moto' : 'Sem motos disponíveis')].concat(motos.map(function (m) { return h('option', { key: m.id, value: String(m.id) }, m.placa + ' · ' + m.modelo); }))))),
               cli ? h('div', { style: { display: 'flex', gap: 12, alignItems: 'flex-start', border: '1px solid #e5e7eb', borderRadius: 12, padding: 12 } },
@@ -2697,6 +2733,7 @@
                 h('div', { style: { minWidth: 0, flex: 1 } }, h('div', { style: { fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } }, cli.nome, TagTipo(cli.tipo), cli.tipo === 'tutts' && cli.cod_profissional ? h('span', { style: { fontWeight: 400, color: '#6b7280' } }, 'cód. ' + cli.cod_profissional) : null), // LOCACAO_V4
                   cliInfo.map(function (l, i) { return h('div', { key: i, style: { fontSize: 12.5, color: '#6b7280', marginTop: 2 } }, l); }),
                   cli.alertas && cli.alertas.length ? h('div', { style: { marginTop: 6 } }, cli.alertas.map(function (a, i) { return h('div', { key: i, style: { fontSize: 12, color: '#92400e' } }, typeof a === 'string' ? a : a.texto || a.mensagem); })) : null)) : null,
+              cli && cli.provisorio ? Aviso('ambar', 'Cadastro ainda não aprovado', 'Dá para gerar o contrato, fazer as fotos da moto e posicionar as assinaturas. O envio para assinatura libera depois de aprovar o cadastro em Cadastros.') : null, /* LOCACAO_PRE_CONTRATO_V1 */
               moto ? h('div', { style: { display: 'flex', gap: 12, alignItems: 'center', border: '1px solid #e9d5f9', background: '#faf7fd', borderRadius: 12, padding: 10, flexWrap: 'wrap' } },
                 h(MotoImg, { src: moto.capa_thumb, tipo: moto.tipo, modelo: moto.modelo, cor: moto.cor, w: 120, h: 76 }),
                 h('div', { style: { flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', gap: 3 } },
@@ -3725,7 +3762,8 @@
           h(AcessoPortalBtn, { api: api, toast: toast, cliente: cli }),
           parcelas.length ? Btn({ variant: 'pri', icon: 'wallet', onClick: function () { nav({ tela: 'financeiro', id: c.id }); }, children: 'Abrir financeiro' }) : null)), // LOCACAO_REMODEL_V1: cobrança e baixa ficam no Financeiro
 
-      assinando || c.etapa === 'retirada' ? h(EtapasLiberacao, { c: c, api: api, ocupado: ocupado, onPosicionar: function () { setModal('posicoes'); }, onLaudo: function () { setModal('laudo'); }, // LOCACAO_FLUXO_V2
+      assinando || c.etapa === 'retirada' ? h(EtapasLiberacao, { c: c, api: api, ocupado: ocupado, onPosicionar: function () { setModal('posicoes'); }, onLaudo: function () { setModal('laudo'); },
+        onRevisarCadastro: c.cadastro_pendente ? function () { nav({ tela: 'lista', tab: 'cadastros', sel: c.cadastro_pendente.precadastro_id }); } : null, /* LOCACAO_PRE_CONTRATO_V1 */ // LOCACAO_FLUXO_V2
         onUsarLaudo: function (v) { if (window.confirm('Usar a ' + String(v.tipo_label).toLowerCase() + ' de ' + fDC(v.criado_em) + ' como fotos da moto deste contrato?')) acao('laudo', '/contratos/' + c.id + '/usar-laudo', { vistoria_id: v.id }, 'Fotos da moto definidas').then(function (r) { if (r && r.assinatura && r.assinatura.conferir) setModal('posicoes'); }).catch(function () {}); },
         onRetirada: function () { setModal('vistoriaEntrega'); }, onMarcarEntrega: function () { setModal('entrega'); }, onCancelar: function () { setModal('cancelar'); } }) : null,
       assinando && !emVistoria ? h('div', { style: { background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 14, padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' } },
@@ -5202,10 +5240,14 @@
             st.id === 'laudo' && atual && ops && ops.vistorias && ops.vistorias.length ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 4, marginTop: 2 } },
               h('span', { style: { fontSize: 11.5, color: '#6b7280' } }, 'Ou reaproveite uma vistoria de até ' + ops.dias + ' dias:'),
               ops.vistorias.slice(0, 3).map(function (v) { return Btn({ key: v.id, small: true, icon: 'refresh', disabled: !!props.ocupado, onClick: function () { props.onUsarLaudo && props.onUsarLaudo(v); }, style: { width: '100%' }, children: 'Usar ' + String(v.tipo_label).toLowerCase() + ' de ' + fDC(v.criado_em) }); })) : null,
+            st.id === 'assinatura' && atual && c.cadastro_pendente ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 } }, /* LOCACAO_PRE_CONTRATO_V1 */
+              h('span', { style: { fontSize: 12, color: '#92400e', fontWeight: 600 } }, 'Falta aprovar o cadastro (' + String(c.cadastro_pendente.status_label || 'em revisão').toLowerCase() + ') para enviar.'),
+              props.onRevisarCadastro ? Btn({ variant: 'pri', icon: 'check', onClick: props.onRevisarCadastro, style: { width: '100%' }, children: 'Revisar e aprovar cadastro' }) : null) :
             st.id === 'assinatura' && atual && !c.autentique_doc_id && props.onPosicionar ? Btn({ variant: 'pri', icon: 'pencil', disabled: !!props.ocupado, onClick: props.onPosicionar, style: { marginTop: 4, width: '100%' }, children: 'Posicionar e enviar' }) : null, // AUTENTIQUE_CONFERIR_V1
             st.id === 'retirada' && atual && props.onRetirada ? Btn({ variant: 'pri', icon: 'camera', disabled: !!props.ocupado, onClick: props.onRetirada, style: { marginTop: 4, width: '100%' }, children: 'Fazer vistoria de retirada' }) : null,
             st.id === 'retirada' && atual && props.onMarcarEntrega ? Btn({ small: true, variant: 'link', onClick: props.onMarcarEntrega, children: 'Já está com ele (sem vistoria)' }) : null);
         })),
+      c.cadastro_pendente ? Aviso('ambar', 'Cadastro do locatário ainda não aprovado', 'Pode seguir com o contrato e as fotos da moto. O envio para assinatura só libera depois de aprovar o cadastro em Cadastros.') : null, /* LOCACAO_PRE_CONTRATO_V1 */
       emLaudo ? h('div', { style: { fontSize: 12, color: '#6b7280' } }, 'O locatário não precisa estar presente. No app ele vê "O contrato está sendo preparado" até o contrato ir para assinatura.') : null);
   }
 
@@ -5215,6 +5257,7 @@
     var rot = tipo === 'laudo' ? 'Fotos da moto registradas' : 'Vistoria registrada'; // LOCACAO_FLUXO_V2
     if (!a) return toast(rot + ' · termo Anexo IV pronto', 'success');
     if (a.conferir) return toast(rot + ' · confira a posição das assinaturas e envie ao Autentique', 'success'); // AUTENTIQUE_CONFERIR_V1
+    if (a.motivo === 'cadastro_nao_aprovado') return toast(rot + ' · contrato pronto. Aprove o cadastro para enviar à assinatura', 'success'); // LOCACAO_PRE_CONTRATO_V1
     if (a.enviado) return toast('Vistoria registrada · contrato com o Anexo IV enviado para assinatura' + (a.whatsapp && a.whatsapp.enviado ? ' · locatário avisado no WhatsApp' : ''), 'success');
     toast('Vistoria registrada, mas a assinatura não saiu' + (a.motivo ? ': ' + a.motivo : '') + '. Use "Enviar ao Autentique" no contrato.', 'error');
   }
@@ -5475,6 +5518,7 @@
       passos: [
         ['Dados do contrato', 'Plano (Tutts Aluguel ou Plano Conquista), periodicidade, prazo, valor da parcela, data de início e a moto disponível. Confira a prévia do demonstrativo.'],
         ['Gerar', 'O contrato é criado e fica "Aguardando fotos da moto". A moto fica Reservada.'],
+        ['Cadastro ainda em revisão?', 'Dá para adiantar: na revisão do pré-cadastro use "Criar contrato antes de aprovar" (ou escolha a pessoa em "Pré-cadastro (ainda sem aprovar)" no Novo contrato). Contrato, fotos da moto e posições seguem normalmente; o envio para assinatura só libera depois de aprovar o cadastro.'],
         ['Se parar no meio', 'O formulário fica salvo como rascunho (aparece "Rascunho salvo hh:mm" no rodapé). Ao abrir Novo contrato de novo, ele volta preenchido. "Começar do zero" apaga o rascunho.'],
         ['Abrir o perfil', 'Contratos › clique no nome. O quadro "Até liberar a moto" mostra o passo atual.']
       ],
