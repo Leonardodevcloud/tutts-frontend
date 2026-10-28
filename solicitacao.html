@@ -197,13 +197,18 @@
         // GEOCODE_AUTOCOMPLETE_V1: autocomplete pelo backend (Geoapify, franquia grátis) — já vem com
         // coordenada, então escolher a sugestão não paga o Google. Se o backend não tiver a chave
         // (indisponivel), cai no Google Places como antes.
+        const __autoMemo = new Map(); // GEOCODE_DIGITANDO_V1: mesma busca na mesma sessão não vai de novo ao servidor
         async function buscarPredicoesPlaces(input){
+            const chave = String(input || '').trim().toLowerCase().replace(/\s+/g, ' ');
+            if (__autoMemo.has(chave)) return __autoMemo.get(chave);
             try {
                 const r = await fetch(`${API_URL}/api/geocode/autocomplete?origem=solicitacao&texto=${encodeURIComponent(input)}`);
                 if (r.ok) {
                     const d = await r.json();
                     if (!d.indisponivel && Array.isArray(d.results)) {
                         // sem número da casa: deixa o fluxo normal pedir o número (sugestão vai sem street_number)
+                        __autoMemo.set(chave, d.results);
+                        if (__autoMemo.size > 300) __autoMemo.delete(__autoMemo.keys().next().value);
                         return d.results;
                     }
                 }
@@ -1731,15 +1736,11 @@
                 }
                 const timer = setTimeout(async () => {
                     try {
+                        // GEOCODE_DIGITANDO_V1: digitando NUNCA chama o Google pago (era 1 chamada por pausa na digitação)
                         const preds = await buscarPredicoesPlaces(buscaNovoEndereco);
-                        if (preds === null) {
-                            const resp = await fetch(`${API_URL}/api/geocode/google?origem=solicitacao-digitando&endereco=${encodeURIComponent(buscaNovoEndereco)}`);
-                            if (resp.ok) { const data = await resp.json(); setSugestoesNovoEndereco(data.results?.length > 0 ? data.results : []); }
-                        } else {
-                            setSugestoesNovoEndereco(preds);
-                        }
+                        setSugestoesNovoEndereco(preds || []);
                     } catch (err) { console.error('Erro busca:', err); }
-                }, 250);
+                }, 400);
                 return () => clearTimeout(timer);
             }, [buscaNovoEndereco, modalNovoEndereco.aberto]);
             
@@ -2241,18 +2242,14 @@
                 const timer = setTimeout(async () => {
                     setBuscando(true);
                     try {
+                        // GEOCODE_DIGITANDO_V1: digitando NUNCA chama o Google pago. Sem sugestão: CEP ou botão Buscar.
                         const preds = await buscarPredicoesPlaces(termoBusca);
-                        if (preds === null) {
-                            const resp = await fetch(`${API_URL}/api/geocode/google?origem=solicitacao-digitando&endereco=${encodeURIComponent(termoBusca)}`);
-                            if (resp.ok) { const data = await resp.json(); setSugestoes(data.results?.length > 0 ? data.results : []); }
-                        } else {
-                            setSugestoes(preds);
-                        }
+                        setSugestoes(preds || []);
                     } catch (err) {
                         console.error('Erro autocomplete:', err);
                     }
                     setBuscando(false);
-                }, 250);
+                }, 400);
                 return () => clearTimeout(timer);
             }, [termoBusca]);
             
