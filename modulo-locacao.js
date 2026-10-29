@@ -1804,17 +1804,26 @@
     var _p = useState(null), prev = _p[0], setPrev = _p[1];
     var _e = useState(null), erro = _e[0], setErro = _e[1];
     var _s = useState(false), salv = _s[0], setSalv = _s[1];
+    var _ta = useState(null), tipoAj = _ta[0], setTipoAj = _ta[1]; // LOCACAO_ADITIVO_V1: 'ajuste' | 'aditivo' (contrato assinado)
     var chave = useDebounce(data, 350);
     useEffect(function () {
       setPrev(null); setErro(null);
       if (!chave || !parseData(chave)) return;
-      api('/contratos/' + c.id + '/vencimentos', { method: 'POST', body: { primeiro: chave, aplicar: false } }).then(setPrev).catch(function (e) { setErro(e.message); });
+      api('/contratos/' + c.id + '/vencimentos', { method: 'POST', body: { primeiro: chave, aplicar: false } }).then(function (r) {
+        setPrev(r);
+        setTipoAj(function (t) { return t || (r.assinado ? (r.mesmo_dia ? 'ajuste' : 'aditivo') : null); }); // LOCACAO_ADITIVO_V1
+      }).catch(function (e) { setErro(e.message); });
     }, [chave]);
     var dt = parseData(data);
     var salvar = function () {
       setSalv(true);
-      api('/contratos/' + c.id + '/vencimentos', { method: 'POST', body: { primeiro: data, motivo: motivo.trim() || null, aplicar: true } })
+      api('/contratos/' + c.id + '/vencimentos', { method: 'POST', body: { primeiro: data, motivo: motivo.trim() || null, aplicar: true, gerar_aditivo: tipoAj === 'aditivo' } })
         .then(function (r) {
+          if (r.aditivo) { /* LOCACAO_ADITIVO_V1 */
+            if (r.aditivo.enviado) toast('Termo aditivo enviado ao Autentique' + (r.aditivo.whatsapp && r.aditivo.whatsapp.enviado ? ' · link no WhatsApp do locatário' : ''), 'success');
+            else toast('Vencimentos salvos, mas o termo aditivo não foi enviado' + (r.aditivo.motivo ? ': ' + r.aditivo.motivo : '') + '. Envie pelo quadro Documentos.', 'error');
+            if (r.aditivo.link_locatario && !(r.aditivo.whatsapp && r.aditivo.whatsapp.enviado)) copiar(r.aditivo.link_locatario, toast);
+          }
           toast(r.aguardando ? 'Início da cobrança salvo: 1ª parcela em ' + fD(r.primeiro) : 'Vencimentos alterados: ' + r.mudancas.length + ' parcela' + (r.mudancas.length === 1 ? '' : 's') + (r.pix_cancelados ? ' · ' + r.pix_cancelados + ' PIX cancelado' + (r.pix_cancelados > 1 ? 's' : '') + ' (um novo sai na régua)' : ''), 'success');
           props.onFeito && props.onFeito(r);
         }).catch(function (e) { toast(e.message, 'error'); setSalv(false); });
@@ -1822,7 +1831,7 @@
     var semMudanca = prev && !prev.aguardando && prev.mudancas.length === 0;
     return h(Modal, { titulo: aguardando ? 'Início da cobrança' : 'Mudar vencimentos', onClose: props.onClose, largura: 560,
       rodape: [Btn({ key: 'c', onClick: props.onClose, children: 'Voltar' }),
-        Btn({ key: 'o', variant: 'pri', icon: 'calendar', disabled: !prev || !!erro || salv || semMudanca, onClick: salvar, children: salv ? 'Salvando...' : 'Salvar vencimentos' })] },
+        Btn({ key: 'o', variant: 'pri', icon: 'calendar', disabled: !prev || !!erro || salv || semMudanca || (prev && prev.assinado && !tipoAj), onClick: salvar, children: salv ? 'Salvando...' : tipoAj === 'aditivo' && prev && prev.assinado ? 'Salvar e enviar termo aditivo' : 'Salvar vencimentos' })] },
       h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
         h('div', { style: { fontSize: 13, color: '#374151', lineHeight: 1.5 } },
           aguardando ? 'Escolha quando vence a 1ª parcela. As parcelas nascem a partir dela quando o contrato for assinado.'
@@ -1842,7 +1851,84 @@
                 h('b', { style: { width: 48, flex: 'none' } }, 'nº ' + m.numero), h('span', { style: { color: '#9ca3af', textDecoration: 'line-through' } }, fD(m.de)), h('span', null, '→'), h('b', null, fDS ? fDS(m.para) : fD(m.para)));
             }),
             prev.mudancas.length > 6 ? h('div', { style: { padding: '7px 12px', borderTop: '1px solid #f3f4f6', fontSize: 12, color: '#6b7280' } }, '… e mais ' + (prev.mudancas.length - 6)) : null)) : null,
-        h(Field, { label: 'Motivo', opt: true, hint: 'Fica no histórico do contrato' }, Input({ value: motivo, placeholder: 'Ex.: combinado com o locatário começar a pagar depois da retirada', onChange: function (e) { setMotivo(e.target.value); } }))));
+        prev && prev.assinado && !semMudanca ? h('div', { role: 'radiogroup', 'aria-label': 'Tipo de mudança', style: { display: 'flex', flexDirection: 'column', gap: 8 } }, /* LOCACAO_ADITIVO_V1 */
+          h('div', { style: { fontSize: 12.5, fontWeight: 600, color: '#374151' } }, 'O contrato já está assinado' + (prev.vencimento_label_atual ? ' · hoje: ' + String(prev.vencimento_label_atual).toLowerCase() : '')),
+          [['ajuste', 'Ajuste: deixar igual ao contrato assinado', 'As parcelas na Central estavam diferentes do contrato e você está corrigindo. Não gera termo, fica no histórico.'],
+           ['aditivo', 'Mudança combinada: gerar termo aditivo', 'Datas diferentes das do contrato. Gera o Termo Aditivo com o de/para de cada parcela e manda para assinatura no Autentique (Tutts assina sozinha, o locatário recebe o link no WhatsApp).']].map(function (o) {
+            var on = tipoAj === o[0];
+            return h('button', { key: o[0], type: 'button', role: 'radio', 'aria-checked': on, onClick: function () { setTipoAj(o[0]); },
+              style: { display: 'flex', gap: 10, alignItems: 'flex-start', textAlign: 'left', padding: '10px 12px', borderRadius: 12, cursor: 'pointer', border: on ? '2px solid ' + ROXO : '1px solid #e5e7eb', background: on ? '#faf7fd' : '#fff' } },
+              h('span', { style: { width: 16, height: 16, borderRadius: 99, border: '2px solid ' + (on ? ROXO : '#d1d5db'), display: 'grid', placeItems: 'center', marginTop: 2, flex: 'none' } }, on ? h('span', { style: { width: 8, height: 8, borderRadius: 99, background: ROXO } }) : null),
+              h('span', null, h('b', { style: { fontSize: 13.5 } }, o[1]), h('span', { style: { display: 'block', fontSize: 12, color: '#6b7280', marginTop: 2, lineHeight: 1.45 } }, o[2])));
+          })) : null,
+        h(Field, { label: 'Motivo', opt: true, hint: 'Fica no histórico do contrato' + (tipoAj === 'aditivo' ? ' e no termo aditivo' : '') }, Input({ value: motivo, placeholder: 'Ex.: combinado com o locatário começar a pagar depois da retirada', onChange: function (e) { setMotivo(e.target.value); } }))));
+  }
+
+  /* LOCACAO_RENEGOCIACAO_V1: saldo em aberto vira um plano novo (quantidade, valor, 1º vencimento) + termo aditivo */
+  function RenegociarModal(props) {
+    var api = props.api, toast = props.toast, c = props.c || {}, parcelas = props.parcelas || [];
+    var mensal = c.periodicidade === 'mensal';
+    var abertas = parcelas.filter(function (p) { return p.status !== 'paga' && p.status !== 'cancelada' && p.status !== 'suspensa'; });
+    var prox = abertas.find(function (p) { return p.status !== 'atrasada'; }) || abertas[0] || null;
+    var _q = useState(String(abertas.length || 1)), qtd = _q[0], setQtd = _q[1];
+    var _v = useState(c.valor_semanal != null ? String(c.valor_semanal).replace('.', ',') : ''), valor = _v[0], setValor = _v[1];
+    var _d = useState(prox ? String(prox.vencimento).slice(0, 10) : ''), data = _d[0], setData = _d[1];
+    var _m = useState(''), motivo = _m[0], setMotivo = _m[1];
+    var _e = useState(true), enviar = _e[0], setEnviar = _e[1];
+    var _p = useState(null), prev = _p[0], setPrev = _p[1];
+    var _er = useState(null), erro = _er[0], setErro = _er[1];
+    var _s = useState(false), salv = _s[0], setSalv = _s[1];
+    var vNum = moedaParse(valor), nQ = parseInt(qtd, 10);
+    var chave = useDebounce(JSON.stringify({ qtd: nQ, valor: vNum, primeiro: data }), 400);
+    useEffect(function () {
+      setErro(null);
+      var b = JSON.parse(chave);
+      if (!(b.qtd > 0) || !(b.valor > 0) || !parseData(b.primeiro)) { setPrev(null); return; }
+      api('/contratos/' + c.id + '/renegociar', { method: 'POST', body: Object.assign(b, { aplicar: false }) }).then(setPrev).catch(function (e) { setPrev(null); setErro(e.message); });
+    }, [chave]);
+    var dividir = function (total) { if (nQ > 0) setValor(String((Math.ceil((total / nQ) * 100) / 100).toFixed(2)).replace('.', ',')); };
+    var salvar = function () {
+      setSalv(true);
+      api('/contratos/' + c.id + '/renegociar', { method: 'POST', body: { qtd: nQ, valor: vNum, primeiro: data, motivo: motivo.trim() || null, aplicar: true, enviar_aditivo: enviar } })
+        .then(function (r) {
+          var a = r.aditivo;
+          toast('Renegociado: ' + nQ + ' × ' + fR(vNum) + (a ? (a.enviado ? ' · termo aditivo enviado ao Autentique' + (a.whatsapp && a.whatsapp.enviado ? ' (link no WhatsApp do locatário)' : '') : ' · termo aditivo não enviado' + (a.motivo ? ': ' + a.motivo : '')) : ' · termo aditivo gerado, envie pelo quadro Documentos'), a && a.enviado === false ? 'error' : 'success');
+          if (a && a.link_locatario && !(a.whatsapp && a.whatsapp.enviado)) copiar(a.link_locatario, toast);
+          props.onFeito && props.onFeito(r);
+        }).catch(function (e) { toast(e.message, 'error'); setSalv(false); });
+    };
+    var sd = prev && prev.saldo;
+    var dif = prev ? prev.diferenca_total : 0;
+    var linha = function (a, b, forte, cor) { return h('div', { style: Object.assign({ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '5px 0', fontSize: 13, borderTop: '1px solid #f3f4f6' }, TAB) }, h('span', { style: { color: '#6b7280' } }, a), h('span', { style: { fontWeight: forte ? 700 : 600, color: cor || '#111827' } }, b)); };
+    var dt = parseData(data);
+    return h(Modal, { titulo: 'Renegociar', onClose: props.onClose, largura: 640, semFecharFora: true,
+      rodape: [Btn({ key: 'c', onClick: props.onClose, children: 'Voltar' }),
+        Btn({ key: 'o', variant: 'pri', icon: 'check', disabled: !prev || !!erro || salv, onClick: salvar, children: salv ? 'Renegociando...' : enviar ? 'Renegociar e enviar termo' : 'Renegociar' })] },
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+        h('div', { style: { fontSize: 13, color: '#374151', lineHeight: 1.5 } }, 'O saldo das ' + abertas.length + ' parcela' + (abertas.length === 1 ? '' : 's') + ' em aberto vira um plano novo. As antigas ficam canceladas como "substituídas pela renegociação" (o histórico fica) e sai um termo aditivo para o locatário assinar. Parcelas pagas não mudam.'),
+        sd ? h('div', { style: { border: '1px solid #e5e7eb', borderRadius: 12, padding: '8px 12px' } },
+          h('b', { style: { fontSize: 12.5, color: '#374151' } }, 'Saldo hoje'),
+          linha(sd.parcelas + ' parcela' + (sd.parcelas === 1 ? '' : 's') + ' em aberto' + (sd.atrasadas ? ' (' + sd.atrasadas + ' atrasada' + (sd.atrasadas === 1 ? '' : 's') + ')' : ''), fR(sd.principal)),
+          sd.encargos ? linha('Encargos de atraso', fR(sd.encargos), false, '#991b1b') : null,
+          linha('Total devido', fR(sd.total), true)) : null,
+        h('div', { className: 'grid grid-cols-1 md:grid-cols-3', style: { gap: 12 } },
+          h(Field, { label: 'Quantidade de parcelas', req: true, hint: mensal ? 'mensais' : 'semanais' }, Input({ value: qtd, inputMode: 'numeric', onChange: function (e) { setQtd(soDig(e.target.value)); } })),
+          h(Field, { label: 'Valor de cada parcela', req: true, hint: vNum > 0 && nQ > 0 ? 'total ' + fR(vNum * nQ) : null }, Input({ value: valor, inputMode: 'decimal', placeholder: 'R$ 0,00', onChange: function (e) { setValor(e.target.value); } })),
+          h(Field, { label: '1ª parcela vence em', req: true, hint: dt ? (mensal ? 'depois: todo dia ' + p2(dt.getDate()) : 'depois: ' + (DIA_PLURAL[dt.getDay()] || '')) : null }, Input({ type: 'date', value: data, onChange: function (e) { setData(e.target.value); } }))),
+        sd && nQ > 0 ? h('div', { style: { display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 12.5 } },
+          h('span', { style: { color: '#6b7280' } }, 'Dividir em ' + nQ + ':'),
+          Btn({ small: true, variant: 'link', onClick: function () { dividir(sd.total); }, children: 'com encargos (' + fR(Math.ceil((sd.total / nQ) * 100) / 100) + ')' }),
+          sd.encargos ? Btn({ small: true, variant: 'link', onClick: function () { dividir(sd.principal); }, children: 'sem encargos (' + fR(Math.ceil((sd.principal / nQ) * 100) / 100) + ')' }) : null) : null,
+        erro ? Aviso('vermelho', null, erro) : null,
+        prev ? h('div', { style: { border: '1px solid #e9d5f9', background: '#faf7fd', borderRadius: 12, padding: '8px 12px' } },
+          h('b', { style: { fontSize: 12.5, color: ROXO_ESC } }, 'Plano novo'),
+          linha(prev.qtd + ' × ' + fR(prev.valor), fR(prev.total_novo), true),
+          linha('Vencimentos', String(prev.vencimento_label || '') + ' · ' + fD(prev.primeiro) + ' a ' + fD(prev.ultimo)),
+          linha(dif < 0 ? 'Desconto em relação ao total devido' : dif > 0 ? 'Acréscimo em relação ao total devido' : 'Igual ao total devido', fR(Math.abs(dif)), false, dif < 0 ? '#166534' : dif > 0 ? '#92400e' : null),
+          prev.pix_cancelados ? linha('PIX já emitidos que serão cancelados', String(prev.pix_cancelados)) : null,
+          prev.volta_ativo ? h('div', { style: { fontSize: 12, color: '#166534', marginTop: 4 } }, 'O contrato sai de "em retomada" e volta a Ativo. Se o rastreador estiver bloqueado, desbloqueie lá.') : null) : null,
+        h(Field, { label: 'Motivo', opt: true, hint: 'Vai no termo aditivo e no histórico' }, Input({ value: motivo, placeholder: 'Ex.: acordo para quitar o atraso', onChange: function (e) { setMotivo(e.target.value); } })),
+        Check(enviar, setEnviar, 'Enviar o termo aditivo para assinatura agora', 'A Tutts assina sozinha e o locatário recebe o link no WhatsApp. Se desmarcar, envie depois pelo quadro Documentos.')));
   }
 
   /* LOCACAO_RASCUNHO_V1: excluir contrato de vez (contratos de teste), confirmando com o número */
@@ -3496,7 +3582,8 @@
             h('h2', { style: { margin: '0 6px 0 0', fontSize: 15, fontWeight: 700 } }, 'Parcelas'),
             Chips([{ id: 'abertas', t: 'Em aberto', n: abertas.length }, { id: 'atrasadas', t: 'Atrasadas', n: cnt(function (p) { return p.status === 'atrasada'; }) }, { id: 'pagas', t: 'Pagas', n: pagas.length }, { id: 'todas', t: 'Todas', n: parcelas.length }], filtro, function (v) { setFiltro(v); setTodas(false); setSel({}); }),
             h('div', { style: { flex: 1 } }),
-            (abertas.length || c.status === 'aguardando_assinatura') && c.status !== 'encerrado' ? Btn({ small: true, icon: 'calendar', onClick: function () { setModal({ vencimentos: true }); }, children: 'Mudar vencimentos' }) : null), /* LOCACAO_VENCIMENTOS_V1 */
+            (abertas.length || c.status === 'aguardando_assinatura') && c.status !== 'encerrado' ? Btn({ small: true, icon: 'calendar', onClick: function () { setModal({ vencimentos: true }); }, children: 'Mudar vencimentos' }) : null, /* LOCACAO_VENCIMENTOS_V1 */
+            abertas.length && { ativo: 1, em_retomada: 1, suspenso: 1 }[c.status] ? Btn({ small: true, icon: 'refresh', onClick: function () { setModal({ renegociar: true }); }, children: 'Renegociar' }) : null), /* LOCACAO_RENEGOCIACAO_V1 */
           parcelas.length === 0 ? Vazio(c.situacao === 'aguardando_assinatura' ? 'As parcelas aparecem depois da assinatura' : 'Sem parcelas') :
           janela.length === 0 ? Vazio('Nenhuma parcela neste filtro') :
           Tabela([{ t: h('input', { type: 'checkbox', 'aria-label': 'Selecionar todas', checked: todasMarcadas, onChange: function (e) { marcarTodas(e.target.checked); }, style: { accentColor: ROXO, width: 16, height: 16 } }), w: 36 },
@@ -3555,6 +3642,7 @@
         onConfirm: function (b) { return api('/parcelas/' + modal.baixa.id + '/baixa-manual', { method: 'POST', body: b }).then(function () { toast('Baixa registrada', 'success'); setModal(null); mudou(); }).catch(function (e) { toast(e.message, 'error'); throw e; }); } }) : null,
       modal && modal.lote ? h(BaixaLoteModal, { api: api, toast: toast, parcelas: modal.lote, onClose: function () { setModal(null); }, onFeito: function () { setModal(null); mudou(); } }) : null,
       modal && modal.vencimentos ? h(VencimentosModal, { api: api, toast: toast, c: c, parcelas: parcelas, onClose: function () { setModal(null); }, onFeito: function () { setModal(null); mudou(); } }) : null, /* LOCACAO_VENCIMENTOS_V1 */
+      modal && modal.renegociar ? h(RenegociarModal, { api: api, toast: toast, c: c, parcelas: parcelas, onClose: function () { setModal(null); }, onFeito: function () { setModal(null); mudou(); } }) : null, /* LOCACAO_RENEGOCIACAO_V1 */
       modal && modal.antecipar ? h(AnteciparModal, { api: api, toast: toast, contrato: c, parcelas: modal.antecipar, onClose: function () { setModal(null); }, onFeito: function () { setModal(null); mudou(); } }) : null,
       modal === 'cobranca' ? h(LancarCobrancaModal, { api: api, toast: toast, moto: mo, contrato: Object.assign({}, c, { cliente_nome: cli.nome }), cliente: cli, onClose: function () { setModal(null); }, onSalvo: function () { setModal(null); mudou(); } }) : null,
       modal && modal.recibo ? h(Modal, { titulo: 'Recibo · parcela ' + modal.recibo.numero, onClose: function () { setModal(null); }, largura: 440 },
@@ -3661,9 +3749,24 @@
     } else if (c.status === 'aguardando_assinatura') {
       lt = linha('tr', 'pencil', 'Termo de vistoria de retirada', 'Vem depois do contrato assinado, na retirada da moto na Base.', Pill('Depois da assinatura', 'cinza', true), []);
     }
+    /* LOCACAO_ADITIVO_V1: termos aditivos (mudança combinada de vencimentos) */
+    var las = (c.aditivos || []).map(function (ad) {
+      var assin = !!ad.assinado_em, noAut = !!ad.autentique_doc_id && !assin;
+      return linha('ad' + ad.id, 'filetext', 'Termo aditivo nº ' + ad.id + ' · vencimentos',
+        (assin ? 'Assinado em ' + fDH(ad.assinado_em) + '. ' : noAut ? 'No Autentique, esperando o locatário. ' : 'Ainda não foi para assinatura. ') + (ad.resumo || ''),
+        assin ? Pill('Assinado', 'verde', true) : noAut ? Pill('Aguardando assinatura', 'azul', true) : Pill('Não enviado', 'ambar', true),
+        [pdf('/aditivos/' + ad.id + '/pdf'),
+          noAut && ad.link_locatario ? linkBtn('Copiar link', function () { copiar(ad.link_locatario, toast); }, null, 'cpa' + ad.id) : null,
+          noAut ? linkBtn(ocup === 'consa' + ad.id ? 'Consultando...' : 'Consultar', function () { chamar('consa' + ad.id, '/aditivos/' + ad.id + '/consultar-assinatura', function (r) { toast(r && r.assinado ? 'Termo aditivo assinado' : 'Ainda não assinado', r && r.assinado ? 'success' : 'info'); }); }, '#374151', 'csa' + ad.id) : null,
+          !assin ? h('span', { key: 'enva' + ad.id }, Btn({ small: true, variant: noAut ? 'sec' : 'pri', icon: 'pencil', disabled: !!ocup, onClick: function () {
+            chamar('enva' + ad.id, '/aditivos/' + ad.id + '/enviar-assinatura', function (r) {
+              if (r && r.enviado) { toast('Termo aditivo enviado ao Autentique' + (r.whatsapp && r.whatsapp.enviado ? ' · link no WhatsApp do locatário' : ''), 'success'); if (r.link_locatario && !(r.whatsapp && r.whatsapp.enviado)) copiar(r.link_locatario, toast); }
+              else toast('Não enviado' + (r && r.motivo ? ': ' + r.motivo : ''), 'error');
+            }); }, children: ocup === 'enva' + ad.id ? 'Enviando...' : noAut ? 'Reenviar' : 'Enviar para assinatura' })) : null].filter(Boolean));
+    });
     return h('section', { 'aria-label': 'Documentos do contrato', style: { borderBottom: '1px solid #f3f4f6' } },
       h('div', { style: { padding: '10px 16px 4px', fontSize: 11.5, fontWeight: 700, color: '#6b7280', letterSpacing: '.04em', textTransform: 'uppercase' } }, 'Documentos'),
-      h('ul', { style: { listStyle: 'none', margin: 0, padding: 0 } }, [lc, ll, lt].filter(Boolean)));
+      h('ul', { style: { listStyle: 'none', margin: 0, padding: 0 } }, [lc, ll, lt].concat(las).filter(Boolean)));
   }
 
   function MotoResumoCard(props) {
@@ -3896,6 +3999,7 @@
               !ativo && sit !== 'em_retomada' && sit !== 'quitado' && !assinando && !suspenso ? h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'Nenhuma ação disponível para este contrato.') : null,
               assinando ? h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'As ações de cobrança e retomada liberam depois da assinatura.') : null,
               (assinando || ativo || suspenso || sit === 'em_retomada') ? Btn({ icon: 'calendar', disabled: !!ocupado, onClick: function () { setModal('vencimentos'); }, style: { width: '100%' }, children: assinando ? 'Início da cobrança' : 'Mudar vencimentos' }) : null, /* LOCACAO_VENCIMENTOS_V1 */
+              (ativo || suspenso || sit === 'em_retomada') && parcelas.some(function (p) { return p.status !== 'paga' && p.status !== 'cancelada' && p.status !== 'suspensa'; }) ? Btn({ icon: 'refresh', disabled: !!ocupado, onClick: function () { setModal('renegociar'); }, style: { width: '100%' }, children: 'Renegociar (valor e parcelas)' }) : null, /* LOCACAO_RENEGOCIACAO_V1 */
               h('div', { style: { borderTop: '1px solid #f3f4f6', paddingTop: 10, display: 'flex', justifyContent: 'center' } }, /* LOCACAO_RASCUNHO_V1 */
                 h('button', { type: 'button', className: 'hover:underline', onClick: function () { setModal('excluirContrato'); }, style: { color: '#991b1b', fontWeight: 600, fontSize: 12.5, cursor: 'pointer', display: 'inline-flex', gap: 6, alignItems: 'center' } }, ico('trash', 13), 'Excluir contrato de vez (teste ou erro)')))),
           h(DadosLocatarioCard, { api: api, toast: toast, cli: cli, perfil: d.perfil || {} }), // LOCACAO_REMODEL_V1
@@ -3910,6 +4014,7 @@
                     h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, fDHc(l.criado_em) + ' · ' + (l.usuario_nome || 'sistema'))));
               }))))),
 
+      modal === 'renegociar' ? h(RenegociarModal, { api: api, toast: toast, c: c, parcelas: parcelas, onClose: function () { setModal(null); }, onFeito: function () { setModal(null); carregar(); props.aoMudar && props.aoMudar(); } }) : null, /* LOCACAO_RENEGOCIACAO_V1 */
       modal === 'vencimentos' ? h(VencimentosModal, { api: api, toast: toast, c: c, parcelas: parcelas, onClose: function () { setModal(null); }, onFeito: function () { setModal(null); carregar(); props.aoMudar && props.aoMudar(); } }) : null, /* LOCACAO_VENCIMENTOS_V1 */
       modal === 'excluirContrato' ? h(ExcluirContratoModal, { api: api, c: c, cliNome: cli && cli.nome, parcelas: parcelas, onClose: function () { setModal(null); }, // LOCACAO_RASCUNHO_V1
         onFeito: function (r) { setModal(null); toast('Contrato ' + r.numero + ' excluído' + (r.pix_cancelados ? ' · ' + r.pix_cancelados + ' PIX cancelado(s)' : ''), 'success'); props.aoMudar && props.aoMudar(); nav({ tela: 'lista', tab: 'contratos' }); } }) : null,
@@ -5634,7 +5739,8 @@
         ['Cobrança avulsa', 'No financeiro da pessoa: "Lançar cobrança avulsa" (ocorrência, tarifa do Anexo I).'],
         ['Desconto em repasses', 'Só Motoboy Tutts, com o Anexo III: liga no financeiro da pessoa; a parcela é abatida do repasse semanal.'],
         ['Exportar', '"Exportar planilha" baixa a lista da semana em CSV.'],
-        ['Início da cobrança e dia de vencimento', 'No Novo contrato, "1ª parcela vence em" define quando a cobrança começa (vazio = 1º vencimento depois do início). Depois, no perfil ou no financeiro do contrato, "Mudar vencimentos": escolha a data da próxima parcela em aberto e as seguintes seguem a partir dela, com prévia antes de salvar. Parcelas pagas não mudam; PIX já emitido das que mudaram é cancelado e um novo sai na régua.']
+        ['Início da cobrança e dia de vencimento', 'No Novo contrato, "1ª parcela vence em" define quando a cobrança começa (vazio = 1º vencimento depois do início). Depois, no perfil ou no financeiro do contrato, "Mudar vencimentos": escolha a data da próxima parcela em aberto e as seguintes seguem a partir dela, com prévia antes de salvar. Parcelas pagas não mudam; PIX já emitido das que mudaram é cancelado e um novo sai na régua. Contrato já assinado: escolha "Ajuste" quando só está deixando igual ao contrato (sem termo) ou "Mudança combinada" para gerar o termo aditivo, que vai para assinatura no Autentique e aparece no quadro Documentos.'],
+        ['Renegociar valor e parcelas', 'Perfil ou financeiro do contrato › "Renegociar": o saldo em aberto (com ou sem os encargos, você escolhe ao dividir) vira um plano novo com a quantidade, o valor e a 1ª data que você definir. As antigas ficam como substituídas, as novas entram na sequência e o termo aditivo de renegociação vai para assinatura. Contrato em retomada volta a Ativo.']
       ],
       dicas: ['O PIX sai sozinho no vencimento e a baixa é automática quando o Stark confirma.'] },
 
