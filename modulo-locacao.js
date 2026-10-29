@@ -1792,6 +1792,59 @@
         erro ? Aviso('vermelho', 'Não dá para excluir agora', erro, 'alert') : null));
   }
 
+  /* LOCACAO_VENCIMENTOS_V1: quando a cobrança começa e em que dia as parcelas vencem */
+  function VencimentosModal(props) {
+    var api = props.api, toast = props.toast, c = props.c || {}, parcelas = props.parcelas || [];
+    var aguardando = c.status === 'aguardando_assinatura';
+    var prox = parcelas.filter(function (p) { return p.status !== 'paga' && p.status !== 'cancelada' && p.status !== 'suspensa'; })[0] || null;
+    var atual = aguardando ? c.primeiro_vencimento : prox && prox.vencimento;
+    var mensal = c.periodicidade === 'mensal';
+    var _d = useState(atual ? String(atual).slice(0, 10) : ''), data = _d[0], setData = _d[1];
+    var _m = useState(''), motivo = _m[0], setMotivo = _m[1];
+    var _p = useState(null), prev = _p[0], setPrev = _p[1];
+    var _e = useState(null), erro = _e[0], setErro = _e[1];
+    var _s = useState(false), salv = _s[0], setSalv = _s[1];
+    var chave = useDebounce(data, 350);
+    useEffect(function () {
+      setPrev(null); setErro(null);
+      if (!chave || !parseData(chave)) return;
+      api('/contratos/' + c.id + '/vencimentos', { method: 'POST', body: { primeiro: chave, aplicar: false } }).then(setPrev).catch(function (e) { setErro(e.message); });
+    }, [chave]);
+    var dt = parseData(data);
+    var salvar = function () {
+      setSalv(true);
+      api('/contratos/' + c.id + '/vencimentos', { method: 'POST', body: { primeiro: data, motivo: motivo.trim() || null, aplicar: true } })
+        .then(function (r) {
+          toast(r.aguardando ? 'Início da cobrança salvo: 1ª parcela em ' + fD(r.primeiro) : 'Vencimentos alterados: ' + r.mudancas.length + ' parcela' + (r.mudancas.length === 1 ? '' : 's') + (r.pix_cancelados ? ' · ' + r.pix_cancelados + ' PIX cancelado' + (r.pix_cancelados > 1 ? 's' : '') + ' (um novo sai na régua)' : ''), 'success');
+          props.onFeito && props.onFeito(r);
+        }).catch(function (e) { toast(e.message, 'error'); setSalv(false); });
+    };
+    var semMudanca = prev && !prev.aguardando && prev.mudancas.length === 0;
+    return h(Modal, { titulo: aguardando ? 'Início da cobrança' : 'Mudar vencimentos', onClose: props.onClose, largura: 560,
+      rodape: [Btn({ key: 'c', onClick: props.onClose, children: 'Voltar' }),
+        Btn({ key: 'o', variant: 'pri', icon: 'calendar', disabled: !prev || !!erro || salv || semMudanca, onClick: salvar, children: salv ? 'Salvando...' : 'Salvar vencimentos' })] },
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+        h('div', { style: { fontSize: 13, color: '#374151', lineHeight: 1.5 } },
+          aguardando ? 'Escolha quando vence a 1ª parcela. As parcelas nascem a partir dela quando o contrato for assinado.'
+            : 'Escolha quando vence a próxima parcela em aberto' + (prox ? ' (nº ' + prox.numero + ', hoje em ' + fD(prox.vencimento) + ')' : '') + '. As seguintes seguem a partir dela. Parcelas pagas não mudam.'),
+        h(Field, { label: aguardando ? '1ª parcela vence em' : 'Próxima parcela vence em', req: true,
+          hint: dt ? (mensal ? 'Daí em diante: todo dia ' + p2(dt.getDate()) + ' de cada mês' : 'Daí em diante: toda semana, ' + (DIA_PLURAL[dt.getDay()] || DIAS_LONGO[dt.getDay()])) : (mensal ? 'Dia 1 a 28' : 'Segunda a sábado') },
+          Input({ type: 'date', value: data, onChange: function (e) { setData(e.target.value); } })),
+        erro ? Aviso('vermelho', null, erro) : null,
+        prev && prev.aviso ? Aviso('ambar', null, prev.aviso) : null,
+        prev && !prev.aguardando ? (prev.mudancas.length === 0 ? Aviso('cinza', null, 'Nada muda: as parcelas já vencem nessas datas.') :
+          h('div', { style: { border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' } },
+            h('div', { style: { padding: '8px 12px', background: '#f9fafb', fontSize: 12, fontWeight: 600, color: '#374151', display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' } },
+              h('span', null, prev.mudancas.length + ' parcela' + (prev.mudancas.length === 1 ? ' muda' : 's mudam') + ' · última em ' + fD(prev.ultimo)),
+              prev.pix_cancelados ? h('span', { style: { color: '#92400e' } }, prev.pix_cancelados + ' PIX já emitido' + (prev.pix_cancelados > 1 ? 's serão cancelados' : ' será cancelado')) : null),
+            prev.mudancas.slice(0, 6).map(function (m) {
+              return h('div', { key: m.numero, style: Object.assign({ display: 'flex', gap: 10, padding: '7px 12px', borderTop: '1px solid #f3f4f6', fontSize: 13 }, TAB) },
+                h('b', { style: { width: 48, flex: 'none' } }, 'nº ' + m.numero), h('span', { style: { color: '#9ca3af', textDecoration: 'line-through' } }, fD(m.de)), h('span', null, '→'), h('b', null, fDS ? fDS(m.para) : fD(m.para)));
+            }),
+            prev.mudancas.length > 6 ? h('div', { style: { padding: '7px 12px', borderTop: '1px solid #f3f4f6', fontSize: 12, color: '#6b7280' } }, '… e mais ' + (prev.mudancas.length - 6)) : null)) : null,
+        h(Field, { label: 'Motivo', opt: true, hint: 'Fica no histórico do contrato' }, Input({ value: motivo, placeholder: 'Ex.: combinado com o locatário começar a pagar depois da retirada', onChange: function (e) { setMotivo(e.target.value); } }))));
+  }
+
   /* LOCACAO_RASCUNHO_V1: excluir contrato de vez (contratos de teste), confirmando com o número */
   function ExcluirContratoModal(props) {
     var c = props.c || {}, parcelas = props.parcelas || [];
@@ -2463,7 +2516,8 @@
       return { cliente_id: cli && cli.id, moto_id: moto && moto.id, plano: f.plano, periodicidade: f.periodicidade, prazo_qtd: nPr, dia_vencimento: mensal ? null : dia, dia_mes: mensal ? dia : null, valor_parcela: vNum, data_inicio: f.inicio,
         caucao_valor: caucaoN || 0, manutencao: f.plano === 'conquista' ? 'locatario' : f.manutencao, area_raio_km: parseInt(f.area_km, 10) || null, area_municipio: f.area_mun.trim() || null,
         base_retirada: baseSel ? [baseSel.nome, baseSel.endereco].filter(Boolean).join(' · ') : null, base_id: baseSel && baseSel.id != null ? baseSel.id : null,
-        formas_pagamento: formas, autoriza_desconto_repasse: !!(f.desconto && cli && cli.tipo === 'tutts'), valor_opcao_compra: f.plano === 'conquista' ? moedaParse(f.opcao) : null, km_entrega: f.km === '' ? null : parseInt(soDig(f.km), 10) };
+        formas_pagamento: formas, autoriza_desconto_repasse: !!(f.desconto && cli && cli.tipo === 'tutts'), valor_opcao_compra: f.plano === 'conquista' ? moedaParse(f.opcao) : null, km_entrega: f.km === '' ? null : parseInt(soDig(f.km), 10),
+        primeiro_vencimento: !importar && f.primeiro ? f.primeiro : null }; /* LOCACAO_VENCIMENTOS_V1 */
     };
     var basico = cli && vNum > 0 && nPr > 0 && f.inicio && dia > 0;
     var completo = basico && moto && formas.length && (f.caucao_isento || caucaoN > 0) && (f.plano !== 'conquista' || moedaParse(f.opcao) > 0) && (!importar || pdf);
@@ -2755,6 +2809,17 @@
                     : Select({ value: f.dia_semana, style: st('venc'), onChange: function (e) { set('dia_semana', e.target.value); } }, [h('option', { key: '', value: '' }, 'Escolha o dia')].concat(DIA_VENC.map(function (d) { return h('option', { key: d[0], value: String(d[0]) }, d[1]); })))),
                 h(Field, Object.assign({ label: tg('valor', 'Valor da parcela'), req: true, hint: hn('valor', vNum > 0 ? fR(vNum) + ' / ' + (mensal ? 'mês' : 'semana') : 'Digitado pelo time'), hintCor: hc('valor') }, hv('valor')), Input({ value: f.valor, inputMode: 'decimal', placeholder: 'R$ 0,00', onChange: function (e) { set('valor', e.target.value); }, style: st('valor') })),
                 h(Field, Object.assign({ label: tg('inicio', 'Data de início (retirada)'), req: true, hint: hn('inicio', ini ? DIAS_LONGO[ini.getDay()] : null), hintCor: hc('inicio') }, hv('inicio')), Input({ type: 'date', value: f.inicio, onChange: function (e) { set('inicio', e.target.value); }, style: st('inicio') })),
+                /* LOCACAO_VENCIMENTOS_V1: quando a cobrança começa (vazio = 1º dia de vencimento depois do início) */
+                importar ? null : h(Field, { label: '1ª parcela vence em', opt: true, hint: f.primeiro ? (parseData(f.primeiro) ? DIAS_LONGO[parseData(f.primeiro).getDay()] + (f.inicio && f.primeiro < f.inicio ? ' · antes do início, confira' : '') + ' · as próximas: ' + (mensal ? 'todo dia ' + p2(parseData(f.primeiro).getDate()) : (DIA_PLURAL[parseData(f.primeiro).getDay()] || '')) : null) : 'Vazio: no 1º vencimento depois do início', hintCor: f.primeiro && f.inicio && f.primeiro < f.inicio ? '#92400e' : null },
+                  h('div', { style: { display: 'flex', gap: 6, alignItems: 'center' } },
+                    Input({ type: 'date', value: f.primeiro || '', 'aria-label': 'Data da primeira parcela', onChange: function (e) {
+                      var v = e.target.value; var d = parseData(v);
+                      if (d && !mensal && d.getDay() === 0) { toast('A parcela não pode vencer no domingo', 'error'); return; }
+                      if (d && mensal && d.getDate() > 28) { toast('No mensal, escolha um dia de 1 a 28', 'error'); return; }
+                      set('primeiro', v);
+                      if (d) { if (mensal) set('dia_mes', String(d.getDate())); else set('dia_semana', String(d.getDay())); }
+                    } }),
+                    f.primeiro ? Btn({ small: true, variant: 'link', onClick: function () { set('primeiro', ''); }, children: 'Limpar' }) : null)),
                 h(Field, Object.assign({ label: tg('caucao_isento', 'Caução'), hint: f.caucao_isento ? 'Débitos do encerramento seriam abatidos da caução (Cl. 15.2)' : null }, hv('caucao_isento')),
                   h('div', { style: { display: 'flex', gap: 8, alignItems: 'center' } }, Segmented([[true, 'Isento'], [false, 'Valor']], f.caucao_isento, function (v) { set('caucao_isento', v); }, 'Caução'),
                     f.caucao_isento ? null : Input({ value: f.caucao, inputMode: 'decimal', placeholder: 'R$ 0,00', 'aria-label': 'Valor da caução', onChange: function (e) { set('caucao', e.target.value); }, style: { flex: 1 } })))),
@@ -3429,7 +3494,9 @@
         h(Card, { pad: false, label: 'Parcelas' },
           h('div', { style: { padding: '12px 16px', borderBottom: '1px solid #f3f4f6', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' } },
             h('h2', { style: { margin: '0 6px 0 0', fontSize: 15, fontWeight: 700 } }, 'Parcelas'),
-            Chips([{ id: 'abertas', t: 'Em aberto', n: abertas.length }, { id: 'atrasadas', t: 'Atrasadas', n: cnt(function (p) { return p.status === 'atrasada'; }) }, { id: 'pagas', t: 'Pagas', n: pagas.length }, { id: 'todas', t: 'Todas', n: parcelas.length }], filtro, function (v) { setFiltro(v); setTodas(false); setSel({}); })),
+            Chips([{ id: 'abertas', t: 'Em aberto', n: abertas.length }, { id: 'atrasadas', t: 'Atrasadas', n: cnt(function (p) { return p.status === 'atrasada'; }) }, { id: 'pagas', t: 'Pagas', n: pagas.length }, { id: 'todas', t: 'Todas', n: parcelas.length }], filtro, function (v) { setFiltro(v); setTodas(false); setSel({}); }),
+            h('div', { style: { flex: 1 } }),
+            (abertas.length || c.status === 'aguardando_assinatura') && c.status !== 'encerrado' ? Btn({ small: true, icon: 'calendar', onClick: function () { setModal({ vencimentos: true }); }, children: 'Mudar vencimentos' }) : null), /* LOCACAO_VENCIMENTOS_V1 */
           parcelas.length === 0 ? Vazio(c.situacao === 'aguardando_assinatura' ? 'As parcelas aparecem depois da assinatura' : 'Sem parcelas') :
           janela.length === 0 ? Vazio('Nenhuma parcela neste filtro') :
           Tabela([{ t: h('input', { type: 'checkbox', 'aria-label': 'Selecionar todas', checked: todasMarcadas, onChange: function (e) { marcarTodas(e.target.checked); }, style: { accentColor: ROXO, width: 16, height: 16 } }), w: 36 },
@@ -3487,6 +3554,7 @@
       modal && modal.baixa ? h(BaixaModal, { p: modal.baixa, onClose: function () { setModal(null); },
         onConfirm: function (b) { return api('/parcelas/' + modal.baixa.id + '/baixa-manual', { method: 'POST', body: b }).then(function () { toast('Baixa registrada', 'success'); setModal(null); mudou(); }).catch(function (e) { toast(e.message, 'error'); throw e; }); } }) : null,
       modal && modal.lote ? h(BaixaLoteModal, { api: api, toast: toast, parcelas: modal.lote, onClose: function () { setModal(null); }, onFeito: function () { setModal(null); mudou(); } }) : null,
+      modal && modal.vencimentos ? h(VencimentosModal, { api: api, toast: toast, c: c, parcelas: parcelas, onClose: function () { setModal(null); }, onFeito: function () { setModal(null); mudou(); } }) : null, /* LOCACAO_VENCIMENTOS_V1 */
       modal && modal.antecipar ? h(AnteciparModal, { api: api, toast: toast, contrato: c, parcelas: modal.antecipar, onClose: function () { setModal(null); }, onFeito: function () { setModal(null); mudou(); } }) : null,
       modal === 'cobranca' ? h(LancarCobrancaModal, { api: api, toast: toast, moto: mo, contrato: Object.assign({}, c, { cliente_nome: cli.nome }), cliente: cli, onClose: function () { setModal(null); }, onSalvo: function () { setModal(null); mudou(); } }) : null,
       modal && modal.recibo ? h(Modal, { titulo: 'Recibo · parcela ' + modal.recibo.numero, onClose: function () { setModal(null); }, largura: 440 },
@@ -3827,6 +3895,7 @@
               (ativo || suspenso) && parcelas.length ? h('div', { style: { fontSize: 12.5, color: '#6b7280', borderTop: '1px solid #f3f4f6', paddingTop: 10 } }, 'Cobrança, baixa, antecipação e desconto em repasses ficam no ', h('button', { type: 'button', onClick: function () { nav({ tela: 'financeiro', id: c.id }); }, className: 'hover:underline', style: { color: ROXO, fontWeight: 600, cursor: 'pointer' } }, 'Financeiro'), '.') : null, // LOCACAO_REMODEL_V1
               !ativo && sit !== 'em_retomada' && sit !== 'quitado' && !assinando && !suspenso ? h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'Nenhuma ação disponível para este contrato.') : null,
               assinando ? h('div', { style: { fontSize: 12.5, color: '#6b7280' } }, 'As ações de cobrança e retomada liberam depois da assinatura.') : null,
+              (assinando || ativo || suspenso || sit === 'em_retomada') ? Btn({ icon: 'calendar', disabled: !!ocupado, onClick: function () { setModal('vencimentos'); }, style: { width: '100%' }, children: assinando ? 'Início da cobrança' : 'Mudar vencimentos' }) : null, /* LOCACAO_VENCIMENTOS_V1 */
               h('div', { style: { borderTop: '1px solid #f3f4f6', paddingTop: 10, display: 'flex', justifyContent: 'center' } }, /* LOCACAO_RASCUNHO_V1 */
                 h('button', { type: 'button', className: 'hover:underline', onClick: function () { setModal('excluirContrato'); }, style: { color: '#991b1b', fontWeight: 600, fontSize: 12.5, cursor: 'pointer', display: 'inline-flex', gap: 6, alignItems: 'center' } }, ico('trash', 13), 'Excluir contrato de vez (teste ou erro)')))),
           h(DadosLocatarioCard, { api: api, toast: toast, cli: cli, perfil: d.perfil || {} }), // LOCACAO_REMODEL_V1
@@ -3841,6 +3910,7 @@
                     h('div', { style: { fontSize: 11.5, color: '#6b7280' } }, fDHc(l.criado_em) + ' · ' + (l.usuario_nome || 'sistema'))));
               }))))),
 
+      modal === 'vencimentos' ? h(VencimentosModal, { api: api, toast: toast, c: c, parcelas: parcelas, onClose: function () { setModal(null); }, onFeito: function () { setModal(null); carregar(); props.aoMudar && props.aoMudar(); } }) : null, /* LOCACAO_VENCIMENTOS_V1 */
       modal === 'excluirContrato' ? h(ExcluirContratoModal, { api: api, c: c, cliNome: cli && cli.nome, parcelas: parcelas, onClose: function () { setModal(null); }, // LOCACAO_RASCUNHO_V1
         onFeito: function (r) { setModal(null); toast('Contrato ' + r.numero + ' excluído' + (r.pix_cancelados ? ' · ' + r.pix_cancelados + ' PIX cancelado(s)' : ''), 'success'); props.aoMudar && props.aoMudar(); nav({ tela: 'lista', tab: 'contratos' }); } }) : null,
       modal === 'retomada' ? h(MotivoModal, { titulo: 'Iniciar retomada', label: 'Motivo', hint: 'Contrato e moto vão para Em retomada e uma ocorrência é aberta.', botao: 'Iniciar retomada', perigo: true,
@@ -5563,7 +5633,8 @@
         ['Antecipar', 'Clique no nome › marque as parcelas a vencer › "Antecipar com PIX". Desconto opcional; "Gerar PIX e mandar no WhatsApp" (baixa sozinha quando cair) ou "Já recebi, dar baixa agora".'],
         ['Cobrança avulsa', 'No financeiro da pessoa: "Lançar cobrança avulsa" (ocorrência, tarifa do Anexo I).'],
         ['Desconto em repasses', 'Só Motoboy Tutts, com o Anexo III: liga no financeiro da pessoa; a parcela é abatida do repasse semanal.'],
-        ['Exportar', '"Exportar planilha" baixa a lista da semana em CSV.']
+        ['Exportar', '"Exportar planilha" baixa a lista da semana em CSV.'],
+        ['Início da cobrança e dia de vencimento', 'No Novo contrato, "1ª parcela vence em" define quando a cobrança começa (vazio = 1º vencimento depois do início). Depois, no perfil ou no financeiro do contrato, "Mudar vencimentos": escolha a data da próxima parcela em aberto e as seguintes seguem a partir dela, com prévia antes de salvar. Parcelas pagas não mudam; PIX já emitido das que mudaram é cancelado e um novo sai na régua.']
       ],
       dicas: ['O PIX sai sozinho no vencimento e a baixa é automática quando o Stark confirma.'] },
 
