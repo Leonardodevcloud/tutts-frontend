@@ -48,14 +48,18 @@
         const dow = new Date(Date.UTC(+m[3], +m[2] - 1, +m[1])).getUTCDay();
         return dias[dow] + ', ' + m[1] + '/' + m[2] + (m[4] ? ' às ' + m[4] : '');
     }
+    // SCORE_SABADO_V1: saque de categoria lancado no sabado (periodo 'YYYY-MM-DD') e semanal
+    function ehSaqueSemana(b) {
+        return !!b && (b.tipo === 'saque_semanal' || (b.tipo === 'saque_mensal' && /^\d{4}-\d{2}-\d{2}$/.test(String(b.periodo || ''))));
+    }
     function textoSaqueGratis(b) {
         if (!b) return '';
         const qtd = Number(b.restantes != null ? b.restantes : (b.quantidade || 1)) || 1;
-        const per = b.tipo === 'saque_semanal' ? 'desta semana' : b.tipo === 'sorteio' ? 'do sorteio' : 'deste mês';
+        const per = ehSaqueSemana(b) ? 'desta semana' : b.tipo === 'sorteio' ? 'do sorteio' : 'deste mês';
         // SCORE_APP_TEXTO_V1
         return (qtd === 1 ? 'Você tem 1 saque sem taxa ' + per + (b.valor ? ' de até ' + fmtBRL(b.valor) : '')
                           : 'Você tem ' + qtd + ' saques sem taxa ' + per + (b.valor ? ', de até ' + fmtBRL(b.valor) + ' cada' : '')) +
-            (b.expira_em ? '. Use até ' + prazoBR(b.expira_em, b.tipo === 'saque_semanal') + '.' : '.');
+            (b.expira_em ? '. Use até ' + prazoBR(b.expira_em, ehSaqueSemana(b)) + '.' : '.');
     }
 
     // SCORE_A_LIBERAR_V1: direito garantido, libera apos a carencia
@@ -71,7 +75,7 @@
             h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 } },
                 h('div', null,
                     h('div', { style: { fontSize: 11, fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.05em' } }, 'Garantido · a liberar'),
-                    h('div', { style: { fontSize: 15, fontWeight: 700, color: '#92400e', marginTop: 2 } }, 'Saque ' + nomeNivelMb(a.nivel) + (a.tipo === 'saque_semanal' ? ' desta semana' : ' do mês')),
+                    h('div', { style: { fontSize: 15, fontWeight: 700, color: '#92400e', marginTop: 2 } }, 'Saque ' + nomeNivelMb(a.nivel) + ' da semana'), // SCORE_SABADO_V1: cai no sábado
                     h('div', { style: { fontSize: 12, color: '#92400e', marginTop: 2 } }, (qtd === 1 ? '1 saque sem taxa' : qtd + ' saques sem taxa') + ', até ' + fmtBRL(a.teto) + (qtd === 1 ? '' : ' cada'))
                 ),
                 h('div', { style: { textAlign: 'center', background: '#fff', border: '1px solid #fde68a', borderRadius: 12, padding: '6px 10px', minWidth: 64 } },
@@ -102,7 +106,9 @@
             removida: ['Cancelado', 'bg-gray-100 text-gray-500'],
             usada_sem_saque: ['Usado', 'bg-gray-100 text-gray-600'],
         };
-        const origem = (b) => b.tipo === 'saque_semanal' ? 'Semana ' + String(b.periodo || '').replace(/^\d{4}-W/, '') + ' · Ouro' /* SCORE_APP_TEXTO_V1 */
+        const origem = (b) => (ehSaqueSemana(b) && /^\d{4}-\d{2}-\d{2}$/.test(String(b.periodo || ''))) /* SCORE_SABADO_V1 */
+            ? 'Sábado ' + b.periodo.slice(8, 10) + '/' + b.periodo.slice(5, 7) + ' · ' + (b.tipo === 'saque_semanal' ? 'Ouro' : 'Prata')
+            : b.tipo === 'saque_semanal' ? 'Semana ' + String(b.periodo || '').replace(/^\d{4}-W/, '') + ' · Ouro' /* SCORE_APP_TEXTO_V1 */
             : b.tipo === 'saque_mensal' ? 'Saque Prata · ' + String(b.periodo || '').slice(5) + '/' + String(b.periodo || '').slice(0, 4)
             : b.tipo === 'sorteio' ? 'Prêmio do sorteio · ' + String(b.periodo || '').slice(5) + '/' + String(b.periodo || '').slice(0, 4)
             : 'Saque grátis';
@@ -121,7 +127,7 @@
                 h('div', null,
                     h('div', { style: { fontSize: 11, fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '.05em' } }, 'Disponível agora'),
                     h('div', { style: { fontSize: 15, fontWeight: 700, color: '#1e40af', marginTop: 2 } },
-                        bonus.tipo === 'saque_semanal' ? 'Saque grátis desta semana' : bonus.tipo === 'sorteio' ? 'Prêmio do sorteio' : 'Saque grátis do mês'), /* SCORE_APP_TEXTO_V1 */
+                        ehSaqueSemana(bonus) ? 'Saque grátis desta semana' : bonus.tipo === 'sorteio' ? 'Prêmio do sorteio' : 'Saque grátis do mês'), /* SCORE_APP_TEXTO_V1 */
                     (function () {
                         const q = Number(bonus.restantes != null ? bonus.restantes : (bonus.quantidade || 1)) || 1;
                         return h('div', { style: { fontSize: 13, color: '#1e40af', marginTop: 3 } },
@@ -130,8 +136,8 @@
                     bonus.expira_em && h('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8, background: '#fff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '3px 10px', fontSize: 12, fontWeight: 600, color: '#1e40af' } },
                         h('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', 'aria-hidden': 'true' },
                             h('circle', { cx: 12, cy: 12, r: 9 }), h('path', { d: 'M12 7v5l3 2' })),
-                        'Use até ' + prazoBR(bonus.expira_em, bonus.tipo === 'saque_semanal')),
-                    h('div', { style: { fontSize: 11.5, color: '#1e40af', marginTop: 8, lineHeight: 1.4 } }, 'Entra sozinho no seu próximo saque, sem taxa. Se não usar até a data, ele expira.')
+                        'Use até ' + prazoBR(bonus.expira_em, ehSaqueSemana(bonus))),
+                    h('div', { style: { fontSize: 11.5, color: '#1e40af', marginTop: 8, lineHeight: 1.4 } }, 'Entra sozinho no seu próximo saque, sem taxa. Se não usar até a data, ele expira. Todo sábado cai um novo.')
                 ),
                 h('div', { style: { textAlign: 'center', background: '#fff', border: '1px solid #bfdbfe', borderRadius: 12, padding: '6px 10px', minWidth: 64 } },
                     h('div', { style: { fontSize: 26, fontWeight: 800, color: '#2563eb', lineHeight: 1 } }, Number(bonus.restantes != null ? bonus.restantes : (bonus.quantidade || 1))),
@@ -148,7 +154,7 @@
                         h('div', { className: 'text-[11px] text-gray-500' },
                             /* SCORE_APP_TEXTO_V1 */
                             (b.lancado_em ? 'liberado ' + prazoBR(b.lancado_em, false) : '') +
-                            (b.situacao === 'disponivel' && b.expira_em ? ' · vale até ' + prazoBR(b.expira_em, b.tipo === 'saque_semanal') :
+                            (b.situacao === 'disponivel' && b.expira_em ? ' · vale até ' + prazoBR(b.expira_em, ehSaqueSemana(b)) :
                              b.situacao === 'sacou' && b.valor_sacado ? ' · ' + fmtBRL(b.valor_sacado) + ' sacados sem taxa' :
                              b.situacao === 'expirou' && b.expira_em ? ' · venceu ' + prazoBR(b.expira_em, false) : ''))
                     ),
@@ -440,7 +446,9 @@
                     '≥ ' + fmtPct(m.pct_prata) + '% no prazo',
                 ],
                 bonus: [
-                    (b.qtd_n2 || 1) + (Number(b.qtd_n2) === 1 ? ' saque grátis/mês de até ' : ' saques grátis/mês de até ') + fmt(b.saque_n2),
+                    // SCORE_SABADO_V1: 1 por sábado, até a cota do mês
+                    '1 saque grátis todo sábado, de até ' + fmt(b.saque_n2) + '. Vale 6 dias (até sexta).',
+                    'Até ' + (b.qtd_n2 || 1) + (Number(b.qtd_n2 || 1) === 1 ? ' saque grátis no mês.' : ' saques grátis no mês — um por sábado.'),
                 ], // SORTEIO_EXTRA_FRONT_V1: sorteio agora e extra
             },
             {
@@ -451,8 +459,8 @@
                     '≥ ' + fmtPct(m.pct_ouro) + '% no prazo',
                 ],
                 bonus: [
-                    '1 saque grátis por semana, de até ' + fmt(b.saque_n3) + '. Ele chega no fim de semana e vale 3 dias.', // SCORE_APP_TEXTO_V1
-                    'Ficando no Ouro o mês todo, são cerca de 4 saques grátis no mês — um por semana.',
+                    '1 saque grátis todo sábado, de até ' + fmt(b.saque_n3) + '. Vale 6 dias (até sexta).', // SCORE_SABADO_V1
+                    'Ficando no Ouro o mês todo, são 4 ou 5 saques grátis no mês — um por sábado.',
                 ],
             },
         ];

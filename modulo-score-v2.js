@@ -64,6 +64,9 @@
     }
     function labelOrigem(c) {
         const mesBR = (p) => (p && /^\d{4}-\d{2}$/.test(p)) ? (p.slice(5) + '/' + p.slice(0, 4)) : (p || '');
+        // SCORE_SABADO_V1: lancamento de sabado (periodo 'YYYY-MM-DD')
+        const sab = /^\d{4}-\d{2}-\d{2}$/.test(String(c.periodo || '')) ? 'sábado ' + c.periodo.slice(8, 10) + '/' + c.periodo.slice(5, 7) : null;
+        if (sab && (c.tipo === 'saque_mensal' || c.tipo === 'saque_semanal')) return { titulo: c.tipo === 'saque_mensal' ? 'Saque Prata' : 'Saque Ouro', sub: sab };
         if (c.tipo === 'saque_mensal') return { titulo: 'Saque Prata', sub: 'mês ' + mesBR(c.periodo) };
         if (c.tipo === 'saque_semanal') return { titulo: 'Saque Ouro', sub: 'semana ' + String(c.periodo || '').replace(/^\d{4}-W/, '') + '/' + String(c.periodo || '').slice(0, 4) };
         if (c.tipo === 'sorteio') return { titulo: 'Sorteio ' + ((COR_NIVEL[c.nivel] || {}).nome || ''), sub: 'ref. ' + mesBR(c.mes_referencia) };
@@ -171,7 +174,7 @@
             setRodando('bonus');
             try {
                 const r = await fetchApiRef.current('/score-v2/admin/lancar-bonus-pendentes', { method: 'POST', body: '{}' });
-                showToastRef.current(r.lancados + ' saque(s) lançado(s) de ' + r.candidatos + ' Prata/Ouro', 'success');
+                showToastRef.current(r.lancados + ' saque(s) do último sábado lançado(s) de ' + r.candidatos + ' Prata/Ouro', 'success'); // SCORE_SABADO_V1
                 carregar();
             } catch (err) { showToastRef.current(err.message, 'error'); }
             finally { setRodando(''); }
@@ -208,7 +211,7 @@
             h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3.5 flex flex-wrap items-center gap-x-5 gap-y-2' },
                 h('div', { className: 'flex items-center gap-2 text-xs text-gray-600' }, ico('clock', 15), h('span', null, 'Última avaliação: ', h('b', { className: 'text-gray-900' }, dados.ultima_avaliacao || '—'))),
                 h('div', { className: 'flex items-center gap-2 text-xs text-gray-600' }, ico('calendar', 15), h('span', null, 'Próxima: ', h('b', { className: 'text-gray-900' }, 'sáb ' + (dados.proxima_avaliacao || '12:00')))),
-                h('div', { className: 'flex items-center gap-2 text-xs text-gray-600' }, ico('wallet', 15), h('span', null, 'Saques grátis lançados todo dia às ', h('b', { className: 'text-gray-900' }, '07:30'))),
+                h('div', { className: 'flex items-center gap-2 text-xs text-gray-600' }, ico('wallet', 15), h('span', null, 'Saques grátis caem ', h('b', { className: 'text-gray-900' }, 'todo sábado'), ' · valem 6 dias')), // SCORE_SABADO_V1
                 h('div', { className: 'flex items-center gap-2 ml-auto flex-wrap' },
                     h('form', {
                         className: 'flex items-center gap-1',
@@ -323,8 +326,10 @@
                     (tem(2) && tem(3) ? ' · ' : '') +
                     (tem(3) ? 'Ouro ≥' + c.pct_ouro + '% + ' + c.dias_pico_ouro + ' dias' : '')),
                 linha('Saque grátis', [
-                    tem(2) ? 'Prata ' + qtdTxt(b.saque_qtd_n2) + '/mês até ' + tetoTxt(b.saque_teto_n2) : null,
-                    tem(3) ? 'Ouro 1/semana (vale 3 dias) até ' + tetoTxt(b.saque_teto_n3) : null, // SCORE_OURO_1SEMANA_V1
+                    // SCORE_SABADO_V1: 1 por sábado, vale 6 dias (Prata até a cota do mês)
+                    tem(2) ? 'Prata 1/sábado (até ' + (Number(b.saque_qtd_n2) || 1) + '/mês) até ' + tetoTxt(b.saque_teto_n2) : null,
+                    tem(3) ? 'Ouro 1/sábado até ' + tetoTxt(b.saque_teto_n3) : null,
+                    (tem(2) || tem(3)) ? 'vale 6 dias' : null,
                 ].filter(Boolean).join(' · ') || '—'),
                 linha('Sorteio', sorteioTxt.length ? sorteioTxt.join(' · ') + ' (mensal, ≥20 dias na categoria)' : 'desligado')
             ),
@@ -496,7 +501,7 @@
                         h('input', { type: 'date', value: ate, onChange: e => setAte(e.target.value), className: 'px-2 py-1 border border-gray-200 rounded-lg text-xs' })),
                     h('div', { className: 'flex gap-2 flex-wrap ml-auto' },
                         sel(regiao, setRegiao, [['', 'Todas as praças']].concat(pracas.map(p => [p, p]))),
-                        sel(tipo, setTipo, [['', 'Toda origem'], ['saque_mensal', 'Saque Prata (mês)'], ['saque_semanal', 'Saque Ouro (semana)'], ['sorteio', 'Sorteio'], ['legado_v1', 'Score v1 (legado)']]),
+                        sel(tipo, setTipo, [['', 'Toda origem'], ['saque_mensal', 'Saque Prata'], ['saque_semanal', 'Saque Ouro'], ['sorteio', 'Sorteio'], ['legado_v1', 'Score v1 (legado)']]),
                         h('input', { value: busca, onChange: e => setBusca(e.target.value), placeholder: 'Nome ou código', className: 'w-40 px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-purple-400' })
                     )
                 ),
@@ -523,7 +528,7 @@
                 ? h('div', { className: 'bg-white rounded-xl border border-gray-200 p-10 text-center' },
                     h('div', { className: 'text-gray-300 flex justify-center mb-2' }, ico('gift', 36)),
                     h('p', { className: 'text-sm font-medium text-gray-700' }, 'Ninguém contemplado com esses filtros'),
-                    h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Saques de categoria são lançados todo dia às 07:30 para quem é Prata/Ouro e já passou da carência.'))
+                    h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Saques de categoria caem todo sábado, na avaliação das 12h, para quem é Prata/Ouro e já passou da carência. Valem 6 dias.'))
                 : h('div', { className: 'bg-white rounded-xl border border-gray-200 overflow-x-auto' + (loading ? ' opacity-60' : '') },
                     h('table', { className: 'w-full text-sm' },
                         h('thead', { className: 'bg-gray-50 border-b border-gray-200' },
@@ -567,7 +572,7 @@
     function TabelaALiberar({ lista, abrirDiagnostico }) {
         const aviso = h('div', { className: 'flex gap-2.5 items-center rounded-xl border px-3.5 py-2.5 text-xs', style: { background: '#fffbeb', borderColor: '#fde68a', color: '#92400e' } },
             ico('clock', 16),
-            h('span', null, 'Estes motoboys ', h('b', null, 'já conquistaram'), ' a categoria e estão nos 7 dias de carência. O saque grátis é lançado sozinho na data indicada (rotina diária das 07:30 ou avaliação de sábado, 12h — o que vier primeiro). Se caírem de categoria antes, a carência recomeça.'));
+            h('span', null, 'Estes motoboys ', h('b', null, 'já conquistaram'), ' a categoria e estão nos 7 dias de carência. O saque grátis cai sozinho no sábado indicado (avaliação das 12h) e vale 6 dias. Se caírem de categoria antes, a carência recomeça.'));
         if (!lista.length) return h('div', { className: 'space-y-3' }, aviso,
             h('div', { className: 'bg-white rounded-xl border border-gray-200 p-10 text-center text-sm text-gray-500' }, 'Ninguém em carência agora.'));
         const cab = ['Motoboy', 'Praça', 'Conquistou', 'Desde', 'Libera em', 'Carência', 'Vai receber'];
@@ -595,7 +600,7 @@
                                     h('div', { className: 'h-full rounded-full', style: { width: pct + '%', background: '#d97706' } })),
                                 h('div', { className: 'text-[11px] text-gray-500 mt-1' }, (x.dias_cumpridos || 0) + ' de ' + (x.carencia_dias || 7) + ' dias cumpridos')),
                             h('td', { className: 'px-3 py-2 whitespace-nowrap' },
-                                h('div', { className: 'text-xs font-semibold text-gray-900' }, x.quantidade + '× saque grátis / ' + (x.tipo === 'saque_semanal' ? 'semana' : 'mês')),
+                                h('div', { className: 'text-xs font-semibold text-gray-900' }, x.quantidade + '× saque grátis / sábado'),
                                 h('div', { className: 'text-[11px] text-gray-500' }, 'até ' + fmtBRL(x.teto) + ' · vale até ' + x.vale_ate))
                         );
                     }))
@@ -1260,8 +1265,8 @@
             ),
             h('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-2.5' },
                 miniCard({ bar: '#92400e', bg: '#fff', txt: '#92400e', num: '#111827' }, '', 'Bronze', counts[1], 'base da praça'),
-                miniCard({ bar: '#6b7280', bg: '#fff', txt: '#374151', num: '#111827' }, '', 'Prata', counts[2], 'sorteio ' + fmtBRL(cfg.sorteio_valor_n2), 'saque ' + fmtBRL(cfg.saque_teto_n2) + '/mês'),
-                miniCard({ bar: '#f67602', bg: '#fffbeb', txt: '#92400e', num: '#92400e' }, '', 'Ouro', counts[3], 'sorteio ' + fmtBRL(cfg.sorteio_valor_n3), 'saque ' + fmtBRL(cfg.saque_teto_n3) + '/sem'),
+                miniCard({ bar: '#6b7280', bg: '#fff', txt: '#374151', num: '#111827' }, '', 'Prata', counts[2], 'sorteio ' + fmtBRL(cfg.sorteio_valor_n2), 'saque ' + fmtBRL(cfg.saque_teto_n2) + '/sáb'),
+                miniCard({ bar: '#f67602', bg: '#fffbeb', txt: '#92400e', num: '#92400e' }, '', 'Ouro', counts[3], 'sorteio ' + fmtBRL(cfg.sorteio_valor_n3), 'saque ' + fmtBRL(cfg.saque_teto_n3) + '/sáb'),
                 miniCard({ bar: '#770fa8', bg: '#faf7fd', txt: '#770fa8', num: '#770fa8' }, '', 'Total', (counts[1] + counts[2] + counts[3]), 'avaliados')
             )
         );
@@ -1331,8 +1336,9 @@
             const badge = h('span', {
                 className: 'text-[11px] font-bold px-2.5 py-0.5 rounded-full ' + (isOuro ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600')
             }, isOuro ? 'OURO' : 'PRATA');
-            const tetoLabel = isOuro ? 'Teto saque / sem (R$)' : 'Teto saque / mês (R$)';
-            const qtdLabel = isOuro ? 'Qtd saque / semana' : 'Qtd saque / mês'; // SAQUE_QTD_FRONT_V1
+            // SCORE_SABADO_V1: saque cai todo sábado; Prata tem cota no mês
+            const tetoLabel = 'Teto por saque (R$)';
+            const qtdLabel = isOuro ? 'Qtd saque / semana' : 'Saques no mês (1 por sábado)'; // SAQUE_QTD_FRONT_V1
             return h('div', { className: 'border border-gray-200 rounded-xl p-3.5 space-y-3' },
                 h('div', { className: 'flex items-center gap-2' },
                     badge,
@@ -1342,7 +1348,7 @@
                     h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, tetoLabel), numInput('saque_teto_' + pk, 0.01, 0)),
                     isOuro
                         ? h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, 'Saque grátis'), /* SCORE_OURO_1SEMANA_V1 */
-                            h('div', { className: 'px-2.5 py-1.5 rounded-lg text-sm bg-gray-50 border border-gray-200 text-gray-700' }, '1 por semana · vale 3 dias'))
+                            h('div', { className: 'px-2.5 py-1.5 rounded-lg text-sm bg-gray-50 border border-gray-200 text-gray-700' }, '1 por sábado · vale 6 dias'))
                         : h('div', null, h('label', { className: 'text-[11px] text-gray-500 font-medium' }, qtdLabel), numInput('saque_qtd_' + pk, 1, 0))
                 ),
                 // BONUS_EXTRAS_FRONT_V1: editor da lista de bonus extras
