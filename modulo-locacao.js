@@ -460,9 +460,10 @@
   }
   function Thumb(src, label, onClick, tam) {
     return h('button', { type: 'button', onClick: onClick || null, title: label, 'aria-label': label ? 'Abrir ' + label : 'Abrir foto',
-      style: { display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'stretch', cursor: onClick ? 'zoom-in' : 'default', background: 'transparent', padding: 0, border: 0, minWidth: 0 } },
-      h('div', { style: { aspectRatio: '4 / 3', borderRadius: 10, overflow: 'hidden', border: '1px solid #e5e7eb', background: src ? '#f3f4f6' : '#faf7fd', display: 'grid', placeItems: 'center', color: '#9ca3af', height: tam || 'auto' } },
-        src ? h('img', { src: src, alt: label || '', loading: 'lazy', style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } }) : ico('image', 18)),
+      style: { display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'stretch', cursor: onClick ? 'zoom-in' : 'default', background: 'transparent', padding: 0, border: 0, minWidth: 0, width: '100%', maxWidth: '100%' } },
+      /* LOCACAO_THUMB_V2: foto em pé (selfie) ou documento grande não estica mais o quadro — a imagem fica presa na moldura 4:3 */
+      h('div', { style: { position: 'relative', width: '100%', aspectRatio: '4 / 3', minHeight: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid #e5e7eb', background: src ? '#f3f4f6' : '#faf7fd', display: 'grid', placeItems: 'center', color: '#9ca3af', height: tam || 'auto', boxSizing: 'border-box' } },
+        src ? h('img', { src: src, alt: label || '', loading: 'lazy', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' } }) : ico('image', 18)),
       label ? h('span', { style: { fontSize: 11.5, color: '#374151', textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, label) : null);
   }
   function blobDeDataUrl(src) { /* LOCACAO_AJUSTES_V1 */
@@ -1257,7 +1258,7 @@
           titSec('Conferência'),
           conf('docs', nDocs === Object.keys(DOCS).length ? 'ok' : central ? 'info' : 'alerta', h(React.Fragment, null,
             h('b', null, 'Documentos'), ' · ' + nDocs + ' de ' + Object.keys(DOCS).length + ' enviados' + (central && nDocs < Object.keys(DOCS).length ? ' (opcional para quem veio da Central)' : ''),
-            h('div', { className: 'grid grid-cols-4', style: { gap: 6, marginTop: 8 } }, Object.keys(DOCS).map(function (t) {
+            h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))', gap: 8, marginTop: 8, minWidth: 0 } }, Object.keys(DOCS).map(function (t) { /* LOCACAO_THUMB_V2 */
               var doc = docsPorTipo[t];
               return doc ? h('div', { key: t, style: { minWidth: 0 } }, Thumb(doc.thumb, DOCS[t], function () { abrirDoc(doc); }))
                 : h('div', { key: t, style: { display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 } },
