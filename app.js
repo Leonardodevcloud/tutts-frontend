@@ -452,6 +452,21 @@ const fetchAuth = async (url, options = {}, retryCount = 0) => {
             }
         }
         
+        // SENHA_FORTE_V1: o servidor exige a troca de senha (sessão aberta antes da atualização):
+        // marca o usuário e recarrega uma vez para abrir a tela de troca.
+        if (response.status === 403) {
+            const d403 = await response.clone().json().catch(() => ({}));
+            if (d403 && d403.codigo === 'TROCAR_SENHA') {
+                try {
+                    const u = JSON.parse(sessionStorage.getItem("tutts_user") || "null");
+                    if (u && u.trocar_senha !== true) {
+                        sessionStorage.setItem("tutts_user", JSON.stringify({ ...u, trocar_senha: true }));
+                        window.location.reload();
+                    }
+                } catch (_) {}
+                return response;
+            }
+        }
         // 🔒 FIX: Se CSRF falhou (403), renovar token (que renova CSRF) e retry
         if (response.status === 403 && retryCount === 0) {
             const data = await response.clone().json().catch(() => ({}));
@@ -10321,6 +10336,18 @@ const hideLoadingScreen = () => {
             }),
             className: "text-gray-500 hover:underline"
         }, "Esqueci minha senha")))));
+        }
+        // SENHA_FORTE_V1: Admin, Master e Financeiro sem a senha nova e forte veem só a tela de troca
+        // (atualização de segurança). Sem pular: só "Sair". O backend também bloqueia (403 TROCAR_SENHA).
+        if (["admin", "admin_master", "admin_financeiro"].includes(l.role) && l.trocar_senha === true && typeof window.TrocaSenhaObrigatoria !== 'undefined') {
+            return React.createElement(window.TrocaSenhaObrigatoria, {
+                usuario: l,
+                apiUrl: API_URL,
+                fetchAuth: fetchAuth,
+                showToast: ja,
+                onConcluido: () => o({ ...l, trocar_senha: false }),
+                onSair: () => o(null)
+            });
         }
         // LOCACAO_V2: locatário externo (role 'locatario') só enxerga a área "Minha moto", em tela cheia
         if ("locatario" === l.role) {
