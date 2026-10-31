@@ -283,19 +283,19 @@
         );
     }
 
-    // SCORE_AVISO_AVALIACAO_V1: o nível só muda na avaliação semanal (sábado 12h,
+    // SCORE_AVISO_AVALIACAO_V1: o nível só muda na avaliação semanal (sábado 07h — SCORE_SAB0730_V1,
     // horário da Bahia — cron scoreV2AvaliacaoSemanal). As barras são ao vivo;
     // o card diz claramente quando a subida acontece.
     function proximaAvaliacao() {
         const agora = Date.now();
         const b = new Date(agora - 3 * 3600 * 1000); // America/Bahia = UTC-3 fixo
         let dias = (6 - b.getUTCDay() + 7) % 7;
-        if (dias === 0 && b.getUTCHours() >= 12) dias = 7;
-        const alvo = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate() + dias, 12, 0, 0) + 3 * 3600 * 1000;
+        if (dias === 0 && b.getUTCHours() >= 7) dias = 7;
+        const alvo = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate() + dias, 7, 0, 0) + 3 * 3600 * 1000;
         const d = new Date(alvo - 3 * 3600 * 1000);
         const dd = String(d.getUTCDate()).padStart(2, '0') + '/' + String(d.getUTCMonth() + 1).padStart(2, '0');
-        const rotulo = dias === 0 ? ('hoje (sábado, ' + dd + '), às 12h') : ('sábado (' + dd + '), às 12h');
-        const rotuloCurto = dias === 0 ? ('hoje, ' + dd + ', às 12h') : ('sábado, ' + dd + ', às 12h');
+        const rotulo = dias === 0 ? ('hoje (sábado, ' + dd + '), às 7h') : ('sábado (' + dd + '), às 7h');
+        const rotuloCurto = dias === 0 ? ('hoje, ' + dd + ', às 7h') : ('sábado, ' + dd + ', às 7h');
         const horas = Math.max(0, (alvo - agora) / 3600000);
         const falta = horas < 1 ? 'falta menos de 1h'
             : horas < 48 ? ('faltam ' + Math.floor(horas) + 'h')

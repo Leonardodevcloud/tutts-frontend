@@ -211,7 +211,7 @@
             h('div', { className: 'bg-white rounded-xl border border-gray-200 p-3.5 flex flex-wrap items-center gap-x-5 gap-y-2' },
                 h('div', { className: 'flex items-center gap-2 text-xs text-gray-600' }, ico('clock', 15), h('span', null, 'Última avaliação: ', h('b', { className: 'text-gray-900' }, dados.ultima_avaliacao || '—'))),
                 h('div', { className: 'flex items-center gap-2 text-xs text-gray-600' }, ico('calendar', 15), h('span', null, 'Próxima: ', h('b', { className: 'text-gray-900' }, 'sáb ' + (dados.proxima_avaliacao || '12:00')))),
-                h('div', { className: 'flex items-center gap-2 text-xs text-gray-600' }, ico('wallet', 15), h('span', null, 'Saques grátis caem ', h('b', { className: 'text-gray-900' }, 'todo sábado'), ' · valem 6 dias')), // SCORE_SABADO_V1
+                h('div', { className: 'flex items-center gap-2 text-xs text-gray-600' }, ico('wallet', 15), h('span', null, 'Saques grátis caem ', h('b', { className: 'text-gray-900' }, 'todo sábado às 07:30'), ' · valem 6 dias')), // SCORE_SABADO_V1 · SCORE_SAB0730_V1
                 h('div', { className: 'flex items-center gap-2 ml-auto flex-wrap' },
                     h('form', {
                         className: 'flex items-center gap-1',
@@ -528,7 +528,7 @@
                 ? h('div', { className: 'bg-white rounded-xl border border-gray-200 p-10 text-center' },
                     h('div', { className: 'text-gray-300 flex justify-center mb-2' }, ico('gift', 36)),
                     h('p', { className: 'text-sm font-medium text-gray-700' }, 'Ninguém contemplado com esses filtros'),
-                    h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Saques de categoria caem todo sábado, na avaliação das 12h, para quem é Prata/Ouro e já passou da carência. Valem 6 dias.'))
+                    h('p', { className: 'text-xs text-gray-500 mt-1' }, 'Saques de categoria caem todo sábado às 07:30, para quem é Prata/Ouro e já passou da carência. Valem 6 dias.' /* SCORE_SAB0730_V1 */))
                 : h('div', { className: 'bg-white rounded-xl border border-gray-200 overflow-x-auto' + (loading ? ' opacity-60' : '') },
                     h('table', { className: 'w-full text-sm' },
                         h('thead', { className: 'bg-gray-50 border-b border-gray-200' },
@@ -572,7 +572,7 @@
     function TabelaALiberar({ lista, abrirDiagnostico }) {
         const aviso = h('div', { className: 'flex gap-2.5 items-center rounded-xl border px-3.5 py-2.5 text-xs', style: { background: '#fffbeb', borderColor: '#fde68a', color: '#92400e' } },
             ico('clock', 16),
-            h('span', null, 'Estes motoboys ', h('b', null, 'já conquistaram'), ' a categoria e estão nos 7 dias de carência. O saque grátis cai sozinho no sábado indicado (avaliação das 12h) e vale 6 dias. Se caírem de categoria antes, a carência recomeça.'));
+            h('span', null, 'Estes motoboys ', h('b', null, 'já conquistaram'), ' a categoria e estão nos 7 dias de carência. O saque grátis cai sozinho no sábado indicado, às 07:30, e vale 6 dias. Se caírem de categoria antes, a carência recomeça.'));
         if (!lista.length) return h('div', { className: 'space-y-3' }, aviso,
             h('div', { className: 'bg-white rounded-xl border border-gray-200 p-10 text-center text-sm text-gray-500' }, 'Ninguém em carência agora.'));
         const cab = ['Motoboy', 'Praça', 'Conquistou', 'Desde', 'Libera em', 'Carência', 'Vai receber'];
